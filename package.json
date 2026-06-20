@@ -1,0 +1,25 @@
+{
+  "name": "qa-agent",
+  "version": "1.0.0",
+  "description": "AI-powered QA Agent using Playwright and Anthropic Claude Vision for automated bug detection",
+  "main": "qa-agent.js",
+  "scripts": {
+    "start": "node qa-agent.js",
+    "install-browsers": "npx playwright install --with-deps chromium"
+  },
+  "keywords": [
+    "qa",
+    "testing",
+    "playwright",
+    "anthropic",
+    "claude",
+    "vision",
+    "automation"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.52.0"
+  }
+}
