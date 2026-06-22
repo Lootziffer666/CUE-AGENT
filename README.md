@@ -6,6 +6,19 @@ QA-Bughunting **und** Videoersteller in einem Werkzeug. CUE-AGENT steuert einen 
 nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten App erstellen.
 
 > Roadmap & Konzept: [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
+
+## Demo
+
+🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein 68-Sekunden-Promo, das CUE-AGENT
+**mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
+8 Szenen, lokale Kokoro-Stimme, Soundeffekte an den Übergängen, Linear-Brand. Reproduzierbar ohne jeden API-Key.
+
+## Continuous QA (GitHub Actions)
+
+Der Workflow [`.github/workflows/qa-and-commit.yml`](.github/workflows/qa-and-commit.yml) richtet eine
+frische Umgebung ein (Node + Playwright + ffmpeg, wie der Devcontainer/Codespace), lässt QA gegen eine
+URL laufen und **committet die dokumentierten Befunde** nach `qa-history/` zurück ins Repo. Ohne URL
+startet er den Configurator lokal und prüft dessen GUI. Per `workflow_dispatch` oder wöchentlich.
 > Status: M0–M5 + Politur umgesetzt (QA, Capture-Engine, Video-Pipeline, Audio, Aspect-Ratios,
 > 6 Brand-Presets, Script-Support, Re-Render, QA-Gate, **echte Video-Clips** & **Tutorial-Highlights**).
 
