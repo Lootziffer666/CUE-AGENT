@@ -126,10 +126,11 @@ function loadConfig(overrides = {}) {
   }
 
   // Secrets niemals in cue.config.json — nur aus der Umgebung
+  // Unterstützt verschiedene Variablennamen (ELEVENLABS_API_KEY, "ElevenLabs API", etc.)
   cfg.secrets = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
-    elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || "",
-    freesoundApiKey: process.env.FREESOUND_API_KEY || "",
+    elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || process.env["ElevenLabs API"] || process.env.ELEVENLABS_KEY || "",
+    freesoundApiKey: process.env.FREESOUND_API_KEY || process.env["Freesound API"] || "",
   };
 
   cfg.targetUrl = overrides.targetUrl || process.env.TARGET_URL || "";

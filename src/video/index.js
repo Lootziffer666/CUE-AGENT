@@ -3,10 +3,8 @@
 /**
  * Video-Pipeline Orchestrator.
  *
- * Verkettet Phasen 0–4 (M2: stummes MP4):
- *   0 Discovery → 1 Storytelling → 2 Capture → 3 Design → 4 Production
- *
- * Phase 5 (Audio + Render mit Ton) kommt in M3.
+ * Verkettet Phasen 0–5:
+ *   0 Discovery → 1 Storytelling → 2 Capture → 3 Design → 4 Production → 5 Audio+Render
  */
 
 const path = require("path");
@@ -18,6 +16,7 @@ const { runDiscovery } = require("./phase0-discovery");
 const { buildStoryboard } = require("./phase1-storytelling");
 const { generateDesign } = require("./phase3-design");
 const { runProduction } = require("./phase4-production");
+const { runAudioRender } = require("./phase5-audio-render");
 
 /**
  * @param {object} args
@@ -98,6 +97,16 @@ async function runVideo({
     logger: log,
   });
 
+  // Phase 5: Audio & Final Render
+  const audio = await runAudioRender({
+    storyboard,
+    cfg,
+    projectDir,
+    silentMp4Path: production.mp4Path,
+    durationSec: production.durationSec,
+    logger: log,
+  });
+
   // Projekt-Plan (Zusammenfassung)
   const plan = {
     tool: "cue-agent",
@@ -110,24 +119,30 @@ async function runVideo({
       capture: "done",
       design: "done",
       production: "done",
-      audio: "pending (M3)",
+      audio: audio.hasAudio ? "done" : "skipped (no keys or failed)",
     },
     storyboard: { scenes: storyboard.totalScenes, estimatedDuration: storyboard.estimatedDuration },
     output: {
-      mp4: production.mp4Path,
+      mp4: audio.finalMp4,
       frames: production.frames,
       durationSec: production.durationSec,
-      silent: true,
+      hasAudio: audio.hasAudio,
+      voiceoverSkipped: audio.voiceoverSkipped,
+      musicSkipped: audio.musicSkipped,
     },
     lintWarnings: production.lintWarnings.length,
   };
   writeJson(path.join(projectDir, "project-plan.json"), plan);
 
-  log.ok(`\nFertig! Stummes Video: ${production.mp4Path}`);
+  if (audio.hasAudio) {
+    log.ok(`\nFertig! Video MIT Audio: ${audio.finalMp4}`);
+  } else {
+    log.ok(`\nFertig! Video (stumm): ${production.mp4Path}`);
+  }
   log.ok(`Dauer: ${production.durationSec.toFixed(1)}s, ${production.frames} Frames`);
 
   return {
-    mp4Path: production.mp4Path,
+    mp4Path: audio.finalMp4,
     projectDir,
     storyboard,
     plan,
