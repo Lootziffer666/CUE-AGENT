@@ -1,0 +1,32 @@
+{
+  "platform": "android",
+  "package": "com.example.app",
+  "name": "Onboarding Happy-Path",
+  "_doc": "Gewollter Userflow als Soll-Ist-Schritte. Jeder Schritt: action (was der Nutzer tut) + expect (wo er landen soll). Der Runner prueft, ob der Tap tatsaechlich im erwarteten Screen landet (oder woanders / nirgends). Dieses Format ist plattform-agnostisch; Web/Windows nutzen analoge expect-Schluessel (url/title bzw. window-title/control-id).",
+  "steps": [
+    {
+      "id": "open-login",
+      "description": "Auf der Startseite 'Login' antippen",
+      "action": { "type": "tap", "text": "Login" },
+      "expect": { "activity": "LoginActivity", "hasId": "com.example.app:id/password", "screen": "Login" }
+    },
+    {
+      "id": "enter-credentials",
+      "description": "Passwortfeld ist da -> Text eingeben",
+      "action": { "type": "text", "value": "demo123" },
+      "expect": { "hasId": "com.example.app:id/password" }
+    },
+    {
+      "id": "submit",
+      "description": "'Anmelden' fuehrt ins Dashboard",
+      "action": { "type": "tap", "text": "Anmelden" },
+      "expect": { "activity": "DashboardActivity", "hasText": "Willkommen", "screen": "Dashboard" }
+    },
+    {
+      "id": "open-settings",
+      "description": "Tap auf Zahnrad fuehrt in die Einstellungen",
+      "action": { "type": "tap", "id": "com.example.app:id/settings_fab" },
+      "expect": { "activity": "SettingsActivity", "screen": "Einstellungen" }
+    }
+  ]
+}

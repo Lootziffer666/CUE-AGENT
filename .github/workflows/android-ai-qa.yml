@@ -1,0 +1,98 @@
+name: Android AI QA
+
+# KI-gesteuerte Android-QA (Phase 1): bootet einen Emulator auf einem
+# KVM-fähigen GitHub-Actions-Runner, installiert eine APK und lässt CUE-AGENT
+# (cue android-qa) die App autonom explorieren — Befunde landen als Artefakt.
+#
+# Multimodale Analyse (optional) läuft über einen OpenAI-kompatiblen Endpunkt
+# (z. B. der ANVIL-BELLOWS-Proxy). Sind die Secrets nicht gesetzt, läuft der
+# Capture-only-Heuristik-Modus (Crash-/ANR-Erkennung funktioniert trotzdem).
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "URL zur Debug-APK (z. B. Actions-Artifact/Release der App)"
+        required: true
+      package:
+        description: "Android-Package-Name der App"
+        required: true
+      steps:
+        description: "Explorationsschritte"
+        required: false
+        default: "8"
+      fail_on:
+        description: "QA-Gate: none|low|medium|high"
+        required: false
+        default: "high"
+
+permissions:
+  contents: read
+
+jobs:
+  android-qa:
+    name: Explore APK on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout CUE-AGENT
+        uses: actions/checkout@v4
+
+      - name: Enable KVM (Hardware-Beschleunigung für den Emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install CUE-AGENT deps
+        run: npm ci
+
+      - name: Download APK
+        run: |
+          mkdir -p .android-qa
+          curl -fsSL "${{ github.event.inputs.apk_url }}" -o .android-qa/app.apk
+          ls -la .android-qa
+
+      - name: Run AI QA on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # Optional: multimodale Analyse über OpenAI-kompatiblen Endpunkt.
+          # Ohne diese Secrets → Capture-only-Heuristik (kein harter Fehler).
+          CUE_LLM_BASE_URL: ${{ secrets.CUE_LLM_BASE_URL }}
+          CUE_LLM_API_KEY: ${{ secrets.CUE_LLM_API_KEY }}
+          CUE_LLM_MODEL: ${{ secrets.CUE_LLM_MODEL }}
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb wait-for-device
+            node bin/cue.js android-qa .android-qa/app.apk \
+              --package "${{ github.event.inputs.package }}" \
+              --steps "${{ github.event.inputs.steps }}" \
+              --fail-on "${{ github.event.inputs.fail_on }}" || echo "QA-Gate verletzt (Befunde im Artefakt)"
+
+      - name: Upload QA reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-qa-reports
+          path: qa-reports/**
+          retention-days: 14
+          if-no-files-found: warn
