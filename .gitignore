@@ -9,3 +9,5 @@ qa-reports/*.json
 
 # Video-Projektordner (generierte Artefakte)
 video-projects/
+configurator-output/
+captures/

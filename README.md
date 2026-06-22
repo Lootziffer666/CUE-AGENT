@@ -92,6 +92,29 @@ npm run install-browsers
 cp .env.example .env   # und Keys eintragen
 ```
 
+## Configurator (Web-GUI)
+
+Für komfortables Einstellen ohne JSON von Hand:
+
+```bash
+cue configurator           # startet lokalen Server, z. B. http://localhost:4477
+cue configurator --port 8080
+```
+
+Im Browser öffnen. Das GUI bietet:
+
+- **Projekt-Settings**: Modus, Brand-Preset (mit Farb-Vorschau), Seitenverhältnis, Sprache, Stimme, optionale Ziel-URL
+- **Zeitsegmente / Szenen**: Szenen hinzufügen (Title, Features, Screenshot, Kapitel, Clip, CTA), Dauer setzen, per Drag-frei umsortieren (↑/↓), löschen
+- **Live-Timeline**: proportionale, farbcodierte Segmente + Gesamtdauer
+- **Voice-over pro Szene**: Narrationstext direkt eingeben
+- **Import/Export**: Script als `*.script.json` und Settings als `cue.config.json` herunterladen/laden
+- **CLI-Befehl** zum Kopieren **und** „Video jetzt erzeugen" (rendert direkt über den lokalen Server, mit deinen eigenen Keys)
+
+Das exportierte Script ist identisch zum `--script`-Format — du kannst es also auch per CLI nutzen:
+```bash
+cue promo --script my-video.script.json
+```
+
 ## CLI-Übersicht
 
 | Command | Zweck |
@@ -102,6 +125,7 @@ cp .env.example .env   # und Keys eintragen
 | `cue tutorial <url>` | Tutorial-Video (Cold-Open → Kapitel → Recap) |
 | `cue showcase <url>` | Showcase-Video (Intro → Walkthrough → Closer) |
 | `cue render <dir>` | Vorhandenes Projekt neu rendern (schnelle Iteration) |
+| `cue configurator` | **Web-GUI** zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts, Im-/Export) |
 | `cue doctor` | Umgebungs-Check |
 
 ### Wichtige Optionen
