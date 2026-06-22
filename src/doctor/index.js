@@ -7,7 +7,7 @@
  */
 
 const { execSync } = require("child_process");
-const { hasValidAnthropicKey } = require("../config");
+const { hasValidLlmCredentials } = require("../config");
 
 function tryCmd(cmd) {
   try {
@@ -54,10 +54,10 @@ async function runDoctor({ cfg, json = false }) {
         : "fehlt \u2014 `npm run install-browsers` ausfuehren",
     },
     {
-      name: "ANTHROPIC_API_KEY",
+      name: "LLM-Provider",
       required: true,
-      ok: hasValidAnthropicKey(cfg),
-      detail: hasValidAnthropicKey(cfg) ? "gesetzt" : "fehlt/Platzhalter",
+      ok: hasValidLlmCredentials(cfg).ok,
+      detail: `${hasValidLlmCredentials(cfg).provider} — ${hasValidLlmCredentials(cfg).reason}`,
     },
     {
       name: "ffmpeg",

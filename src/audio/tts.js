@@ -118,35 +118,57 @@ async function generateVoiceover({ storyboard, cfg, outDir, logger }) {
 
   log.info(`Voiceover-Script: ${script.length} Zeichen, ${parts.length} Abschnitte`);
 
-  const apiKey = cfg.secrets && cfg.secrets.elevenLabsApiKey;
-  if (!apiKey) {
-    log.warn("ELEVENLABS_API_KEY nicht gesetzt — Voiceover wird übersprungen (stumm).");
-    // Script trotzdem speichern für spätere Nutzung
-    const scriptPath = path.join(outDir, "voiceover-script.txt");
-    fs.writeFileSync(scriptPath, script, "utf-8");
-    return { voiceoverPath: null, script, skipped: true };
+  // Engine-Kette bestimmen: explizit (cfg.audio.engine) oder auto mit Fallback.
+  //   auto: ElevenLabs (wenn Key) -> Kokoro (lokal, key-frei)
+  const elevenKey = cfg.secrets && cfg.secrets.elevenLabsApiKey;
+  const explicit = (cfg.audio && cfg.audio.engine) || "auto";
+  let chain;
+  if (explicit === "auto") chain = elevenKey ? ["elevenlabs", "kokoro"] : ["kokoro"];
+  else chain = [explicit];
+
+  const voice = (cfg.audio && cfg.audio.voice) || "matilda";
+  const audioDir = path.join(outDir, "audio");
+  ensureDir(audioDir);
+
+  async function tryEngine(engine) {
+    if (engine === "elevenlabs") {
+      if (!elevenKey) throw new Error("ELEVENLABS_API_KEY fehlt");
+      const out = path.join(audioDir, "voiceover.mp3");
+      log.info(`ElevenLabs TTS (Voice: ${voice}) ...`);
+      await elevenLabsTTS({ text: script, apiKey: elevenKey, voice, outPath: out });
+      return out;
+    }
+    if (engine === "openai") {
+      const { openaiTTS } = require("./providers/openai-speech");
+      const out = path.join(audioDir, "voiceover.mp3");
+      await openaiTTS({ text: script, voice, outPath: out, cfg, logger: log });
+      return out;
+    }
+    if (engine === "kokoro") {
+      const { kokoroTTS } = require("./providers/kokoro");
+      const out = path.join(audioDir, "voiceover.wav");
+      await kokoroTTS({ text: script, voice, outPath: out, logger: log });
+      return out;
+    }
+    throw new Error(`Unbekannte TTS-Engine "${engine}"`);
   }
 
-  const voiceoverPath = path.join(outDir, "audio", "voiceover.mp3");
-  ensureDir(path.dirname(voiceoverPath));
-
-  log.info(`ElevenLabs TTS (Voice: ${cfg.audio.voice || "matilda"}) ...`);
-  try {
-    await elevenLabsTTS({
-      text: script,
-      apiKey,
-      voice: cfg.audio.voice || "matilda",
-      outPath: voiceoverPath,
-    });
-    const stats = fs.statSync(voiceoverPath);
-    log.ok(`Voiceover: ${voiceoverPath} (${(stats.size / 1024).toFixed(0)} KB)`);
-    return { voiceoverPath, script, skipped: false };
-  } catch (err) {
-    log.warn(`ElevenLabs fehlgeschlagen: ${err.message}. Voiceover wird übersprungen.`);
-    const scriptPath = path.join(outDir, "voiceover-script.txt");
-    fs.writeFileSync(scriptPath, script, "utf-8");
-    return { voiceoverPath: null, script, skipped: true };
+  for (let i = 0; i < chain.length; i++) {
+    const engine = chain[i];
+    try {
+      const out = await tryEngine(engine);
+      log.ok(`Voiceover: ${out} (${(fs.statSync(out).size / 1024).toFixed(0)} KB, ${engine})`);
+      return { voiceoverPath: out, script, skipped: false, engine };
+    } catch (err) {
+      const next = chain[i + 1];
+      log.warn(`TTS (${engine}) fehlgeschlagen: ${err.message}.${next ? ` Fallback → ${next}.` : ""}`);
+    }
   }
+
+  // Alles fehlgeschlagen → Script speichern, stumm bleiben
+  const scriptPath = path.join(outDir, "voiceover-script.txt");
+  fs.writeFileSync(scriptPath, script, "utf-8");
+  return { voiceoverPath: null, script, skipped: true };
 }
 
 module.exports = { generateVoiceover, elevenLabsTTS, VOICES };

@@ -6,6 +6,7 @@
  */
 
 const { renderBuiltin } = require("./builtin");
+const { renderHyperframes } = require("./hyperframes");
 
 async function render(args) {
   const renderer = (args.cfg && args.cfg.video && args.cfg.video.renderer) || "builtin";
@@ -13,7 +14,7 @@ async function render(args) {
     case "builtin":
       return renderBuiltin(args);
     case "hyperframes":
-      throw new Error("hyperframes-Renderer ist als Plugin geplant (M5). Nutze 'builtin'.");
+      return renderHyperframes(args);
     default:
       throw new Error(`Unbekannter Renderer: ${renderer}`);
   }

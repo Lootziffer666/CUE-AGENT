@@ -24,6 +24,9 @@ const { runDoctor } = require("../src/doctor");
 const { runCapture } = require("../src/core");
 const { runVideo } = require("../src/video");
 const { runRender } = require("../src/video/render-existing");
+const { startConfigurator } = require("../src/configurator/server");
+const { runReleaseCheck } = require("../src/qa/release-check");
+const { runQaLoop } = require("../src/qa/loop");
 
 function parseArgs(argv) {
   const args = { _: [], flags: {} };
@@ -59,16 +62,20 @@ Verwendung:
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
   android-qa [apk]  Android-App-QA (Emulator via ADB + multimodale Analyse)
+  release-check <url>  Pruefen, ob das Produkt veroeffentlichungsreif ist
+  qa-loop <url>     AI-QA-Loop: testen -> fixen -> rebuilden -> erneut testen
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
   promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
   tutorial <url>    Tutorial-Video (Cold-Open -> Schritte -> Recap)
   showcase <url>    Showcase-Video (Intro -> Walkthrough -> Highlights -> Closer)
+  configurator      Web-GUI zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
   render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html)
 
 Globale Optionen:
   --lang de|en      Sprache der Ausgaben (Default: de bzw. CUE_LANG)
   --fail-on L       CI-Gate: none|low|medium|high
+  --skip-qa-gate    Promo/Video OHNE bestandene QA erzwingen (mit Warnung)
   --json            Maschinenlesbares JSON-Ergebnis ausgeben
   --help, -h        Diese Hilfe
 
@@ -98,9 +105,9 @@ async function main() {
   const args = parseArgs(argv);
   const command = args._[0];
 
-  if (!command || args.flags.help && !command) {
+  if (!command) {
     showHelp();
-    process.exit(command ? 0 : 1);
+    process.exit(args.flags.help ? 0 : 1);
   }
 
   const overrides = buildOverrides(args.flags);
@@ -176,7 +183,7 @@ async function main() {
     case "showcase":
     case "tutorial": {
       if (args.flags.help) {
-        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear] [--aspect 16:9|9:16|1:1|4:5] [--no-video] [--json]`);
+        console.log(`cue ${command} <url> [--script s.json] [--flow f.json] [--out dir] [--brand ...] [--aspect ...] [--tts auto|elevenlabs|kokoro|openai] [--voice ...] [--no-voice] [--no-music] [--sfx] [--music-file f] [--sfx-file f] [--images auto|off] [--theme "..."] [--media dir] [--skip-qa-gate] [--no-video] [--json]`);
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
@@ -188,6 +195,22 @@ async function main() {
         ? loadConfig({ ...overrides, video: { ...cfg.video, ...videoOverrides } })
         : cfg;
       if (args.flags.brand) mergedCfg.video.brand = args.flags.brand;
+      // TTS-Engine / Stimme
+      if (args.flags.tts) mergedCfg.audio = { ...mergedCfg.audio, engine: args.flags.tts };
+      if (args.flags.voice) mergedCfg.audio = { ...mergedCfg.audio, voice: args.flags.voice };
+      // Audio-Toggles (--no-voice / --no-music / --sfx) + eigene Dateien
+      const a = { ...mergedCfg.audio };
+      if (args.flags["no-voice"] || args.flags.voiceover === "off") a.voiceover = false;
+      if (args.flags["no-music"] || args.flags.music === "off") a.music = false;
+      if (args.flags.sfx && args.flags.sfx !== "off") a.sfx = true;
+      if (args.flags["music-file"]) a.musicFile = args.flags["music-file"];
+      if (args.flags["sfx-file"]) { a.sfxFile = args.flags["sfx-file"]; a.sfx = true; }
+      mergedCfg.audio = a;
+      // Bildgenerierung + Medien
+      if (args.flags.images) mergedCfg.image = { ...mergedCfg.image, mode: args.flags.images };
+      if (args.flags.theme) mergedCfg.image = { ...mergedCfg.image, theme: args.flags.theme };
+      if (args.flags["image-model"]) mergedCfg.image = { ...mergedCfg.image, model: args.flags["image-model"] };
+      if (args.flags.media) mergedCfg.mediaDir = args.flags.media;
 
       const result = await runVideo({
         url,
@@ -197,6 +220,7 @@ async function main() {
         scriptFile: args.flags.script || null,
         outDir: args.flags.out || null,
         recordVideo: !args.flags["no-video"],
+        skipGate: Boolean(args.flags["skip-qa-gate"]),
         logger: log,
       });
       if (args.flags.json) {
@@ -205,9 +229,59 @@ async function main() {
       return 0;
     }
 
+    case "configurator":
+    case "config":
+    case "gui": {
+      let port = 4477;
+      if (args.flags.port) {
+        port = parseInt(args.flags.port, 10);
+        if (isNaN(port) || port < 1 || port > 65535) {
+          log.error("Ungültige Portnummer (1–65535).");
+          return 1;
+        }
+      }
+      await startConfigurator({ cfg, port, logger: log });
+      // Server offen halten
+      return new Promise(() => {});
+    }
+
+    case "release-check": {
+      if (args.flags.help) {
+        console.log("cue release-check <url> [--flow flow.json] [--out dir] [--json]");
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runReleaseCheck({
+        url, cfg, flowFile: args.flags.flow || null, outDir: args.flags.out || null, logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
+    }
+
+    case "qa-loop": {
+      if (args.flags.help) {
+        console.log('cue qa-loop <url> [--repo path] [--rebuild "cmd"] [--max N] [--apply] [--flow flow.json] [--out dir] [--json]');
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runQaLoop({
+        url,
+        cfg,
+        repoPath: args.flags.repo || null,
+        rebuildCmd: args.flags.rebuild || null,
+        maxIterations: args.flags.max ? parseInt(args.flags.max, 10) : 3,
+        apply: Boolean(args.flags.apply),
+        flowFile: args.flags.flow || null,
+        outDir: args.flags.out || null,
+        logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
+    }
+
     case "render": {
       if (args.flags.help) {
-        console.log("cue render <projektVerzeichnis> [--json]  — rendert vorhandene scenes/*.html neu");
+        console.log("cue render <projektVerzeichnis> [--force] [--json]  — rendert scenes/*.html neu (Cache: nur geänderte Szenen; --force = alle)");
         return 0;
       }
       const dir = args._[1];
@@ -215,7 +289,7 @@ async function main() {
         log.error("cue render benötigt ein Projektverzeichnis (mit scenes/*.html).");
         return 1;
       }
-      const result = await runRender({ projectDir: dir, cfg, logger: log });
+      const result = await runRender({ projectDir: dir, cfg, force: Boolean(args.flags.force), logger: log });
       if (args.flags.json) {
         process.stdout.write(JSON.stringify(result, null, 2) + "\n");
       }

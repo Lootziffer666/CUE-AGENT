@@ -71,4 +71,44 @@ function t(lang, key) {
   return STRINGS[l][key];
 }
 
-module.exports = { t, QA_SYSTEM_PROMPT, qaUserMessage };
+// Strukturierte Befunde als JSON (für QA-Loop & Release-Readiness)
+const QA_STRUCTURED_PROMPT = {
+  de: `Du bist ein erfahrener QA-Ingenieur. Analysiere den Screenshot und die Konsolen-Logs einer Webseite.
+Antworte AUSSCHLIESSLICH mit gültigem JSON (kein Markdown, keine Erklärung davor/danach) in genau diesem Schema:
+{
+  "summary": "kurze Gesamtbewertung",
+  "score": 0-100,
+  "findings": [
+    {
+      "id": "kurz-eindeutig",
+      "title": "knappe Überschrift",
+      "severity": "low|medium|high|critical",
+      "category": "ui|layout|visual|technical|accessibility|performance|content",
+      "description": "was ist das Problem",
+      "suggestedFix": "konkreter, umsetzbarer Lösungsvorschlag",
+      "location": "betroffener Bereich/Selektor/Datei-Hinweis, falls erkennbar"
+    }
+  ]
+}
+Wenn alles gut ist: leeres findings-Array und hoher score. Sei streng aber fair.`,
+  en: `You are an experienced QA engineer. Analyze the screenshot and console logs of a web page.
+Respond ONLY with valid JSON (no markdown, no text before/after) in exactly this schema:
+{
+  "summary": "short overall assessment",
+  "score": 0-100,
+  "findings": [
+    {
+      "id": "short-unique",
+      "title": "concise title",
+      "severity": "low|medium|high|critical",
+      "category": "ui|layout|visual|technical|accessibility|performance|content",
+      "description": "what is the problem",
+      "suggestedFix": "concrete, actionable fix",
+      "location": "affected area/selector/file hint if discernible"
+    }
+  ]
+}
+If everything is fine: empty findings array and high score. Be strict but fair.`,
+};
+
+module.exports = { t, QA_SYSTEM_PROMPT, QA_STRUCTURED_PROMPT, qaUserMessage };

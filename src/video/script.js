@@ -20,7 +20,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const VALID_TYPES = ["title", "features", "screenshot", "cta", "chapter"];
+const VALID_TYPES = ["title", "features", "screenshot", "cta", "chapter", "clip", "image"];
 
 function validateScene(scene, i) {
   if (!scene.id) throw new Error(`Script-Szene #${i}: 'id' fehlt.`);
@@ -28,6 +28,18 @@ function validateScene(scene, i) {
     throw new Error(
       `Script-Szene "${scene.id}": ungültiger Typ "${scene.type}". Erlaubt: ${VALID_TYPES.join(", ")}`
     );
+  }
+  // Dauer validieren + in Zahl umwandeln (verhindert String-Konkatenation/NaN)
+  if (scene.duration !== undefined) {
+    const dur = Number(scene.duration);
+    if (isNaN(dur) || dur <= 0) {
+      throw new Error(`Script-Szene "${scene.id}": 'duration' muss eine positive Zahl sein.`);
+    }
+    scene.duration = dur;
+  }
+  if (scene.clipDuration !== undefined) {
+    const cd = Number(scene.clipDuration);
+    if (!isNaN(cd) && cd > 0) scene.clipDuration = cd;
   }
 }
 

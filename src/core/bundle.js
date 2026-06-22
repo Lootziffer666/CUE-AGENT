@@ -15,6 +15,9 @@ const { writeJson, ensureDir } = require("../util");
  * Minimale Schema-Validierung (keine externe Lib nötig).
  */
 function validateBundle(bundle) {
+  if (!bundle || typeof bundle !== "object") {
+    throw new Error("CaptureBundle ungültig: Bundle ist kein Objekt");
+  }
   const errors = [];
   if (!bundle.intent) errors.push("'intent' fehlt (qa|promo|tutorial)");
   if (!bundle.url) errors.push("'url' fehlt");

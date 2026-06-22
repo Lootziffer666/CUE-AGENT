@@ -1,81 +1,44 @@
 "use strict";
 
 /**
- * Gekapselter Anthropic-Client.
+ * LLM-Client (Provider-Dispatcher).
  *
- * Hält die SDK-Details an einer Stelle, damit QA- und Video-Pipeline
- * denselben Zugang nutzen. Vision-Analyse (Bild + Text) ist hier gebündelt.
+ * Wählt anhand von cfg.llm.provider den konkreten Provider:
+ *   - "anthropic" (Default) — Claude via SDK
+ *   - "openai"              — jeder OpenAI-kompatible Endpoint (OpenAI,
+ *                             LiteLLM/ANVIL-BELLOWS, Ollama, …) via BYOK
+ *
+ * Einheitliche Schnittstelle: analyzeImage(), complete().
  */
 
-const Anthropic = require("@anthropic-ai/sdk");
+const { AnthropicProvider } = require("./providers/anthropic");
+const { OpenAiProvider } = require("./providers/openai");
 
-class LlmClient {
-  /**
-   * @param {object} cfg aufgelöste Config aus src/config
-   */
-  constructor(cfg) {
-    this.cfg = cfg;
-    this.apiKey = cfg.secrets.anthropicApiKey;
-    this.model = cfg.model;
-    this.maxTokens = cfg.maxTokens;
-    this._sdk = null;
-  }
-
-  get sdk() {
-    if (!this._sdk) {
-      this._sdk = new Anthropic({ apiKey: this.apiKey });
-    }
-    return this._sdk;
-  }
-
-  _firstText(response) {
-    const block =
-      response && response.content && response.content.find((b) => b.type === "text");
-    return block && block.text ? block.text : "";
-  }
-
-  /**
-   * Analysiert ein PNG-Bild mit begleitendem Text.
-   * @param {object} args
-   * @param {string} args.system System-Prompt
-   * @param {string} args.text Nutzer-Text
-   * @param {Buffer|string} args.imageBase64 Base64-PNG (ohne data:-Präfix)
-   * @param {string} [args.mediaType] Standard image/png
-   * @returns {Promise<string>} reiner Analysetext
-   */
-  async analyzeImage({ system, text, imageBase64, mediaType = "image/png" }) {
-    const response = await this.sdk.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: imageBase64 },
-            },
-            { type: "text", text },
-          ],
-        },
-      ],
-    });
-    return this._firstText(response) || "";
-  }
-
-  /**
-   * Reine Textanfrage (für spätere Video-Phasen: Script, Storyboard, Design).
-   */
-  async complete({ system, text }) {
-    const response = await this.sdk.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      system,
-      messages: [{ role: "user", content: [{ type: "text", text }] }],
-    });
-    return this._firstText(response) || "";
+function createProvider(cfg) {
+  const provider = (cfg.llm && cfg.llm.provider) || "anthropic";
+  switch (provider) {
+    case "anthropic":
+      return new AnthropicProvider(cfg);
+    case "openai":
+    case "openai-compatible":
+    case "litellm":
+      return new OpenAiProvider(cfg);
+    default:
+      throw new Error(`Unbekannter LLM-Provider: ${provider} (erlaubt: anthropic, openai)`);
   }
 }
 
-module.exports = { LlmClient };
+class LlmClient {
+  constructor(cfg) {
+    this.cfg = cfg;
+    this.provider = createProvider(cfg);
+  }
+  analyzeImage(args) {
+    return this.provider.analyzeImage(args);
+  }
+  complete(args) {
+    return this.provider.complete(args);
+  }
+}
+
+module.exports = { LlmClient, createProvider };

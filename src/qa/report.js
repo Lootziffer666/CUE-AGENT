@@ -54,6 +54,15 @@ function writeReports({ cfg, ts, url, screenshotName, consoleLogs, analysis, ass
   const isoTime = new Date().toISOString();
   const consoleText = buildConsoleText(consoleLogs, lang);
 
+  // Label/Modell provider-abhängig
+  const provider = (cfg.llm && cfg.llm.provider) || "anthropic";
+  const activeModel = provider === "anthropic"
+    ? cfg.model
+    : (cfg.llm.openai && cfg.llm.openai.model) || cfg.model;
+  const label = provider === "anthropic"
+    ? cfg.modelLabel
+    : `${activeModel} (${provider})`;
+
   const md = buildMarkdown({
     lang,
     url,
@@ -61,7 +70,7 @@ function writeReports({ cfg, ts, url, screenshotName, consoleLogs, analysis, ass
     consoleText,
     analysis,
     assessment,
-    label: cfg.modelLabel,
+    label,
     isoTime,
   });
 
@@ -71,7 +80,8 @@ function writeReports({ cfg, ts, url, screenshotName, consoleLogs, analysis, ass
     timestamp: isoTime,
     url,
     lang,
-    model: cfg.model,
+    provider,
+    model: activeModel,
     screenshot: screenshotName,
     assessment,
     console: consoleLogs,

@@ -22,7 +22,7 @@ const templates = require("../templates/scenes");
  * @param {object} [args.logger]
  * @returns {{scenePaths:string[], designMdPath:string}}
  */
-function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims, logger }) {
+function generateDesign({ storyboard, context, projectDir, screenshotsDir, videoSource, mediaDir, dims, logger }) {
   const log = logger || { info() {}, ok() {} };
   log.info("Phase 3: Design");
 
@@ -32,11 +32,27 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims,
 
   const sceneDims = dims || { width: 1920, height: 1080 };
   const scenePaths = [];
+  const renderScenes = []; // aligned mit scenePaths; enthält ggf. clip-Metadaten
+
+  // Löst einen Medien-/Bildpfad auf: absolut, relativ zum CWD oder im Medienordner.
+  function resolveMedia(file) {
+    if (!file) return null;
+    const candidates = [file, path.resolve(file)];
+    if (mediaDir) candidates.push(path.join(mediaDir, file));
+    for (const c of candidates) {
+      if (fs.existsSync(c)) return c;
+    }
+    return null;
+  }
 
   storyboard.scenes.forEach((scene, i) => {
-    const filename = `${String(i).padStart(2, "0")}-${scene.id}.html`;
+    const isClip = scene.type === "clip";
+    const isImage = scene.type === "image";
+    const usesOverlay = isClip || isImage;
+    const filename = `${String(i).padStart(2, "0")}-${scene.id}${usesOverlay ? ".overlay" : ""}.html`;
     const filepath = path.join(scenesDir, filename);
     let html = "";
+    let clipMeta = null;
 
     const screenshotSrc = scene.screenshotFile
       ? (screenshotsDir
@@ -60,10 +76,48 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims,
           screenshotFile: screenshotSrc,
           caption: scene.caption,
           chapter: scene.chapter,
+          highlight: scene.highlight || null,
           dims: sceneDims,
           duration: scene.duration,
         });
         break;
+
+      case "clip":
+        // Transparentes Overlay; der echte Video-Clip kommt vom Renderer (ffmpeg)
+        html = templates.clipOverlay(brand, {
+          heading: scene.heading,
+          caption: scene.caption,
+          chapter: scene.chapter,
+          dims: sceneDims,
+        });
+        clipMeta = videoSource
+          ? { source: videoSource, start: scene.clipStart || 0, duration: scene.clipDuration || 4 }
+          : null;
+        break;
+
+      case "image": {
+        // AI-generiertes oder lokales Bild als Vollbild-Hintergrund + Overlay
+        const imgSrc = scene._imageSource || resolveMedia(scene.mediaFile);
+        if (imgSrc) {
+          html = templates.clipOverlay(brand, {
+            heading: scene.heading,
+            caption: scene.caption,
+            chapter: scene.chapter,
+            dims: sceneDims,
+          });
+          clipMeta = { source: imgSrc, kind: "image", start: 0, duration: scene.duration || 5 };
+        } else {
+          // Kein Bild verfügbar → auf Title-Card zurückfallen
+          log.info(`  Bild-Szene "${scene.id}" ohne Quelle → Title-Fallback`);
+          html = templates.titleCard(brand, {
+            title: scene.heading || scene.id,
+            subtitle: scene.caption || "",
+            dims: sceneDims,
+            duration: scene.duration,
+          });
+        }
+        break;
+      }
 
       case "features":
         html = templates.featureList(brand, {
@@ -98,6 +152,8 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims,
 
     fs.writeFileSync(filepath, html, "utf-8");
     scenePaths.push(filepath);
+    // Wenn Clip aber keine Video-Quelle: auf Screenshot/animiert zurückfallen (clipMeta=null)
+    renderScenes.push({ clip: clipMeta });
   });
 
   // DESIGN.md
@@ -117,7 +173,7 @@ ${storyboard.scenes.map((s, i) => `${i + 1}. [${s.type}] ${s.id} (${s.duration}s
   writeText(designMdPath, designMd);
 
   log.ok(`${scenePaths.length} Szenen generiert + DESIGN.md`);
-  return { scenePaths, designMdPath };
+  return { scenePaths, renderScenes, designMdPath };
 }
 
 module.exports = { generateDesign };

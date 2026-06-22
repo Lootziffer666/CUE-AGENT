@@ -9,7 +9,19 @@
  * Renderer per Playwright geöffnet wird.
  */
 
-function wrapScene(brand, { body, gsapTimeline, duration = 3, dims }) {
+// HTML-Escaping für dynamische Textfelder (Titel, Captions, Features …),
+// damit Sonderzeichen wie < > & " ' das Template nicht zerbrechen.
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function wrapScene(brand, { body, gsapTimeline, duration = 3, dims, extraCss = "" }) {
   const p = brand.palette;
   const t = brand.typography;
   const W = (dims && dims.width) || 1920;
@@ -39,6 +51,7 @@ html, body { width:${W}px; height:${H}px; overflow:hidden; background:${p.bg}; c
 .feat-icon { color:${p.accent}; font-weight:700; }
 /* Premium fade transition overlay */
 #fade-overlay { position:absolute; inset:0; background:${p.bg}; opacity:1; pointer-events:none; z-index:100; }
+${extraCss}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 </head>
@@ -70,8 +83,8 @@ function titleCard(brand, { title, subtitle, dims, duration }) {
   return wrapScene(brand, {
     dims,
     body: `
-  <h1 class="heading">${title}</h1>
-  ${subtitle ? `<p class="subheading">${subtitle}</p>` : ""}
+  <h1 class="heading">${escapeHtml(title)}</h1>
+  ${subtitle ? `<p class="subheading">${escapeHtml(subtitle)}</p>` : ""}
   <div class="accent-bar"></div>`,
     gsapTimeline: `
 tl.fromTo(".heading", {opacity:0, y:30}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);
@@ -84,19 +97,32 @@ tl.fromTo(".accent-bar", {opacity:0, scaleX:0}, {opacity:1, scaleX:1, duration:$
 /**
  * Screenshot-Szene: zeigt einen App-Screenshot mit optionaler Überschrift + Caption.
  */
-function screenshotScene(brand, { heading, screenshotFile, caption, chapter, dims, duration }) {
+function screenshotScene(brand, { heading, screenshotFile, caption, chapter, highlight, dims, duration }) {
   const m = brand.motion;
+  const p = brand.palette;
+  const hl = highlight && highlight.wPct
+    ? `<div class="hl-spot" style="left:${highlight.xPct}%;top:${highlight.yPct}%;width:${highlight.wPct}%;height:${highlight.hPct}%;"></div>`
+    : "";
+  const hlCss = highlight && highlight.wPct
+    ? `.screenshot-wrap{position:relative;} .hl-spot{position:absolute;border:3px solid ${p.accent};border-radius:8px;box-shadow:0 0 0 4000px rgba(0,0,0,0.45),0 0 24px ${p.accent};opacity:0;pointer-events:none;}`
+    : "";
+  const zoomTween = highlight && highlight.zoom
+    ? `tl.to(".screenshot-wrap", {scale:1.12, duration:${m.durationSlow}, ease:"${m.easeInOut}", transformOrigin:"${(highlight.xPct + highlight.wPct / 2).toFixed(1)}% ${(highlight.yPct + highlight.hPct / 2).toFixed(1)}%"}, 1.2);`
+    : "";
   return wrapScene(brand, {
     dims,
+    extraCss: hlCss,
     body: `
-  ${chapter ? `<div class="chapter-badge">${chapter}</div>` : ""}
-  ${heading ? `<h2 class="heading" style="font-size:2.5rem">${heading}</h2>` : ""}
-  <div class="screenshot-wrap"><img src="${screenshotFile}" alt=""></div>
-  ${caption ? `<div class="caption-bar">${caption}</div>` : ""}`,
+  ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
+  ${heading ? `<h2 class="heading" style="font-size:2.5rem">${escapeHtml(heading)}</h2>` : ""}
+  <div class="screenshot-wrap"><img src="${screenshotFile}" alt="">${hl}</div>
+  ${caption ? `<div class="caption-bar">${escapeHtml(caption)}</div>` : ""}`,
     gsapTimeline: `
 ${chapter ? `tl.fromTo(".chapter-badge", {opacity:0, x:-20}, {opacity:1, x:0, duration:${m.durationFast}, ease:"${m.easeOut}"}, 0.1);` : ""}
 ${heading ? `tl.fromTo(".heading", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);` : ""}
 tl.fromTo(".screenshot-wrap", {opacity:0, y:30}, {opacity:1, y:0, duration:${m.durationSlow}, ease:"${m.easeOut}"}, 0.4);
+${hl ? `tl.fromTo(".hl-spot", {opacity:0}, {opacity:1, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 1.0);` : ""}
+${zoomTween}
 ${caption ? `tl.fromTo(".caption-bar", {opacity:0}, {opacity:1, duration:${m.durationFast}}, 1.2);` : ""}`,
     duration: duration || 4,
   });
@@ -109,12 +135,12 @@ function featureList(brand, { heading, features = [], dims, duration }) {
   const m = brand.motion;
   const p = brand.palette;
   const items = features.map(
-    (f) => `<li class="feature-item"><span class="feat-icon">\u2713</span> ${f}</li>`
+    (f) => `<li class="feature-item"><span class="feat-icon">\u2713</span> ${escapeHtml(f)}</li>`
   ).join("\n    ");
   return wrapScene(brand, {
     dims,
     body: `
-  <h2 class="heading" style="font-size:2.8rem">${heading || "Features"}</h2>
+  <h2 class="heading" style="font-size:2.8rem">${escapeHtml(heading || "Features")}</h2>
   <ul class="feature-list">${items}</ul>`,
     gsapTimeline: `
 tl.fromTo(".heading", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);
@@ -132,8 +158,8 @@ function ctaScene(brand, { heading, url, buttonText, dims, duration }) {
   return wrapScene(brand, {
     dims,
     body: `
-  <h2 class="heading" style="font-size:3rem">${heading || "Jetzt starten"}</h2>
-  <div class="cta-button" style="margin-top:40px;padding:16px 48px;background:${p.accent};color:#fff;font-size:1.25rem;font-weight:600;border-radius:8px;opacity:0;">${buttonText || url || "Los geht's"}</div>`,
+  <h2 class="heading" style="font-size:3rem">${escapeHtml(heading || "Jetzt starten")}</h2>
+  <div class="cta-button" style="margin-top:40px;padding:16px 48px;background:${p.accent};color:#fff;font-size:1.25rem;font-weight:600;border-radius:8px;opacity:0;">${escapeHtml(buttonText || url || "Los geht's")}</div>`,
     gsapTimeline: `
 tl.fromTo(".heading", {opacity:0, scale:0.9}, {opacity:1, scale:1, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.3);
 tl.fromTo(".cta-button", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.7);`,
@@ -149,8 +175,8 @@ function chapterCard(brand, { number, goal, dims, duration }) {
   return wrapScene(brand, {
     dims,
     body: `
-  <div class="chapter-badge" style="position:static;font-size:1.25rem;">Schritt ${number}</div>
-  <h2 class="heading" style="font-size:2.8rem;margin-top:24px;">${goal}</h2>
+  <div class="chapter-badge" style="position:static;font-size:1.25rem;">Schritt ${escapeHtml(number)}</div>
+  <h2 class="heading" style="font-size:2.8rem;margin-top:24px;">${escapeHtml(goal)}</h2>
   <div class="accent-bar"></div>`,
     gsapTimeline: `
 tl.fromTo(".chapter-badge", {opacity:0, y:-10}, {opacity:1, y:0, duration:${m.durationFast}, ease:"${m.easeOut}"}, 0.2);
@@ -160,4 +186,39 @@ tl.fromTo(".accent-bar", {opacity:0, scaleX:0}, {opacity:1, scaleX:1, duration:$
   });
 }
 
-module.exports = { titleCard, screenshotScene, featureList, ctaScene, chapterCard, wrapScene };
+/**
+ * Clip-Overlay: transparenter Hintergrund mit Brand-Caption (Lower-Third),
+ * optionalem Chapter-Badge und Heading. Wird EINMAL als PNG gerendert und
+ * vom Renderer über den echten Video-Clip gelegt.
+ */
+function clipOverlay(brand, { heading, caption, chapter, dims }) {
+  const p = brand.palette;
+  const t = brand.typography;
+  const W = (dims && dims.width) || 1920;
+  const H = (dims && dims.height) || 1080;
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:${W}px; height:${H}px; background:transparent; overflow:hidden; font-family:${t.fontFamily}; }
+.layer { position:absolute; inset:0; }
+.chapter-badge { position:absolute; top:56px; left:64px; font-size:${t.captionSize}; color:#fff; background:${p.accent}; padding:8px 18px; border-radius:999px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; box-shadow:0 6px 20px rgba(0,0,0,0.35); }
+.heading { position:absolute; top:48px; left:0; right:0; text-align:center; font-size:1.9rem; font-weight:${t.headingWeight}; color:#fff; text-shadow:0 2px 16px rgba(0,0,0,0.6); padding:0 120px; }
+.caption-wrap { position:absolute; left:0; right:0; bottom:0; height:34%; background:linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.0) 100%); display:flex; align-items:flex-end; justify-content:center; padding:0 80px 64px; }
+.caption { color:#fff; font-size:1.7rem; font-weight:600; text-align:center; text-shadow:0 2px 12px rgba(0,0,0,0.7); }
+.caption .bar { display:inline-block; width:40px; height:4px; background:${p.gradient}; border-radius:2px; margin-bottom:18px; }
+</style>
+</head>
+<body>
+<div class="layer">
+  ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
+  ${heading ? `<div class="heading">${escapeHtml(heading)}</div>` : ""}
+  ${caption ? `<div class="caption-wrap"><div class="caption"><span class="bar"></span><br>${escapeHtml(caption)}</div></div>` : ""}
+</div>
+</body>
+</html>`;
+}
+
+module.exports = { titleCard, screenshotScene, featureList, ctaScene, chapterCard, clipOverlay, wrapScene };
