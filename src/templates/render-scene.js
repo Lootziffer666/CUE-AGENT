@@ -37,7 +37,8 @@ function renderSceneHtml({ scene, brand, dims, opts = {} }) {
       if (opts.screenshotSrc) {
         return templates.screenshotScene(brand, {
           heading: scene.heading, screenshotFile: opts.screenshotSrc,
-          caption: scene.caption, chapter: scene.chapter, highlight: scene.highlight, dims, duration,
+          caption: scene.caption, chapter: scene.chapter, highlight: scene.highlight,
+          frame: scene.frame || (brand && brand.frame) || null, dims, duration,
         });
       }
       // Vorschau ohne Bild → Overlay/Platzhalter

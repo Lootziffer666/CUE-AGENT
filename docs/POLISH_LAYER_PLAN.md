@@ -54,11 +54,11 @@ exakt** (Playwright-Click-Events / ADB-Taps / Flow-Schritte). Daraus folgt:
 
 ## Phasen (inkrementell, jede für sich lauffähig)
 
-**Polish-Phase A — „Sofort sichtbarer Sprung"**
-- Deterministischer **Auto-Zoom** auf geklickte Elemente (BBox + `tClick` aus der Aufnahme).
-- **Styled-Frame-Wrapper** (Wallpaper/Gradient/Solid, Padding, Rounded, Blur, Shadow) als CSS um jede Szene.
-- Manuelle Zoom-Region im Configurator-Timeline-Player.
-- *Akzeptanz:* ein Promo-Clip wirkt „studio-poliert" (Frame + sanfte Zooms) — rein deterministisch gerendert.
+**Polish-Phase A — „Sofort sichtbarer Sprung"** ✅ *(umgesetzt & live verifiziert)*
+- ✅ Deterministischer **Auto-Zoom** auf die bekannte Highlight-BBox (rein→halten→raus, Transform am Wrapper) — `src/render/polish.js::autoZoomTimeline`, integriert in `screenshotScene`.
+- ✅ **Styled-Frame-Wrapper** (Gradient/Wallpaper-Backdrop, Radius, Schatten, optional Blur) — `framePresentationCss`, via `scene.frame`/`brand.frame`.
+- ⏳ Manuelle Zoom-Region im Configurator-Timeline-Player (UI) — offen.
+- *Live verifiziert (Chromium):* Frame-Gradient aktiv; Auto-Zoom scale 1.17→1.01 über die GSAP-Timeline.
 
 **Polish-Phase B — Bewegung & Export**
 - Synthetischer **Cursor-Layer** (Smoothing/Bounce/Größe).

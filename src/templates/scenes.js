@@ -9,6 +9,8 @@
  * Renderer per Playwright geöffnet wird.
  */
 
+const templates_polish = require("../render/polish");
+
 // HTML-Escaping für dynamische Textfelder (Titel, Captions, Features …),
 // damit Sonderzeichen wie < > & " ' das Template nicht zerbrechen.
 function escapeHtml(str) {
@@ -97,7 +99,7 @@ tl.fromTo(".accent-bar", {opacity:0, scaleX:0}, {opacity:1, scaleX:1, duration:$
 /**
  * Screenshot-Szene: zeigt einen App-Screenshot mit optionaler Überschrift + Caption.
  */
-function screenshotScene(brand, { heading, screenshotFile, caption, chapter, highlight, dims, duration }) {
+function screenshotScene(brand, { heading, screenshotFile, caption, chapter, highlight, frame, dims, duration }) {
   const m = brand.motion;
   const p = brand.palette;
   const hl = highlight && highlight.wPct
@@ -106,12 +108,12 @@ function screenshotScene(brand, { heading, screenshotFile, caption, chapter, hig
   const hlCss = highlight && highlight.wPct
     ? `.screenshot-wrap{position:relative;} .hl-spot{position:absolute;border:3px solid ${p.accent};border-radius:8px;box-shadow:0 0 0 4000px rgba(0,0,0,0.45),0 0 24px ${p.accent};opacity:0;pointer-events:none;}`
     : "";
-  const zoomTween = highlight && highlight.zoom
-    ? `tl.to(".screenshot-wrap", {scale:1.12, duration:${m.durationSlow}, ease:"${m.easeInOut}", transformOrigin:"${(highlight.xPct + highlight.wPct / 2).toFixed(1)}% ${(highlight.yPct + highlight.hPct / 2).toFixed(1)}%"}, 1.2);`
-    : "";
+  // Polish-Phase A: Studio-Frame (optional) + deterministischer Auto-Zoom (rein→halten→raus)
+  const frameCss = frame ? templates_polish.framePresentationCss(brand, frame) : "";
+  const zoomTween = highlight && highlight.zoom ? templates_polish.autoZoomTimeline(highlight, m) : "";
   return wrapScene(brand, {
     dims,
-    extraCss: hlCss,
+    extraCss: hlCss + frameCss,
     body: `
   ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
   ${heading ? `<h2 class="heading" style="font-size:2.5rem">${escapeHtml(heading)}</h2>` : ""}
