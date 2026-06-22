@@ -62,6 +62,7 @@ Verwendung:
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
   android-qa [apk]  Android-App-QA (Emulator via ADB + multimodale Analyse)
+  design-check      Ist-UI gegen Design-Baseline (Mockup) prüfen
   release-check <url>  Pruefen, ob das Produkt veroeffentlichungsreif ist
   qa-loop <url>     AI-QA-Loop: testen -> fixen -> rebuilden -> erneut testen
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
@@ -156,6 +157,50 @@ async function main() {
         process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       }
       return result.exitCode;
+    }
+
+    case "design-check": {
+      if (args.flags.help) {
+        console.log("cue design-check --baseline <spec.json> --actual <elements.json> [--fail-on none|low|medium|high] [--json]");
+        return 0;
+      }
+      const baselineFile = args.flags.baseline;
+      const actualFile = args.flags.actual;
+      if (!baselineFile || !actualFile) {
+        log.error("--baseline <spec.json> und --actual <elements.json> erforderlich.");
+        return 2;
+      }
+      const fs = require("fs");
+      const path = require("path");
+      const { loadBaselineSpec, compareToBaseline } = require("../src/qa/design-baseline");
+      const { failsGate } = require("../src/qa/severity");
+      const { writeJson, writeText, timestamp, ensureDir } = require("../src/util");
+
+      const spec = loadBaselineSpec(baselineFile);
+      const parsed = JSON.parse(fs.readFileSync(actualFile, "utf-8"));
+      const actual = Array.isArray(parsed) ? parsed : parsed.elements || [];
+      const res = compareToBaseline({ spec, actual });
+
+      const ts = timestamp();
+      ensureDir(cfg.absPaths.qaReports);
+      const jsonPath = path.join(cfg.absPaths.qaReports, `design-${ts}.json`);
+      const mdPath = path.join(cfg.absPaths.qaReports, `design-${ts}.md`);
+      writeJson(jsonPath, { tool: "cue-agent", intent: "design-check", timestamp: new Date().toISOString(), baseline: baselineFile, ...res });
+      const md = [
+        `# Design-Baseline-Report — ${res.screen || "(screen)"}`,
+        "",
+        `Score: **${res.score}/100** · Severity: **${res.severity}** · ${res.passed} PASS / ${res.failed} FAIL (${res.missing} fehlend)`,
+        "",
+        "| Element | Status | Abweichungen |",
+        "|---|---|---|",
+        ...res.results.map((r) => `| ${r.label || r.id} | ${r.pass ? "✓" : r.missing ? "✗ fehlt" : "✗"} | ${(r.deviations || []).join("; ") || "—"} |`),
+      ].join("\n");
+      writeText(mdPath, md);
+
+      log.ok(`Design-Report: ${mdPath} (Score ${res.score}, ${res.severity})`);
+      if (args.flags.json) process.stdout.write(JSON.stringify(res, null, 2) + "\n");
+      const failOn = args.flags["fail-on"] || cfg.qa.failOn;
+      return failsGate(res.severity, failOn) ? 1 : 0;
     }
 
     case "capture": {
