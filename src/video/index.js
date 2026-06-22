@@ -154,6 +154,37 @@ async function runVideo({
     ? path.join(projectDir, captureResult.video)
     : null;
 
+  // Medienordner (eigene Assets/Referenzen)
+  const mediaDir = cfg.mediaDir
+    ? (path.isAbsolute(cfg.mediaDir) ? cfg.mediaDir : path.join(cfg.root, cfg.mediaDir))
+    : null;
+
+  // Phase 2.5: Auto-Bildgenerierung für image-Szenen ohne Asset
+  if (cfg.image && cfg.image.mode === "auto") {
+    const { generateImage, imageProviderAvailable } = require("../image");
+    if (imageProviderAvailable(cfg)) {
+      const genDir = path.join(projectDir, "media");
+      const theme = cfg.image.theme || (context.goal || "");
+      for (const s of storyboard.scenes || []) {
+        if (s.type !== "image") continue;
+        const hasAsset = s.mediaFile || s._imageSource;
+        if (hasAsset) continue;
+        const prompt = [theme, s.heading, s.narration].filter(Boolean).join(" — ");
+        if (!prompt) continue;
+        try {
+          const out = path.join(genDir, `gen-${s.id}.png`);
+          await generateImage({ prompt, outPath: out, cfg, logger: log });
+          s._imageSource = out;
+          log.ok(`Bild generiert: ${out}`);
+        } catch (err) {
+          log.warn(`Bildgenerierung für "${s.id}" fehlgeschlagen: ${err.message}`);
+        }
+      }
+    } else {
+      log.warn("Bild-Auto-Modus aktiv, aber kein Bild-Provider (CUE_LLM_BASE_URL/image.baseUrl) — übersprungen.");
+    }
+  }
+
   // Phase 3: Design (generiert HTML-Szenen + ggf. Clip-Overlays)
   const { scenePaths, renderScenes, designMdPath } = generateDesign({
     storyboard,
@@ -163,6 +194,7 @@ async function runVideo({
       ? path.join(projectDir, captureResult.screenshotsDir || "screenshots")
       : null,
     videoSource,
+    mediaDir,
     dims,
     logger: log,
   });

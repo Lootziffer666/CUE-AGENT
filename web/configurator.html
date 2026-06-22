@@ -120,6 +120,46 @@
     <div class="hint">Ziel-URL nur nötig, wenn Screenshots/Clips der App ins Video sollen. Reine Script-Videos brauchen keine URL.</div>
   </div>
 
+  <!-- Audio & Effekte -->
+  <div class="card">
+    <h2>Audio &amp; Effekte</h2>
+    <div class="row">
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_voice" checked style="width:auto"> Sprache (Voiceover)</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_music" checked style="width:auto"> Musik</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_sfx" style="width:auto"> Soundeffekte</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Eigene Musik (Medien-Datei)</label>
+        <select id="a_musicfile"><option value="">— Freesound/Auto —</option></select>
+      </div>
+      <div class="field">
+        <label>Eigener Soundeffekt (Medien-Datei)</label>
+        <select id="a_sfxfile"><option value="">— generiert —</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bilder & Medien -->
+  <div class="card">
+    <h2>Bilder &amp; Medien</h2>
+    <div class="row">
+      <div class="field">
+        <label>AI-Bildgenerierung</label>
+        <select id="i_mode"><option value="off">Aus (nur eigene Assets)</option><option value="auto">Auto (aus Thema generieren)</option></select>
+      </div>
+      <div class="field" style="flex:2">
+        <label>Thema (für Auto-Generierung)</label>
+        <input id="i_theme" placeholder="z. B. futuristisches dunkles Dashboard">
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Medienordner — Referenzen / Assets hochladen (Bilder, Musik, SFX)</label>
+      <input type="file" id="mediaUpload" multiple>
+    </div>
+    <div id="mediaList" class="hint"></div>
+  </div>
+
   <!-- Timeline -->
   <div class="card">
     <h2>Timeline</h2>
@@ -137,6 +177,7 @@
       <button class="sm" data-add="title">+ Title</button>
       <button class="sm" data-add="features">+ Features</button>
       <button class="sm" data-add="screenshot">+ Screenshot</button>
+      <button class="sm" data-add="image">+ Bild</button>
       <button class="sm" data-add="chapter">+ Kapitel</button>
       <button class="sm" data-add="clip">+ Clip</button>
       <button class="sm" data-add="cta">+ CTA</button>
@@ -172,9 +213,10 @@ let PRESETS = {
   apple:  { label: "Apple", bg: "#000000", accent: "#2997FF" },
   notion: { label: "Notion", bg: "#FFFFFF", accent: "#2383E2" },
 };
-const TYPE_COLORS = { title:"#0070f3", features:"#7928ca", screenshot:"#28c76f", chapter:"#f0a020", clip:"#e0455e", cta:"#19b5c9" };
+const TYPE_COLORS = { title:"#0070f3", features:"#7928ca", screenshot:"#28c76f", chapter:"#f0a020", clip:"#e0455e", cta:"#19b5c9", image:"#16a34a" };
 
 let scenes = [];
+let mediaFiles = [];
 
 // ---- Defaults ----
 function defaultScene(type) {
@@ -185,6 +227,7 @@ function defaultScene(type) {
   if (type==="chapter") return {...base, number:1, goal:"Was wird getan?", narration:""};
   if (type==="clip") return {...base, heading:"Clip", caption:"", clipStart:0, clipDuration:4, narration:""};
   if (type==="cta") return {...base, heading:"Jetzt starten", url:"", narration:""};
+  if (type==="image") return {...base, heading:"Bild", caption:"", mediaFile:"", prompt:"", narration:"", duration:4};
   return base;
 }
 
@@ -288,6 +331,17 @@ function renderScenes() {
     } else if (s.type==="cta") {
       card.appendChild(field("Heading", s.heading, v=>s.heading=v));
       card.appendChild(field("Button/URL-Text", s.url, v=>s.url=v));
+    } else if (s.type==="image") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Caption", s.caption, v=>s.caption=v));
+      // Medien-Datei wählen
+      const mw = document.createElement("div"); mw.className="field";
+      const ml = document.createElement("label"); ml.textContent="Bild aus Medienordner"; mw.appendChild(ml);
+      const sel = document.createElement("select");
+      const none = document.createElement("option"); none.value=""; none.textContent="— keine (per Prompt generieren) —"; sel.appendChild(none);
+      mediaFiles.forEach(f=>{ const o=document.createElement("option"); o.value=f; o.textContent=f; if(f===s.mediaFile)o.selected=true; sel.appendChild(o); });
+      sel.onchange=()=>s.mediaFile=sel.value; mw.appendChild(sel); card.appendChild(mw);
+      card.appendChild(field("Prompt (falls kein Bild gewählt, für Auto-Generierung)", s.prompt, v=>s.prompt=v));
     }
 
     card.appendChild(field("Voice-over (Narration)", s.narration, v=>s.narration=v, "textarea"));
@@ -370,16 +424,57 @@ document.getElementById("importFile").onchange = (e) => {
 };
 document.getElementById("generate").onclick = async () => {
   const log = document.getElementById("log"); log.style.display="block"; log.textContent = "Erzeuge Video … (das kann dauern)";
+  const settings = {
+    audio: {
+      voiceover: document.getElementById("a_voice").checked,
+      music: document.getElementById("a_music").checked,
+      sfx: document.getElementById("a_sfx").checked,
+      musicFile: document.getElementById("a_musicfile").value || undefined,
+      sfxFile: document.getElementById("a_sfxfile").value || undefined,
+    },
+    image: {
+      mode: document.getElementById("i_mode").value,
+      theme: document.getElementById("i_theme").value || undefined,
+    },
+  };
   try {
     const res = await fetch("/api/generate", { method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ script: buildScript(), url: document.getElementById("m_url").value.trim() }) });
+      body: JSON.stringify({ script: buildScript(), url: document.getElementById("m_url").value.trim(), settings }) });
     const data = await res.json();
     log.textContent = (data.log || "") + "\n\n" + (data.ok ? ("✓ Fertig: " + data.mp4) : ("✗ Fehler: " + data.error));
   } catch (err) { log.textContent = "Server nicht erreichbar (läuft der Configurator über `cue configurator`?).\n" + err.message; }
 };
 
+// ---- Medien: Liste + Upload ----
+function refreshMedia() {
+  fetch("/api/media").then(r=>r.json()).then(d => {
+    mediaFiles = d.files || [];
+    document.getElementById("mediaList").textContent = mediaFiles.length
+      ? ("Im Medienordner: " + mediaFiles.join(", ")) : "Medienordner leer.";
+    // Audio-Dropdowns füllen
+    const mf = document.getElementById("a_musicfile"); const sf = document.getElementById("a_sfxfile");
+    const audioExt = /\.(mp3|wav|ogg|m4a|aac|flac)$/i;
+    mf.innerHTML = '<option value="">— Freesound/Auto —</option>';
+    sf.innerHTML = '<option value="">— generiert —</option>';
+    mediaFiles.filter(f=>audioExt.test(f)).forEach(f=>{
+      [mf, sf].forEach(sel=>{ const o=document.createElement("option"); o.value=f; o.textContent=f; sel.appendChild(o); });
+    });
+    renderScenes();
+  }).catch(()=>{ document.getElementById("mediaList").textContent = "Medien-API nur via `cue configurator` verfügbar."; });
+}
+document.getElementById("mediaUpload").onchange = async (e) => {
+  const files = Array.from(e.target.files || []);
+  for (const f of files) {
+    const dataBase64 = await new Promise((resolve)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.readAsDataURL(f); });
+    await fetch("/api/media", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ name: f.name, dataBase64 }) }).catch(()=>{});
+  }
+  toast(files.length + " Datei(en) hochgeladen"); refreshMedia();
+};
+
 // ---- Presets vom Server holen (sonst Fallback) ----
 fetch("/api/presets").then(r=>r.json()).then(p => { if (p && Object.keys(p).length) PRESETS = p; fillBrands(); }).catch(()=>fillBrands());
+refreshMedia();
 
 // ---- Start mit Beispiel-Szenen ----
 fillBrands();

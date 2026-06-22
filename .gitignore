@@ -11,3 +11,6 @@ qa-reports/*.json
 video-projects/
 configurator-output/
 captures/
+
+# Eigener Medienordner (User-Assets)
+media/

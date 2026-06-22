@@ -20,7 +20,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const VALID_TYPES = ["title", "features", "screenshot", "cta", "chapter"];
+const VALID_TYPES = ["title", "features", "screenshot", "cta", "chapter", "clip", "image"];
 
 function validateScene(scene, i) {
   if (!scene.id) throw new Error(`Script-Szene #${i}: 'id' fehlt.`);

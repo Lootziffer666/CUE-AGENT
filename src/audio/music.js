@@ -90,6 +90,22 @@ function downloadPreview(previewUrl, outPath) {
 async function fetchMusic({ cfg, outDir, targetDuration = 60, logger }) {
   const log = logger || { info() {}, warn() {}, ok() {} };
 
+  // Toggle: Musik komplett aus
+  if (cfg.audio && cfg.audio.music === false) {
+    log.info("Musik deaktiviert (Toggle aus).");
+    return { musicPath: null, credits: null, skipped: true };
+  }
+
+  // Eigene Musikdatei hat Vorrang vor Freesound
+  const userMusic = cfg.audio && cfg.audio.musicFile;
+  if (userMusic) {
+    if (fs.existsSync(userMusic)) {
+      log.ok(`Musik (eigene Datei): ${userMusic}`);
+      return { musicPath: userMusic, credits: null, skipped: false };
+    }
+    log.warn(`Eigene Musikdatei nicht gefunden: ${userMusic} — versuche Freesound.`);
+  }
+
   const apiKey = cfg.secrets && cfg.secrets.freesoundApiKey;
   if (!apiKey) {
     log.warn("FREESOUND_API_KEY nicht gesetzt — keine Hintergrundmusik.");
