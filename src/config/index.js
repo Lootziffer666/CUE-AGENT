@@ -56,6 +56,13 @@ const DEFAULTS = {
   // QA-Gate / Severity (Grundlage; wird in späteren Meilensteinen erweitert)
   qa: {
     failOn: "none", // none | low | medium | high  -> Exit-Code != 0 ab dieser Stufe
+    // QA-Gate: "erst QA, dann Promo" — schützt davor, eine ungeprüfte/kaputte App zu bewerben
+    gate: {
+      requireForVideo: true, // Promo/Showcase/Tutorial benötigen bestandene QA (bei vorhandener URL)
+      minScore: 70, // Mindest-QA-Score
+      maxAgeHours: 24, // QA-Report darf max. so alt sein
+      failOnSeverity: "high", // ab dieser Severity wird blockiert
+    },
   },
 
   // Video / Promo
