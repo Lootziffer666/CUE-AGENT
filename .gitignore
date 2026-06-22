@@ -3,3 +3,7 @@ node_modules/
 qa-reports/*.png
 qa-reports/*.md
 !qa-reports/.gitkeep
+
+# Promo video binary output artifacts (audio/video/screenshots)
+promovideo/out/
+promovideo/public/
