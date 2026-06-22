@@ -115,11 +115,55 @@ Das exportierte Script ist identisch zum `--script`-Format — du kannst es also
 cue promo --script my-video.script.json
 ```
 
+## Autonomer QA-Zyklus & Release-Readiness
+
+Über die reine Analyse hinaus kann CUE-AGENT Bugs **dokumentieren, beheben und erneut testen** — bis das Produkt veröffentlichungsreif ist.
+
+```bash
+# Veröffentlichungsreife prüfen (schreibt RELEASE-READINESS.md, Exit 1 wenn nicht bereit)
+cue release-check https://deine-app.tld
+
+# Reiner Test-/Monitoring-Lauf (keine Code-Änderung)
+cue qa-loop https://deine-app.tld
+
+# Fix-Vorschläge (Dry-Run) für ein lokales Repo
+cue qa-loop https://deine-app.tld --repo ./mein-repo
+
+# Voller autonomer Zyklus: testen → fixen → rebuilden → erneut testen
+cue qa-loop https://deine-app.tld --repo ./mein-repo --apply --rebuild "npm run build" --max 3
+```
+
+**Wie es funktioniert:**
+1. **Strukturierte Befunde** — das LLM liefert maschinenlesbare Findings (Severity, Kategorie, Ort, konkreter Fix-Vorschlag).
+2. **Release-Readiness** — klares Urteil READY/NOT READY mit Checkliste (keine High/Critical-Befunde, Score ≥ Schwelle, keine Konsolen-Fehler, keine 5xx). Konfigurierbar unter `qa.release`.
+3. **AI-Loop** — bei `--repo` schlägt das LLM gezielte Datei-Änderungen vor; mit `--apply` werden sie geschrieben, mit `--rebuild` neu gebaut, dann erneut getestet. Schleife bis READY oder `--max` erreicht.
+4. **Schriftliche Doku** — `RELEASE-READINESS.md` und `QA-LOOP.md` (alle Iterationen, Befunde, vorgeschlagene/angewendete Fixes, Rebuild-Status).
+
+**Sicherheit:** Ohne `--repo` keine Code-Änderung. Ohne `--apply` nur Vorschläge (Dry-Run, gespeichert unter `proposed-fixes/`). Es werden nur existierende Dateien **innerhalb** des Repos geschrieben.
+
+## Sprachausgabe (TTS) — auch ganz ohne Key
+
+CUE-AGENT wählt die TTS-Engine automatisch:
+
+- **`elevenlabs`** — höchste Qualität (braucht `ELEVENLABS_API_KEY`)
+- **`kokoro`** — **lokal, key-frei, Apache-2.0** ([Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)); lädt beim ersten Lauf ein ~300 MB-Modell, läuft dann offline auf der CPU
+- **`openai`** — OpenAI-kompatibler `/v1/audio/speech`-Endpoint (z. B. über deinen Proxy)
+
+**Auto-Verhalten**: ElevenLabs (falls Key & gültig) → sonst/​bei Fehler automatisch **Kokoro**. So bekommst du natürliche Stimmen ohne jeden Key. Erzwingen mit `--tts kokoro`.
+
+```bash
+cue promo --script my-video.script.json --tts kokoro --voice daniel
+```
+
+> `kokoro-js` ist eine optionale Dependency. Falls nicht installiert: `npm install kokoro-js`.
+
 ## CLI-Übersicht
 
 | Command | Zweck |
 |---|---|
 | `cue qa <url>` | QA-Analyse: Screenshot + Konsolen-Logs + Claude-Vision (MD + JSON, Severity, CI-Exit-Code) |
+| `cue release-check <url>` | Veröffentlichungsreife prüfen (Verdict + RELEASE-READINESS.md) |
+| `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen |
 | `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs) |
 | `cue promo <url>` | Promo-Video (Hook → Features → Screenshots → CTA) |
 | `cue tutorial <url>` | Tutorial-Video (Cold-Open → Kapitel → Recap) |

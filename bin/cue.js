@@ -24,6 +24,8 @@ const { runCapture } = require("../src/core");
 const { runVideo } = require("../src/video");
 const { runRender } = require("../src/video/render-existing");
 const { startConfigurator } = require("../src/configurator/server");
+const { runReleaseCheck } = require("../src/qa/release-check");
+const { runQaLoop } = require("../src/qa/loop");
 
 function parseArgs(argv) {
   const args = { _: [], flags: {} };
@@ -58,6 +60,8 @@ Verwendung:
 
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
+  release-check <url>  Pruefen, ob das Produkt veroeffentlichungsreif ist
+  qa-loop <url>     AI-QA-Loop: testen -> fixen -> rebuilden -> erneut testen
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
   promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
   tutorial <url>    Tutorial-Video (Cold-Open -> Schritte -> Recap)
@@ -196,6 +200,40 @@ async function main() {
       await startConfigurator({ cfg, port, logger: log });
       // Server offen halten
       return new Promise(() => {});
+    }
+
+    case "release-check": {
+      if (args.flags.help) {
+        console.log("cue release-check <url> [--flow flow.json] [--out dir] [--json]");
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runReleaseCheck({
+        url, cfg, flowFile: args.flags.flow || null, outDir: args.flags.out || null, logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
+    }
+
+    case "qa-loop": {
+      if (args.flags.help) {
+        console.log('cue qa-loop <url> [--repo path] [--rebuild "cmd"] [--max N] [--apply] [--flow flow.json] [--out dir] [--json]');
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runQaLoop({
+        url,
+        cfg,
+        repoPath: args.flags.repo || null,
+        rebuildCmd: args.flags.rebuild || null,
+        maxIterations: args.flags.max ? parseInt(args.flags.max, 10) : 3,
+        apply: Boolean(args.flags.apply),
+        flowFile: args.flags.flow || null,
+        outDir: args.flags.out || null,
+        logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
     }
 
     case "render": {

@@ -60,6 +60,8 @@ async function captureForQa({ url, cfg, outDir, screenshotName, flowFile, logger
   return {
     screenshotPath,
     consoleLogs: result.console,
+    network: result.network || [],
+    metrics: result.metrics || {},
     navOk: result.navOk,
     bundlePath,
   };
