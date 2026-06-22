@@ -174,6 +174,9 @@ function loadConfig(overrides = {}) {
   // Installationsordner. Daher: Projekt-Root = aktuelles Arbeitsverzeichnis.
   const root = overrides.root || process.cwd();
 
+  // Verschlüsselt gespeicherte API-Keys in die Umgebung laden (env hat Vorrang)
+  try { require("./keystore").applyToEnv(); } catch (_) {}
+
   // DEFAULTS tief klonen, damit verschachtelte Objekte nie global mutiert werden.
   let cfg = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), {});
   const configFile = readConfigFile(root);

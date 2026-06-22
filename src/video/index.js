@@ -144,6 +144,8 @@ async function runVideo({
   const storyboard = scriptResult
     ? scriptResult.storyboard
     : buildStoryboard({ context, flow, bundle: captureResult, logger: log });
+  // @N-Szenen-Referenzen in Narration/Prompts auflösen
+  require("./refs").resolveStoryboardRefs(storyboard);
   writeJson(path.join(projectDir, "storyboard.json"), storyboard);
 
   // Render-Dimensionen aus Aspect

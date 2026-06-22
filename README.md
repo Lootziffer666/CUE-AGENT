@@ -122,6 +122,9 @@ Im Browser öffnen. Das GUI bietet:
 - **Voice-over pro Szene**: Narrationstext direkt eingeben
 - **Import/Export**: Script als `*.script.json` und Settings als `cue.config.json` herunterladen/laden
 - **CLI-Befehl** zum Kopieren **und** „Video jetzt erzeugen" (rendert direkt über den lokalen Server, mit deinen eigenen Keys)
+- **Timeline-Player**: greifbare Szenen-Blöcke mit Resize-Griff (Dauer ziehen), Klick-Auswahl, **Scrub-Vorschau** (nutzt die echte GSAP-Timeline der Szene — kein Render nötig) und **@N-Referenzen** zum Einfügen in Prompts/Narration
+- **Sprach-Engine + Stimmwahl** (Auto/Kokoro/ElevenLabs/OpenAI · Matilda/Rachel/Daniel/Josh)
+- **Verschlüsselte API-Keys**: im GUI eintragbar, AES-256-GCM-verschlüsselt in `~/.cue/keys.enc` (nie im Repo, nie im Klartext); optional via `CUE_KEYS_PASSPHRASE` passphrase-geschützt
 
 Das exportierte Script ist identisch zum `--script`-Format — du kannst es also auch per CLI nutzen:
 ```bash
