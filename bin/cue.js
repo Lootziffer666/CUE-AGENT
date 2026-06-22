@@ -21,11 +21,9 @@ const { makeLogger } = require("../src/util");
 const { runQa } = require("../src/qa");
 const { runDoctor } = require("../src/doctor");
 const { runCapture } = require("../src/core");
+const { runVideo } = require("../src/video");
 
 const PLANNED = {
-  promo: "Promo-Video (Hook \u2192 Pain \u2192 Solution \u2192 Features \u2192 CTA)",
-  showcase: "Showcase-Video (Intro \u2192 Walkthrough \u2192 Highlights \u2192 Closer)",
-  tutorial: "Tutorial-Video (Cold-Open \u2192 Schritte \u2192 Recap)",
   render: "Aus vorhandenem Projekt rendern",
 };
 
@@ -63,10 +61,10 @@ Verwendung:
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
+  promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
+  tutorial <url>    Tutorial-Video (Cold-Open -> Schritte -> Recap)
+  showcase <url>    Showcase-Video (Intro -> Walkthrough -> Highlights -> Closer)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
-  promo <url>       [geplant] Promo-Video (QA-Gate erforderlich)
-  showcase <url>    [geplant] Showcase-Video
-  tutorial <url>    [geplant] Tutorial-Video
   render <dir>      [geplant] Vorhandenes Video-Projekt rendern
 
 Globale Optionen:
@@ -156,10 +154,35 @@ async function main() {
 
     case "promo":
     case "showcase":
-    case "tutorial":
+    case "tutorial": {
+      if (args.flags.help) {
+        console.log(`cue ${command} <url> [--flow flow.json] [--out dir] [--brand vercel] [--aspect 16:9|9:16|1:1|4:5] [--no-video] [--json]`);
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const videoOverrides = {};
+      if (args.flags.brand) videoOverrides.brand = args.flags.brand;
+      if (args.flags.aspect) videoOverrides.aspect = args.flags.aspect;
+      const mergedCfg = { ...cfg, video: { ...cfg.video, ...videoOverrides } };
+
+      const result = await runVideo({
+        url,
+        mode: command,
+        cfg: mergedCfg,
+        flowFile: args.flags.flow || null,
+        outDir: args.flags.out || null,
+        recordVideo: !args.flags["no-video"],
+        logger: log,
+      });
+      if (args.flags.json) {
+        process.stdout.write(JSON.stringify(result.plan, null, 2) + "\n");
+      }
+      return 0;
+    }
+
     case "render": {
       log.info(`"${command}" ist geplant: ${PLANNED[command]}.`);
-      log.info("Siehe docs/ULTIMATE_VIDEO_CREATOR_PLAN.md (Roadmap M1\u2013M5).");
+      log.info("Siehe docs/ULTIMATE_VIDEO_CREATOR_PLAN.md (Roadmap M2\u2013M5).");
       return 0;
     }
 
