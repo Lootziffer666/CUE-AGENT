@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Horrorgeticon Ops — Promo Video (60s)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 1920px; height: 1080px; overflow: hidden; background: #050505; }
+    [data-composition-id="main"] {
+      position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden;
+    }
+    /* Swoosh overlays */
+    .swoosh {
+      position: absolute; inset: 0; z-index: 50; pointer-events: none;
+      background: linear-gradient(
+        115deg,
+        transparent 35%,
+        rgba(255,255,255,0.28) 47%,
+        rgba(255,255,255,0.75) 50%,
+        rgba(255,255,255,0.28) 53%,
+        transparent 65%
+      );
+      background-size: 250% 100%;
+      background-position: -75% 0;
+      mix-blend-mode: screen;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"
+       data-composition-id="main"
+       data-width="1920"
+       data-height="1080"
+       data-start="0"
+       data-duration="60">
+
+    <!-- Audio (Phase 5 will generate out/voiceover.mp3) -->
+    <audio id="audio-main" data-start="0" data-duration="60" data-track-index="0"
+           src="out/voiceover.mp3"></audio>
+
+    <!-- ═══════════════════════════════════
+         SCENE 01 — HOOK (0 → 5.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-01-hook"
+         data-composition-src="scenes/01-hook.html"
+         data-start="0" data-duration="5.4" data-track-index="1"
+         style="opacity:1"></div>
+
+    <!-- Swoosh 01→02 at t=5 -->
+    <div id="swoosh-01-02" class="swoosh clip"
+         data-start="5" data-duration="0.4" data-track-index="10"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 02 — PAIN (5 → 15.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-02-pain"
+         data-composition-src="scenes/02-pain.html"
+         data-start="5" data-duration="10.4" data-track-index="2"
+         style="opacity:0"></div>
+
+    <!-- Swoosh 02→03 at t=15 -->
+    <div id="swoosh-02-03" class="swoosh clip"
+         data-start="15" data-duration="0.4" data-track-index="11"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 03 — SOLUTION (15 → 20.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-03-solution"
+         data-composition-src="scenes/03-solution.html"
+         data-start="15" data-duration="5.4" data-track-index="3"
+         style="opacity:0"></div>
+
+    <!-- Swoosh 03→04 at t=20 -->
+    <div id="swoosh-03-04" class="swoosh clip"
+         data-start="20" data-duration="0.4" data-track-index="12"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 04 — DASHBOARD (20 → 30.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-04-dashboard"
+         data-composition-src="scenes/04-dashboard.html"
+         data-start="20" data-duration="10.4" data-track-index="4"
+         style="opacity:0"></div>
+
+    <!-- Swoosh 04→05 at t=30 -->
+    <div id="swoosh-04-05" class="swoosh clip"
+         data-start="30" data-duration="0.4" data-track-index="13"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 05 — MAZE LEAD (30 → 38.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-05-maze-lead"
+         data-composition-src="scenes/05-maze-lead.html"
+         data-start="30" data-duration="8.4" data-track-index="5"
+         style="opacity:0"></div>
+
+    <!-- Swoosh 05→06 at t=38 -->
+    <div id="swoosh-05-06" class="swoosh clip"
+         data-start="38" data-duration="0.4" data-track-index="14"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 06 — SCARE ACTOR (38 → 46.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-06-scare-actor"
+         data-composition-src="scenes/06-scare-actor.html"
+         data-start="38" data-duration="8.4" data-track-index="6"
+         style="opacity:0"></div>
+
+    <!-- Swoosh 06→07 at t=46 -->
+    <div id="swoosh-06-07" class="swoosh clip"
+         data-start="46" data-duration="0.4" data-track-index="15"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 07 — CATERING (46 → 52.4s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-07-catering"
+         data-composition-src="scenes/07-catering.html"
+         data-start="46" data-duration="6.4" data-track-index="7"
+         style="opacity:0"></div>
+
+    <!-- Swoosh 07→08 at t=52 -->
+    <div id="swoosh-07-08" class="swoosh clip"
+         data-start="52" data-duration="0.4" data-track-index="16"
+         style="opacity:0" aria-hidden="true"></div>
+
+    <!-- ═══════════════════════════════════
+         SCENE 08 — CTA (52 → 60s)
+         ═══════════════════════════════════ -->
+    <div data-composition-id="scene-08-cta"
+         data-composition-src="scenes/08-cta.html"
+         data-start="52" data-duration="8" data-track-index="8"
+         style="opacity:0"></div>
+
+  </div><!-- /#root -->
+
+  <script src="public/js/gsap.min.js"></script>
+  <script>
+    window.__timelines = window.__timelines || {};
+    const tl = gsap.timeline({ paused: true });
+
+    // ── Crossfades (incoming scene opacity 0→1 only) ──
+    tl.to('[data-composition-id="scene-02-pain"]',       { opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 5);
+    tl.to('[data-composition-id="scene-03-solution"]',   { opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 15);
+    tl.to('[data-composition-id="scene-04-dashboard"]',  { opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 20);
+    tl.to('[data-composition-id="scene-05-maze-lead"]',  { opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 30);
+    tl.to('[data-composition-id="scene-06-scare-actor"]',{ opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 38);
+    tl.to('[data-composition-id="scene-07-catering"]',   { opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 46);
+    tl.to('[data-composition-id="scene-08-cta"]',        { opacity: 1, duration: 0.4, ease: 'power2.inOut' }, 52);
+
+    // ── Metallic Swoosh helper ──
+    function swoosh(id, t) {
+      tl.to('#' + id, { opacity: 1, duration: 0.08, ease: 'power1.out' }, t);
+      tl.to('#' + id, { backgroundPosition: '175% 0', duration: 0.4, ease: 'power2.inOut' }, t);
+      tl.to('#' + id, { opacity: 0, duration: 0.08, ease: 'power1.in' }, t + 0.32);
+    }
+
+    swoosh('swoosh-01-02', 5);
+    swoosh('swoosh-02-03', 15);
+    swoosh('swoosh-03-04', 20);
+    swoosh('swoosh-04-05', 30);
+    swoosh('swoosh-05-06', 38);
+    swoosh('swoosh-06-07', 46);
+    swoosh('swoosh-07-08', 52);
+
+    window.__timelines['main'] = tl;
+  </script>
+</body>
+</html>

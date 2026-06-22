@@ -1,0 +1,79 @@
+<template id="scene-02-pain-template">
+  <div data-composition-id="scene-02-pain" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div class="layout">
+      <div class="section-label" style="opacity:0">Das Problem</div>
+      <div class="cards">
+        <div class="card" style="opacity:0">
+          <div class="card-icon">📵</div>
+          <div class="card-title">Phone-Chaos kurz vor Show-Start</div>
+          <div class="card-body">Wer ist schon da? Wer fehlt? Wo ist der Springer? 15 Anrufe in 5 Minuten.</div>
+        </div>
+        <div class="card danger" style="opacity:0">
+          <div class="card-icon">⚠️</div>
+          <div class="card-title">Maze ohne Springer — keiner merkt's</div>
+          <div class="card-body">Position nicht besetzt. Besucher warten. Das Management erfährt es als letztes.</div>
+        </div>
+        <div class="card" style="opacity:0">
+          <div class="card-icon">💥</div>
+          <div class="card-title">Server-Absturz · Event-Abend</div>
+          <div class="card-body">Eine einzige App-Abhängigkeit. Ein einziger Update-Fehler. Kein Plan B.</div>
+        </div>
+      </div>
+    </div>
+    <style>
+      [data-composition-id="scene-02-pain"] {
+        position: absolute; inset: 0;
+        background: #050505;
+        display: flex; align-items: center; justify-content: center;
+      }
+      [data-composition-id="scene-02-pain"] .bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(196,43,43,0.06) 0%, transparent 70%);
+      }
+      [data-composition-id="scene-02-pain"] .layout {
+        position: relative; z-index: 2;
+        width: 1360px; display: flex; flex-direction: column; gap: 40px;
+      }
+      [data-composition-id="scene-02-pain"] .section-label {
+        font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase; color: #FF6B2C;
+      }
+      [data-composition-id="scene-02-pain"] .cards {
+        display: flex; flex-direction: column; gap: 20px;
+      }
+      [data-composition-id="scene-02-pain"] .card {
+        background: #111111; border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 16px; padding: 32px 40px;
+        display: flex; flex-direction: row; align-items: center; gap: 32px;
+      }
+      [data-composition-id="scene-02-pain"] .card.danger {
+        border-color: rgba(196,43,43,0.3);
+        background: rgba(196,43,43,0.07);
+      }
+      [data-composition-id="scene-02-pain"] .card-icon { font-size: 36px; flex-shrink: 0; }
+      [data-composition-id="scene-02-pain"] .card-title {
+        font-family: system-ui, sans-serif; font-size: 26px; font-weight: 700;
+        color: #F8F6F2; margin-bottom: 6px;
+      }
+      [data-composition-id="scene-02-pain"] .card-body {
+        font-family: system-ui, sans-serif; font-size: 20px; font-weight: 400;
+        color: rgba(248,246,242,0.5); line-height: 1.4;
+      }
+      [data-composition-id="scene-02-pain"] .card > div:not(.card-icon) {
+        display: flex; flex-direction: column; gap: 4px;
+      }
+    </style>
+    <script src="../public/js/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ns = '[data-composition-id="scene-02-pain"]';
+      tl.fromTo(ns + ' .section-label',
+        { autoAlpha: 0, x: -20 }, { autoAlpha: 1, x: 0, duration: 0.4, ease: 'power3.out' }, 0.2);
+      tl.fromTo(ns + ' .card',
+        { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.5, ease: 'power3.out', stagger: 0.2 }, 0.5);
+      window.__timelines['scene-02-pain'] = tl;
+    </script>
+  </div>
+</template>

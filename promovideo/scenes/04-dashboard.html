@@ -1,0 +1,90 @@
+<template id="scene-04-dashboard-template">
+  <div data-composition-id="scene-04-dashboard" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div class="layout">
+      <div class="label-block" style="opacity:0">
+        <div class="scene-label">FEATURE 1/4</div>
+        <h2 class="feature-title">Management Leitstand</h2>
+        <p class="feature-desc">Live-KPIs · Event-Phasen · SLA-Badges · alle Bereiche</p>
+      </div>
+      <div class="device-wrap" style="opacity:0">
+        <div class="browser-frame">
+          <div class="browser-bar">
+            <span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>
+            <div class="url-bar">localhost:8787</div>
+          </div>
+          <div class="browser-content">
+            <img src="../public/screenshots/scene-04-dashboard.png" alt="Management Leitstand" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>
+      [data-composition-id="scene-04-dashboard"] {
+        position: absolute; inset: 0;
+        background: #050505;
+        display: flex; align-items: center; justify-content: center;
+      }
+      [data-composition-id="scene-04-dashboard"] .bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 70% 60% at 65% 50%, rgba(255,107,44,0.06) 0%, transparent 65%);
+      }
+      [data-composition-id="scene-04-dashboard"] .layout {
+        position: relative; z-index: 2;
+        display: flex; flex-direction: row; align-items: center; gap: 60px;
+        width: 1680px;
+      }
+      [data-composition-id="scene-04-dashboard"] .label-block {
+        flex: 0 0 420px; display: flex; flex-direction: column; gap: 16px;
+      }
+      [data-composition-id="scene-04-dashboard"] .scene-label {
+        font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.12em; color: #FF6B2C; text-transform: uppercase;
+      }
+      [data-composition-id="scene-04-dashboard"] .feature-title {
+        font-family: system-ui, sans-serif; font-size: 44px; font-weight: 800;
+        color: #F8F6F2; margin: 0; letter-spacing: -0.02em; line-height: 1.1;
+      }
+      [data-composition-id="scene-04-dashboard"] .feature-desc {
+        font-family: system-ui, sans-serif; font-size: 20px; font-weight: 500;
+        color: rgba(248,246,242,0.5); margin: 0; line-height: 1.5;
+      }
+      [data-composition-id="scene-04-dashboard"] .device-wrap {
+        flex: 1;
+      }
+      [data-composition-id="scene-04-dashboard"] .browser-frame {
+        border-radius: 12px; overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,107,44,0.08);
+        background: #111;
+      }
+      [data-composition-id="scene-04-dashboard"] .browser-bar {
+        background: #1a1a1a; padding: 12px 16px;
+        display: flex; align-items: center; gap: 8px;
+      }
+      [data-composition-id="scene-04-dashboard"] .dot {
+        width: 12px; height: 12px; border-radius: 50%;
+      }
+      [data-composition-id="scene-04-dashboard"] .dr { background: #ff5f56; }
+      [data-composition-id="scene-04-dashboard"] .dy { background: #ffbd2e; }
+      [data-composition-id="scene-04-dashboard"] .dg { background: #27c93f; }
+      [data-composition-id="scene-04-dashboard"] .url-bar {
+        flex: 1; background: rgba(255,255,255,0.05); border-radius: 6px;
+        padding: 5px 12px; font-family: monospace; font-size: 13px;
+        color: rgba(255,255,255,0.4); margin-left: 12px;
+      }
+      [data-composition-id="scene-04-dashboard"] .browser-content img {
+        display: block; width: 100%; height: auto;
+      }
+    </style>
+    <script src="../public/js/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ns = '[data-composition-id="scene-04-dashboard"]';
+      tl.fromTo(ns + ' .label-block', { autoAlpha: 0, x: -40 }, { autoAlpha: 1, x: 0, duration: 0.6, ease: 'power3.out' }, 0.1);
+      tl.fromTo(ns + ' .device-wrap', { autoAlpha: 0, x: 60, scale: 0.97 }, { autoAlpha: 1, x: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, 0.3);
+      window.__timelines['scene-04-dashboard'] = tl;
+    </script>
+  </div>
+</template>

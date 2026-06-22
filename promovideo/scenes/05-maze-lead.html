@@ -1,0 +1,90 @@
+<template id="scene-05-maze-lead-template">
+  <div data-composition-id="scene-05-maze-lead" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div class="layout">
+      <div class="device-wrap" style="opacity:0">
+        <div class="tablet-frame">
+          <div class="tablet-bar">
+            <span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>
+            <div class="url-bar">Maze Lead · MT-0301 · Asylum</div>
+          </div>
+          <div class="tablet-content">
+            <img src="../public/screenshots/scene-05-maze-lead.png" alt="Maze Lead Tablet" />
+          </div>
+        </div>
+      </div>
+      <div class="label-block" style="opacity:0">
+        <div class="scene-label">FEATURE 2/4</div>
+        <h2 class="feature-title">Maze Lead · Tablet</h2>
+        <p class="feature-desc">Team-Status · Live-Karte · Aufgaben-Inbox · Rundgänge</p>
+        <div class="badge">Echte Energeticon-Grundrisse</div>
+      </div>
+    </div>
+    <style>
+      [data-composition-id="scene-05-maze-lead"] {
+        position: absolute; inset: 0;
+        background: #050505;
+        display: flex; align-items: center; justify-content: center;
+      }
+      [data-composition-id="scene-05-maze-lead"] .bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 65% 55% at 35% 50%, rgba(255,107,44,0.05) 0%, transparent 65%);
+      }
+      [data-composition-id="scene-05-maze-lead"] .layout {
+        position: relative; z-index: 2;
+        display: flex; flex-direction: row; align-items: center; gap: 60px; width: 1680px;
+      }
+      [data-composition-id="scene-05-maze-lead"] .device-wrap { flex: 1; }
+      [data-composition-id="scene-05-maze-lead"] .label-block {
+        flex: 0 0 380px; display: flex; flex-direction: column; gap: 16px;
+      }
+      [data-composition-id="scene-05-maze-lead"] .tablet-frame {
+        border-radius: 12px; overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+        background: #111;
+      }
+      [data-composition-id="scene-05-maze-lead"] .tablet-bar {
+        background: #1a1a1a; padding: 10px 16px;
+        display: flex; align-items: center; gap: 8px;
+      }
+      [data-composition-id="scene-05-maze-lead"] .dot { width: 11px; height: 11px; border-radius: 50%; }
+      [data-composition-id="scene-05-maze-lead"] .dr { background: #ff5f56; }
+      [data-composition-id="scene-05-maze-lead"] .dy { background: #ffbd2e; }
+      [data-composition-id="scene-05-maze-lead"] .dg { background: #27c93f; }
+      [data-composition-id="scene-05-maze-lead"] .url-bar {
+        font-family: monospace; font-size: 12px; color: rgba(255,255,255,0.35);
+        margin-left: 8px;
+      }
+      [data-composition-id="scene-05-maze-lead"] .tablet-content img { display: block; width: 100%; }
+      [data-composition-id="scene-05-maze-lead"] .scene-label {
+        font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.12em; color: #FF6B2C; text-transform: uppercase;
+      }
+      [data-composition-id="scene-05-maze-lead"] .feature-title {
+        font-family: system-ui, sans-serif; font-size: 40px; font-weight: 800;
+        color: #F8F6F2; margin: 0; letter-spacing: -0.02em; line-height: 1.1;
+      }
+      [data-composition-id="scene-05-maze-lead"] .feature-desc {
+        font-family: system-ui, sans-serif; font-size: 19px; font-weight: 500;
+        color: rgba(248,246,242,0.5); margin: 0; line-height: 1.5;
+      }
+      [data-composition-id="scene-05-maze-lead"] .badge {
+        display: inline-block;
+        background: rgba(255,107,44,0.12); border: 1px solid rgba(255,107,44,0.25);
+        border-radius: 999px; padding: 5px 16px;
+        font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+        color: #FF6B2C; width: fit-content;
+      }
+    </style>
+    <script src="../public/js/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ns = '[data-composition-id="scene-05-maze-lead"]';
+      tl.fromTo(ns + ' .device-wrap', { autoAlpha: 0, x: -60, scale: 0.97 }, { autoAlpha: 1, x: 0, scale: 1, duration: 0.8, ease: 'expo.out' }, 0.1);
+      tl.fromTo(ns + ' .label-block', { autoAlpha: 0, x: 40 }, { autoAlpha: 1, x: 0, duration: 0.6, ease: 'power3.out' }, 0.4);
+      window.__timelines['scene-05-maze-lead'] = tl;
+    </script>
+  </div>
+</template>
