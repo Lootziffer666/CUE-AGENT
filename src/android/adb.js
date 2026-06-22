@@ -141,6 +141,16 @@ function currentPackage(serial) {
   return m ? m[1] : null;
 }
 
+/** Aktuell fokussierte Activity-Komponente "package/Activity" (Screen-Identität). */
+function currentActivity(serial) {
+  const r = run(withSerial(serial, ["shell", "dumpsys", "window"]));
+  const out = String(r.stdout || "");
+  const m =
+    out.match(/mCurrentFocus=.*\s([a-zA-Z0-9_.]+\/[a-zA-Z0-9_.$]+)/) ||
+    out.match(/mResumedActivity[^\n]*\s([a-zA-Z0-9_.]+\/[a-zA-Z0-9_.$]+)/);
+  return m ? m[1] : null;
+}
+
 function clearLogcat(serial) {
   run(withSerial(serial, ["logcat", "-c"]));
 }
@@ -197,6 +207,7 @@ module.exports = {
   inputText,
   back,
   currentPackage,
+  currentActivity,
   clearLogcat,
   logcatDump,
   detectCrashes,

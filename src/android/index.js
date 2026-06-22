@@ -22,6 +22,7 @@ const { assess, failsGate } = require("../qa/severity");
 const { writeReports } = require("../qa/report");
 const adb = require("./adb");
 const vision = require("./vision");
+const flowmod = require("./flow");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const pad = (n) => String(n).padStart(2, "0");
@@ -35,8 +36,9 @@ const pad = (n) => String(n).padStart(2, "0");
  * @param {string} [args.goal]      optionales Testziel für die KI
  * @param {object} [args.logger]
  */
-async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", logger }) {
+async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile = null, logger }) {
   const log = logger || makeLogger("ANDROID-QA");
+  const flow = flowFile ? flowmod.loadAndroidFlow(flowFile) : null;
 
   if (!adb.isAdbAvailable()) {
     throw new Error("adb nicht verfügbar. Android platform-tools installieren oder ADB_PATH setzen.");
@@ -53,6 +55,7 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", logger }) 
     adb.installApk(apk, serial);
     if (!pkg) pkg = adb.packageFromApk(apk);
   }
+  if (!pkg && flow && flow.package) pkg = flow.package;
   if (!pkg) {
     throw new Error("Package-Name nicht ermittelbar — bitte --package <id> angeben (aapt nicht gefunden).");
   }
@@ -77,9 +80,66 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", logger }) 
   let crashed = false;
   let anr = false;
   let llmSeverity = "none";
+  let flowSeverity = "none";
   const SEV_RANK = { none: 0, low: 1, medium: 2, high: 3 };
+  const bumpRank = (cur, lvl) => (SEV_RANK[lvl] > SEV_RANK[cur] ? lvl : cur);
 
-  for (let i = 1; i <= maxSteps; i++) {
+  // ── Flow-Modus: gewollter vs. tatsächlicher Userflow (Soll-Ist) ──────────
+  // Gilt plattform-agnostisch; hier der Android-Adapter (Activity/Text/ID).
+  if (flow) {
+    log.info(`Flow-Verifikation: ${flow.name || "(unbenannt)"} — ${flow.steps.length} Schritte`);
+    let prevActivity = adb.currentActivity(serial);
+    for (let i = 0; i < flow.steps.length; i++) {
+      const step = flow.steps[i];
+      const a = step.action || {};
+      let actionDesc = a.type;
+      let resolved = null;
+      try {
+        if (a.type === "tap") {
+          const clickables = adb.parseClickables(adb.uiDumpXml(serial));
+          resolved = flowmod.resolveTarget(a, clickables);
+          if (resolved) { adb.tap(resolved.x, resolved.y, serial); actionDesc = `tap ${resolved.matched}`; }
+          else actionDesc = `tap UNRESOLVED(${a.text || a.id || "?"})`;
+        } else if (a.type === "back") { adb.back(serial); }
+        else if (a.type === "text") { adb.inputText(a.value || "", serial); actionDesc = `text "${a.value || ""}"`; }
+        else if (a.type === "swipe") { adb.swipe(a.x1, a.y1, a.x2, a.y2, a.ms, serial); }
+      } catch (e) { actionDesc += ` (Fehler: ${e.message})`; }
+      await sleep(1500);
+
+      const shotRel = `android-${ts}/${pad(i + 1)}.png`;
+      try { fs.writeFileSync(path.join(cfg.absPaths.qaReports, shotRel), adb.screencapPng(serial)); } catch (_) {}
+      const xmlAfter = adb.uiDumpXml(serial);
+      const activity = adb.currentActivity(serial);
+      const cr = adb.detectCrashes(adb.logcatDump(serial), pkg);
+      if (cr.crashed) crashed = true;
+      if (cr.anr) anr = true;
+
+      let res;
+      if (a.type === "tap" && !resolved) {
+        res = { pass: false, reasons: [`Aktionsziel nicht gefunden: "${a.text || a.id || "?"}"`], landedNowhere: true };
+      } else {
+        res = flowmod.assertExpectation(step.expect, { activity, xml: xmlAfter, prevActivity });
+      }
+      if (cr.crashed) { res.pass = false; res.reasons.push("App abgestürzt"); }
+
+      steps.push({
+        n: i + 1, id: step.id, screenshot: shotRel, action: actionDesc,
+        expected: step.expect || {}, actual: { activity }, pass: res.pass,
+        reasons: res.reasons, landedNowhere: !!res.landedNowhere,
+      });
+      observations.push(
+        `${res.pass ? "✓ PASS" : "✗ FAIL"} [${step.id}] ${actionDesc} → ${activity || "—"}` +
+        (res.reasons.length ? ` | ${res.reasons.join("; ")}` : "")
+      );
+      if (!res.pass) flowSeverity = bumpRank(flowSeverity, res.landedNowhere ? "high" : "medium");
+      prevActivity = activity;
+      if (crashed) { log.error(`Crash in Flow-Schritt ${step.id}.`); break; }
+    }
+    navOk = steps.every((s) => s.pass);
+  }
+
+  const effectiveMax = flow ? 0 : maxSteps;
+  for (let i = 1; i <= effectiveMax; i++) {
     let shotRel = null;
     try {
       const png = adb.screencapPng(serial);
@@ -142,11 +202,19 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", logger }) 
   const order = ["none", "low", "medium", "high"];
   const bump = (lvl) => { if (order.indexOf(lvl) > order.indexOf(assessment.level)) assessment.level = lvl; };
   bump(llmSeverity);
+  bump(flowSeverity);
   if (anr) bump("high");
   if (crashed) { assessment.level = "high"; assessment.score = Math.min(assessment.score, 20); }
 
+  const passed = steps.filter((s) => s.pass === true).length;
+  const failed = steps.filter((s) => s.pass === false).length;
+  const head = flow
+    ? `Flow-Verifikation (Soll-Ist) "${flow.name || ""}": ${passed} PASS / ${failed} FAIL\n` + observations.join("\n")
+    : useLlm
+      ? observations.join("\n")
+      : "Capture-only-Modus (kein LLM konfiguriert) — heuristische Exploration.";
   const analysisText =
-    (useLlm ? observations.join("\n") : "Capture-only-Modus (kein LLM konfiguriert) — heuristische Exploration.") +
+    head +
     `\n\nSchritte: ${steps.length} | Crash: ${crashed} | ANR: ${anr}` +
     (finalCr.lines.length ? `\n\nCrash/ANR-Logzeilen:\n${finalCr.lines.join("\n")}` : "");
 
@@ -170,7 +238,8 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", logger }) 
     timestamp: new Date().toISOString(),
     package: pkg,
     device: serial,
-    analysisMode: useLlm ? "llm" : "capture-only",
+    analysisMode: flow ? "flow" : useLlm ? "llm" : "capture-only",
+    flow: flow ? { name: flow.name || null, steps: flow.steps.length } : null,
     maxSteps,
     navOk,
     crashed,

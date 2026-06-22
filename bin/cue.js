@@ -132,7 +132,7 @@ async function main() {
 
     case "android-qa": {
       if (args.flags.help) {
-        console.log('cue android-qa [apk] --package <id> [--steps N] [--goal "..."] [--lang de|en] [--fail-on none|low|medium|high] [--json]');
+        console.log('cue android-qa [apk] --package <id> [--flow flow.json] [--steps N] [--goal "..."] [--lang de|en] [--fail-on none|low|medium|high] [--json]');
         return 0;
       }
       const apk = args._[1] || null;
@@ -140,6 +140,7 @@ async function main() {
         apk,
         pkg: args.flags.package || null,
         cfg,
+        flowFile: typeof args.flags.flow === "string" ? args.flags.flow : null,
         maxSteps: args.flags.steps ? parseInt(args.flags.steps, 10) : 8,
         goal: typeof args.flags.goal === "string" ? args.flags.goal : "",
         logger: log,
