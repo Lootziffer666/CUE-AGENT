@@ -19,6 +19,7 @@
 const { loadConfig } = require("../src/config");
 const { makeLogger } = require("../src/util");
 const { runQa } = require("../src/qa");
+const { runAndroidQa } = require("../src/android");
 const { runDoctor } = require("../src/doctor");
 const { runCapture } = require("../src/core");
 const { runVideo } = require("../src/video");
@@ -57,6 +58,7 @@ Verwendung:
 
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
+  android-qa [apk]  Android-App-QA (Emulator via ADB + multimodale Analyse)
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
   promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
   tutorial <url>    Tutorial-Video (Cold-Open -> Schritte -> Recap)
@@ -122,6 +124,26 @@ async function main() {
       }
       const url = args._[1] || cfg.targetUrl;
       const result = await runQa({ url, cfg, logger: log });
+      if (args.flags.json) {
+        process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      }
+      return result.exitCode;
+    }
+
+    case "android-qa": {
+      if (args.flags.help) {
+        console.log('cue android-qa [apk] --package <id> [--steps N] [--goal "..."] [--lang de|en] [--fail-on none|low|medium|high] [--json]');
+        return 0;
+      }
+      const apk = args._[1] || null;
+      const result = await runAndroidQa({
+        apk,
+        pkg: args.flags.package || null,
+        cfg,
+        maxSteps: args.flags.steps ? parseInt(args.flags.steps, 10) : 8,
+        goal: typeof args.flags.goal === "string" ? args.flags.goal : "",
+        logger: log,
+      });
       if (args.flags.json) {
         process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       }
