@@ -156,7 +156,7 @@ async function main() {
     case "showcase":
     case "tutorial": {
       if (args.flags.help) {
-        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear] [--aspect 16:9|9:16|1:1|4:5] [--skip-qa-gate] [--no-video] [--json]`);
+        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear|stripe|apple|notion] [--aspect 16:9|9:16|1:1|4:5] [--tts auto|elevenlabs|kokoro|openai] [--voice matilda|rachel|daniel|josh] [--skip-qa-gate] [--no-video] [--json]`);
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
@@ -168,6 +168,9 @@ async function main() {
         ? loadConfig({ ...overrides, video: { ...cfg.video, ...videoOverrides } })
         : cfg;
       if (args.flags.brand) mergedCfg.video.brand = args.flags.brand;
+      // TTS-Engine / Stimme
+      if (args.flags.tts) mergedCfg.audio = { ...mergedCfg.audio, engine: args.flags.tts };
+      if (args.flags.voice) mergedCfg.audio = { ...mergedCfg.audio, voice: args.flags.voice };
 
       const result = await runVideo({
         url,

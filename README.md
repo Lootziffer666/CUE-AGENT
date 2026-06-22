@@ -134,6 +134,8 @@ cue promo --script my-video.script.json
 --lang de|en                     # Sprache der Ausgaben
 --aspect 16:9|9:16|1:1|4:5       # Seitenverhältnis (Web / Reels / IG / Portrait)
 --brand vercel|horror|linear|stripe|apple|notion   # Design-Preset
+--tts auto|elevenlabs|kokoro|openai   # TTS-Engine (auto: ElevenLabs→Kokoro)
+--voice matilda|rachel|daniel|josh    # Stimme
 --script datei.script.json       # eigenes Voiceover-/Storyboard-Script
 --flow datei.json                # deklarativer Flow (klicken/tippen/scrollen)
 --fail-on none|low|medium|high   # CI-Gate für QA

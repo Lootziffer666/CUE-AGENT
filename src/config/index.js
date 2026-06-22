@@ -85,7 +85,9 @@ const DEFAULTS = {
 
   // Audio
   audio: {
+    engine: "auto", // auto | elevenlabs | kokoro | openai
     voice: "matilda",
+    ttsModel: "tts-1", // nur für engine=openai
   },
 };
 
