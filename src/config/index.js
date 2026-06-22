@@ -42,6 +42,16 @@ const DEFAULTS = {
   modelLabel: "Claude Sonnet 4",
   maxTokens: 4096,
 
+  // LLM-Provider (BYOK). Video braucht kein LLM; nur QA nutzt es (Vision).
+  //   provider: "anthropic" (Default) | "openai" (OpenAI-kompatibel / LiteLLM / ANVIL-BELLOWS)
+  llm: {
+    provider: "anthropic",
+    openai: {
+      baseUrl: "https://api.openai.com", // z. B. http://localhost:4000 für ANVIL-BELLOWS
+      model: "gpt-4o",
+    },
+  },
+
   // Capture / Browser
   viewport: { width: 1920, height: 1080 },
   navTimeoutMs: 30000,
@@ -114,6 +124,16 @@ function fromEnv() {
   const env = {};
   if (process.env.CUE_LANG) env.lang = process.env.CUE_LANG;
   if (process.env.CUE_MODEL) env.model = process.env.CUE_MODEL;
+
+  // LLM-Provider per Env (BYOK)
+  const llm = {};
+  if (process.env.CUE_LLM_PROVIDER) llm.provider = process.env.CUE_LLM_PROVIDER;
+  const openai = {};
+  if (process.env.CUE_LLM_BASE_URL) openai.baseUrl = process.env.CUE_LLM_BASE_URL;
+  if (process.env.CUE_LLM_MODEL) openai.model = process.env.CUE_LLM_MODEL;
+  if (Object.keys(openai).length) llm.openai = openai;
+  if (Object.keys(llm).length) env.llm = llm;
+
   return env;
 }
 
@@ -152,6 +172,13 @@ function loadConfig(overrides = {}) {
   // Unterstützt verschiedene Variablennamen (ELEVENLABS_API_KEY, "ElevenLabs API", etc.)
   cfg.secrets = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+    // LLM-Key für OpenAI-kompatible Provider (eigener Proxy/OpenAI). Reihenfolge:
+    // CUE_LLM_API_KEY -> OPENAI_API_KEY -> LITELLM_MASTER_KEY (ANVIL-BELLOWS)
+    llmApiKey:
+      process.env.CUE_LLM_API_KEY ||
+      process.env.OPENAI_API_KEY ||
+      process.env.LITELLM_MASTER_KEY ||
+      "",
     elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || process.env["ElevenLabs API"] || process.env.ELEVENLABS_KEY || "",
     freesoundApiKey: process.env.FREESOUND_API_KEY || process.env["Freesound API"] || "",
   };
@@ -173,9 +200,38 @@ function hasValidAnthropicKey(cfg) {
   return Boolean(k) && !k.startsWith("sk-ant-api03-your-key");
 }
 
+/**
+ * Prüft, ob für den aktiven LLM-Provider gültige Credentials vorliegen.
+ * - anthropic: gültiger ANTHROPIC_API_KEY
+ * - openai:    Base-URL gesetzt; Key optional (offene lokale Proxys brauchen keinen)
+ * @returns {{ok:boolean, provider:string, reason:string}}
+ */
+function hasValidLlmCredentials(cfg) {
+  const provider = (cfg.llm && cfg.llm.provider) || "anthropic";
+  if (provider === "anthropic") {
+    const ok = hasValidAnthropicKey(cfg);
+    return {
+      ok,
+      provider,
+      reason: ok ? "ANTHROPIC_API_KEY gesetzt" : "ANTHROPIC_API_KEY fehlt/Platzhalter",
+    };
+  }
+  // openai-kompatibel
+  const baseUrl = cfg.llm && cfg.llm.openai && cfg.llm.openai.baseUrl;
+  if (!baseUrl) {
+    return { ok: false, provider, reason: "CUE_LLM_BASE_URL fehlt" };
+  }
+  return {
+    ok: true,
+    provider,
+    reason: `OpenAI-kompatibel: ${baseUrl} (Modell ${cfg.llm.openai.model})`,
+  };
+}
+
 module.exports = {
   loadConfig,
   hasValidAnthropicKey,
+  hasValidLlmCredentials,
   DEFAULTS,
   SUPPORTED_LANGS,
   SUPPORTED_ASPECTS,
