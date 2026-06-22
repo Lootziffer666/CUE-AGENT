@@ -7,7 +7,7 @@
  * damit sowohl die CLI als auch spätere Pipelines/CI es nutzen können.
  */
 
-const { hasValidAnthropicKey } = require("../config");
+const { hasValidLlmCredentials } = require("../config");
 const { makeLogger, timestamp } = require("../util");
 const { captureForQa } = require("./capture");
 const { analyze } = require("./analyze");
@@ -31,11 +31,12 @@ async function runQa({ url, cfg, logger }) {
         : "Keine URL angegeben. URL übergeben oder TARGET_URL in .env setzen."
     );
   }
-  if (!hasValidAnthropicKey(cfg)) {
+  const llm = hasValidLlmCredentials(cfg);
+  if (!llm.ok) {
     throw new Error(
       cfg.lang === "en"
-        ? "ANTHROPIC_API_KEY is not set or still a placeholder."
-        : "ANTHROPIC_API_KEY ist nicht gesetzt oder noch ein Platzhalter."
+        ? `No valid LLM credentials for provider "${llm.provider}": ${llm.reason}.`
+        : `Keine gültigen LLM-Credentials für Provider "${llm.provider}": ${llm.reason}.`
     );
   }
 
@@ -54,7 +55,7 @@ async function runQa({ url, cfg, logger }) {
   });
 
   // 2) Analyse
-  log.info("Analyse via Claude (Vision) ...");
+  log.info(`Analyse via LLM (${(cfg.llm && cfg.llm.provider) || "anthropic"}, Vision) ...`);
   const analysis = await analyze({ cfg, url, screenshotPath, consoleLogs });
   log.ok("Analyse erhalten.");
 
