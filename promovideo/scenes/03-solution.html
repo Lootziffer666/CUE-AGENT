@@ -1,0 +1,72 @@
+<template id="scene-03-solution-template">
+  <div data-composition-id="scene-03-solution" data-width="1920" data-height="1080">
+    <div class="bg-grid" style="opacity:0"></div>
+    <div class="glow" style="opacity:0"></div>
+    <div class="center">
+      <div class="wordmark" style="opacity:0">Horrorgeticon<em> Ops</em></div>
+      <div class="tagline" style="opacity:0">Der Leitstand für den Wahnsinn vor Ort.</div>
+      <div class="pills" style="opacity:0">
+        <span class="pill">Crew</span>
+        <span class="pill">Mazes</span>
+        <span class="pill">Live-Tracking</span>
+        <span class="pill">Catering</span>
+        <span class="pill">Fahrgruppen</span>
+      </div>
+    </div>
+    <style>
+      [data-composition-id="scene-03-solution"] {
+        position: absolute; inset: 0;
+        background: #050505;
+        display: flex; align-items: center; justify-content: center;
+      }
+      [data-composition-id="scene-03-solution"] .bg-grid {
+        position: absolute; inset: 0;
+        background-image: linear-gradient(rgba(255,107,44,0.04) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(255,107,44,0.04) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+      [data-composition-id="scene-03-solution"] .glow {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 70% 55% at 50% 52%, rgba(255,107,44,0.12) 0%, transparent 65%);
+      }
+      [data-composition-id="scene-03-solution"] .center {
+        position: relative; z-index: 2;
+        display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center;
+      }
+      [data-composition-id="scene-03-solution"] .wordmark {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 96px; font-weight: 900; letter-spacing: -0.03em;
+        color: #F8F6F2; margin: 0; line-height: 1;
+      }
+      [data-composition-id="scene-03-solution"] .wordmark em {
+        font-style: normal; color: #FF6B2C;
+      }
+      [data-composition-id="scene-03-solution"] .tagline {
+        font-family: system-ui, sans-serif;
+        font-size: 30px; font-weight: 500; color: rgba(248,246,242,0.65);
+        letter-spacing: -0.01em;
+      }
+      [data-composition-id="scene-03-solution"] .pills {
+        display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      }
+      [data-composition-id="scene-03-solution"] .pill {
+        background: rgba(255,107,44,0.12); border: 1px solid rgba(255,107,44,0.3);
+        border-radius: 999px; padding: 6px 20px;
+        font-family: system-ui, sans-serif; font-size: 16px; font-weight: 600;
+        color: #FF6B2C; letter-spacing: 0.04em;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" crossorigin="anonymous"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ns = '[data-composition-id="scene-03-solution"]';
+      tl.fromTo(ns + ' .bg-grid', { autoAlpha: 0 }, { autoAlpha: 1, duration: 1.2, ease: 'power1.out' }, 0);
+      tl.fromTo(ns + ' .glow', { autoAlpha: 0 }, { autoAlpha: 1, duration: 1.5, ease: 'power1.out' }, 0);
+      tl.fromTo(ns + ' .wordmark', { autoAlpha: 0, scale: 0.88 }, { autoAlpha: 1, scale: 1, duration: 0.8, ease: 'expo.out' }, 0.2);
+      tl.fromTo(ns + ' .tagline', { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.8);
+      tl.fromTo(ns + ' .pills', { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 1.2);
+      window.__timelines['scene-03-solution'] = tl;
+    </script>
+  </div>
+</template>
