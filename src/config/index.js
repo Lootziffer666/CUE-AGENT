@@ -25,6 +25,14 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const SUPPORTED_LANGS = ["de", "en"];
 const SUPPORTED_ASPECTS = ["16:9", "9:16", "1:1", "4:5"];
 
+// Seitenverhältnis → Pixel-Dimensionen (Render-Canvas)
+const ASPECT_DIMENSIONS = {
+  "16:9": { width: 1920, height: 1080 },
+  "9:16": { width: 1080, height: 1920 },
+  "1:1": { width: 1080, height: 1080 },
+  "4:5": { width: 1080, height: 1350 },
+};
+
 const DEFAULTS = {
   // Sprache der Ausgaben (QA-Reports, Voiceover-Script, Captions)
   lang: "de",
@@ -113,7 +121,10 @@ function normalizeLang(lang) {
  * @returns {object} aufgelöste Config inkl. Secrets und absoluter Pfade
  */
 function loadConfig(overrides = {}) {
-  const root = overrides.root || ROOT;
+  // Bei Installation in ein fremdes Repo sollen Ausgaben (qa-reports/,
+  // video-projects/) im Arbeitsverzeichnis des Nutzers landen — nicht im
+  // Installationsordner. Daher: Projekt-Root = aktuelles Arbeitsverzeichnis.
+  const root = overrides.root || process.cwd();
 
   let cfg = deepMerge(DEFAULTS, {});
   cfg = deepMerge(cfg, readConfigFile(root));
@@ -123,6 +134,11 @@ function loadConfig(overrides = {}) {
   cfg.lang = normalizeLang(cfg.lang);
   if (!SUPPORTED_ASPECTS.includes(cfg.video.aspect)) {
     cfg.video.aspect = "16:9";
+  }
+
+  // Viewport aus Aspect ableiten (Render-Canvas), außer explizit überschrieben
+  if (!overrides.viewport) {
+    cfg.viewport = { ...ASPECT_DIMENSIONS[cfg.video.aspect] };
   }
 
   // Secrets niemals in cue.config.json — nur aus der Umgebung
@@ -156,4 +172,5 @@ module.exports = {
   DEFAULTS,
   SUPPORTED_LANGS,
   SUPPORTED_ASPECTS,
+  ASPECT_DIMENSIONS,
 };

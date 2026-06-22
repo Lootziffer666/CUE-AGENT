@@ -22,10 +22,7 @@ const { runQa } = require("../src/qa");
 const { runDoctor } = require("../src/doctor");
 const { runCapture } = require("../src/core");
 const { runVideo } = require("../src/video");
-
-const PLANNED = {
-  render: "Aus vorhandenem Projekt rendern",
-};
+const { runRender } = require("../src/video/render-existing");
 
 function parseArgs(argv) {
   const args = { _: [], flags: {} };
@@ -65,7 +62,7 @@ Commands:
   tutorial <url>    Tutorial-Video (Cold-Open -> Schritte -> Recap)
   showcase <url>    Showcase-Video (Intro -> Walkthrough -> Highlights -> Closer)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
-  render <dir>      [geplant] Vorhandenes Video-Projekt rendern
+  render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html)
 
 Globale Optionen:
   --lang de|en      Sprache der Ausgaben (Default: de bzw. CUE_LANG)
@@ -156,20 +153,25 @@ async function main() {
     case "showcase":
     case "tutorial": {
       if (args.flags.help) {
-        console.log(`cue ${command} <url> [--flow flow.json] [--out dir] [--brand vercel] [--aspect 16:9|9:16|1:1|4:5] [--no-video] [--json]`);
+        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear] [--aspect 16:9|9:16|1:1|4:5] [--no-video] [--json]`);
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
       const videoOverrides = {};
       if (args.flags.brand) videoOverrides.brand = args.flags.brand;
       if (args.flags.aspect) videoOverrides.aspect = args.flags.aspect;
-      const mergedCfg = { ...cfg, video: { ...cfg.video, ...videoOverrides } };
+      // Aspect-Override muss Viewport neu berechnen → über loadConfig
+      const mergedCfg = args.flags.aspect || args.flags.brand
+        ? loadConfig({ ...overrides, video: { ...cfg.video, ...videoOverrides } })
+        : cfg;
+      if (args.flags.brand) mergedCfg.video.brand = args.flags.brand;
 
       const result = await runVideo({
         url,
         mode: command,
         cfg: mergedCfg,
         flowFile: args.flags.flow || null,
+        scriptFile: args.flags.script || null,
         outDir: args.flags.out || null,
         recordVideo: !args.flags["no-video"],
         logger: log,
@@ -181,8 +183,19 @@ async function main() {
     }
 
     case "render": {
-      log.info(`"${command}" ist geplant: ${PLANNED[command]}.`);
-      log.info("Siehe docs/ULTIMATE_VIDEO_CREATOR_PLAN.md (Roadmap M2\u2013M5).");
+      if (args.flags.help) {
+        console.log("cue render <projektVerzeichnis> [--json]  — rendert vorhandene scenes/*.html neu");
+        return 0;
+      }
+      const dir = args._[1];
+      if (!dir) {
+        log.error("cue render benötigt ein Projektverzeichnis (mit scenes/*.html).");
+        return 1;
+      }
+      const result = await runRender({ projectDir: dir, cfg, logger: log });
+      if (args.flags.json) {
+        process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      }
       return 0;
     }
 

@@ -22,7 +22,7 @@ const templates = require("../templates/scenes");
  * @param {object} [args.logger]
  * @returns {{scenePaths:string[], designMdPath:string}}
  */
-function generateDesign({ storyboard, context, projectDir, screenshotsDir, logger }) {
+function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims, logger }) {
   const log = logger || { info() {}, ok() {} };
   log.info("Phase 3: Design");
 
@@ -30,6 +30,7 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, logge
   const scenesDir = path.join(projectDir, "scenes");
   ensureDir(scenesDir);
 
+  const sceneDims = dims || { width: 1920, height: 1080 };
   const scenePaths = [];
 
   storyboard.scenes.forEach((scene, i) => {
@@ -48,6 +49,8 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, logge
         html = templates.titleCard(brand, {
           title: scene.title,
           subtitle: scene.subtitle,
+          dims: sceneDims,
+          duration: scene.duration,
         });
         break;
 
@@ -57,6 +60,8 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, logge
           screenshotFile: screenshotSrc,
           caption: scene.caption,
           chapter: scene.chapter,
+          dims: sceneDims,
+          duration: scene.duration,
         });
         break;
 
@@ -64,6 +69,8 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, logge
         html = templates.featureList(brand, {
           heading: scene.heading,
           features: scene.features,
+          dims: sceneDims,
+          duration: scene.duration,
         });
         break;
 
@@ -71,6 +78,8 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, logge
         html = templates.ctaScene(brand, {
           heading: scene.heading,
           url: scene.url,
+          dims: sceneDims,
+          duration: scene.duration,
         });
         break;
 
@@ -78,11 +87,13 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, logge
         html = templates.chapterCard(brand, {
           number: scene.number,
           goal: scene.goal,
+          dims: sceneDims,
+          duration: scene.duration,
         });
         break;
 
       default:
-        html = templates.titleCard(brand, { title: scene.id, subtitle: "" });
+        html = templates.titleCard(brand, { title: scene.id, subtitle: "", dims: sceneDims, duration: scene.duration });
     }
 
     fs.writeFileSync(filepath, html, "utf-8");
