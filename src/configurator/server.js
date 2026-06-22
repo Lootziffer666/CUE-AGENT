@@ -106,9 +106,14 @@ function startConfigurator({ cfg, port = 4477, logger }) {
       if (req.method === "POST" && url === "/api/keys") {
         const ks = require("../config/keystore");
         const body = JSON.parse(await readBody(req));
-        const saved = ks.saveKeys(body || {});
-        ks.applyToEnv(); // sofort für laufende Sitzung wirksam
-        return sendJson(res, 200, { ok: true, status: saved });
+        try {
+          const saved = ks.saveKeys(body || {});
+          ks.applyToEnv(); // sofort für laufende Sitzung wirksam
+          return sendJson(res, 200, { ok: true, status: saved });
+        } catch (err) {
+          // z. B. unlesbarer Store → NICHT überschrieben, klare Meldung zurück
+          return sendJson(res, 200, { ok: false, error: err.message, status: ks.status() });
+        }
       }
 
       if (req.method === "POST" && url === "/api/scene-html") {

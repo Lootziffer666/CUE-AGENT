@@ -693,6 +693,10 @@ function refreshKeys() {
   fetch("/api/keys").then(r=>r.json()).then(s => {
     ["anthropic","elevenlabs","freesound","imageApiKey","llmApiKey"].forEach(f => setStatusDot("st_"+f, s[f] && s[f].set));
     document.getElementById("keyEnc").textContent = s._encrypted ? (s._passphrase ? "verschlüsselt (Passphrase)" : "verschlüsselt") : "";
+    if (s._readable === false) {
+      document.getElementById("keyEnc").textContent = "⚠ vorhanden, NICHT entschlüsselbar — Speichern gesperrt (Passphrase prüfen)";
+      document.getElementById("keyEnc").style.color = "var(--danger)";
+    }
     // Nicht-geheime Werte vorbefüllen
     if (s.llmProvider && s.llmProvider.value) document.getElementById("k_llmProvider").value = s.llmProvider.value;
     if (s.llmBaseUrl && s.llmBaseUrl.value) document.getElementById("k_llmBaseUrl").value = s.llmBaseUrl.value;
@@ -713,8 +717,9 @@ if (sk) sk.onclick = async () => {
   };
   try {
     const res = await fetch("/api/keys", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    // Eingabefelder (Geheimnisse) nach dem Speichern leeren
+    const data = await res.json();
+    if (!data.ok) { toast("⚠ " + (data.error || "Speichern abgebrochen")); refreshKeys(); return; }
+    // Eingabefelder (Geheimnisse) nur bei Erfolg leeren
     ["k_anthropic","k_elevenlabs","k_freesound","k_imageApiKey","k_llmApiKey"].forEach(id=>document.getElementById(id).value="");
     toast("Keys verschlüsselt gespeichert"); refreshKeys();
   } catch (err) { toast("Speichern fehlgeschlagen (Server nötig)"); }
