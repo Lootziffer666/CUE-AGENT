@@ -9,7 +9,7 @@ nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten 
 
 ## Demo
 
-🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein 64-Sekunden-Promo, das CUE-AGENT
+🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein 68-Sekunden-Promo, das CUE-AGENT
 **mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
 8 Szenen, lokale Kokoro-Stimme, Soundeffekte an den Übergängen, Linear-Brand. Reproduzierbar ohne jeden API-Key.
 
