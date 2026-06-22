@@ -29,6 +29,18 @@ function validateScene(scene, i) {
       `Script-Szene "${scene.id}": ungültiger Typ "${scene.type}". Erlaubt: ${VALID_TYPES.join(", ")}`
     );
   }
+  // Dauer validieren + in Zahl umwandeln (verhindert String-Konkatenation/NaN)
+  if (scene.duration !== undefined) {
+    const dur = Number(scene.duration);
+    if (isNaN(dur) || dur <= 0) {
+      throw new Error(`Script-Szene "${scene.id}": 'duration' muss eine positive Zahl sein.`);
+    }
+    scene.duration = dur;
+  }
+  if (scene.clipDuration !== undefined) {
+    const cd = Number(scene.clipDuration);
+    if (!isNaN(cd) && cd > 0) scene.clipDuration = cd;
+  }
 }
 
 /**

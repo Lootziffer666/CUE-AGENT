@@ -40,7 +40,10 @@ async function runQaLoop({ url, cfg, repoPath, rebuildCmd, maxIterations = 3, ap
 
   const iterations = [];
   let lastRelease = null;
-  const maxIt = repoPath && apply ? Math.max(1, maxIterations) : 1;
+  // maxIterations defensiv parsen (NaN würde die Schleife nie laufen lassen → Crash)
+  const parsedMax = parseInt(maxIterations, 10);
+  const validMax = isNaN(parsedMax) ? 3 : Math.max(1, parsedMax);
+  const maxIt = repoPath && apply ? validMax : 1;
 
   for (let n = 1; n <= maxIt; n++) {
     log.info(`\n=== Iteration ${n}/${maxIt} ===`);

@@ -88,7 +88,7 @@ function buildStoryboard({ context, flow, bundle, logger }) {
     });
 
     // Feature scenes from flow steps
-    const stepsWithGoal = flow.steps.filter((s) => s.goal);
+    const stepsWithGoal = ((flow && flow.steps) || []).filter((s) => s.goal);
     if (stepsWithGoal.length > 0) {
       scenes.push({
         type: "features",
@@ -136,7 +136,7 @@ function buildStoryboard({ context, flow, bundle, logger }) {
 
     // Kapitel aus Flow-Schritten mit goal
     let chapterNum = 0;
-    flow.steps.forEach((step) => {
+    ((flow && flow.steps) || []).forEach((step) => {
       if (step.goal) {
         chapterNum++;
         // Kapitel-Karte

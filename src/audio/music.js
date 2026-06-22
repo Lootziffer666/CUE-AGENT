@@ -35,6 +35,10 @@ function searchFreesound({ apiKey, query = "ambient background music", minDurati
     const url = `https://freesound.org/apiv2/search/text/?${params.toString()}`;
 
     https.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Freesound API Status ${res.statusCode}`));
+        return;
+      }
       let data = "";
       res.on("data", (d) => (data += d));
       res.on("end", () => {
@@ -65,9 +69,17 @@ function downloadPreview(previewUrl, outPath) {
       if (res.statusCode === 301 || res.statusCode === 302) {
         // Follow redirect
         https.get(res.headers.location, (res2) => {
+          if (res2.statusCode !== 200) {
+            reject(new Error(`Musik-Download fehlgeschlagen: Status ${res2.statusCode}`));
+            return;
+          }
           res2.pipe(file);
           file.on("finish", () => { file.close(); resolve(outPath); });
         }).on("error", reject);
+        return;
+      }
+      if (res.statusCode !== 200) {
+        reject(new Error(`Musik-Download fehlgeschlagen: Status ${res.statusCode}`));
         return;
       }
       res.pipe(file);

@@ -19,11 +19,17 @@ const path = require("path");
 const { execSync } = require("child_process");
 
 function hyperframesAvailable() {
+  // --no-install: nur prüfen, nicht aus der Registry nachladen (vermeidet 60s-Timeouts)
   try {
-    execSync("npx --yes hyperframes --version", { stdio: "ignore", timeout: 60000 });
+    execSync("npx --no-install hyperframes --version", { stdio: "ignore", timeout: 15000 });
     return true;
   } catch (_) {
-    return false;
+    try {
+      execSync("hyperframes --version", { stdio: "ignore", timeout: 15000 });
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
@@ -48,7 +54,7 @@ async function renderHyperframes({ outDir, cfg, logger }) {
   }
 
   log.info("hyperframes: render ...");
-  execSync("npx --yes hyperframes render", { cwd: outDir, stdio: ["ignore", "pipe", "pipe"] });
+  execSync("npx --no-install hyperframes render", { cwd: outDir, stdio: "inherit" });
 
   const mp4Path = path.join(outDir, "out", "final.mp4");
   if (!fs.existsSync(mp4Path)) {

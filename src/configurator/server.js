@@ -36,7 +36,10 @@ function readBody(req) {
     let data = "";
     req.on("data", (c) => {
       data += c;
-      if (data.length > 5e6) reject(new Error("Body zu groß"));
+      if (data.length > 5e6) {
+        req.destroy();
+        reject(new Error("Body zu groß"));
+      }
     });
     req.on("end", () => resolve(data));
     req.on("error", reject);
@@ -132,8 +135,8 @@ function startConfigurator({ cfg, port = 4477, logger }) {
             if (typeof s.audio.music === "boolean") effCfg.audio.music = s.audio.music;
             if (typeof s.audio.sfx === "boolean") effCfg.audio.sfx = s.audio.sfx;
             if (s.audio.engine) effCfg.audio.engine = s.audio.engine;
-            if (s.audio.musicFile) effCfg.audio.musicFile = path.join(cfg.root, "media", s.audio.musicFile);
-            if (s.audio.sfxFile) effCfg.audio.sfxFile = path.join(cfg.root, "media", s.audio.sfxFile);
+            if (s.audio.musicFile) effCfg.audio.musicFile = path.join(cfg.root, "media", path.basename(s.audio.musicFile));
+            if (s.audio.sfxFile) effCfg.audio.sfxFile = path.join(cfg.root, "media", path.basename(s.audio.sfxFile));
           }
           if (s.image) {
             if (s.image.mode) effCfg.image.mode = s.image.mode;

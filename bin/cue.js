@@ -103,9 +103,9 @@ async function main() {
   const args = parseArgs(argv);
   const command = args._[0];
 
-  if (!command || args.flags.help && !command) {
+  if (!command) {
     showHelp();
-    process.exit(command ? 0 : 1);
+    process.exit(args.flags.help ? 0 : 1);
   }
 
   const overrides = buildOverrides(args.flags);
@@ -209,7 +209,14 @@ async function main() {
     case "configurator":
     case "config":
     case "gui": {
-      const port = args.flags.port ? parseInt(args.flags.port, 10) : 4477;
+      let port = 4477;
+      if (args.flags.port) {
+        port = parseInt(args.flags.port, 10);
+        if (isNaN(port) || port < 1 || port > 65535) {
+          log.error("Ungültige Portnummer (1–65535).");
+          return 1;
+        }
+      }
       await startConfigurator({ cfg, port, logger: log });
       // Server offen halten
       return new Promise(() => {});
@@ -251,7 +258,7 @@ async function main() {
 
     case "render": {
       if (args.flags.help) {
-        console.log("cue render <projektVerzeichnis> [--json]  — rendert vorhandene scenes/*.html neu");
+        console.log("cue render <projektVerzeichnis> [--force] [--json]  — rendert scenes/*.html neu (Cache: nur geänderte Szenen; --force = alle)");
         return 0;
       }
       const dir = args._[1];
@@ -259,7 +266,7 @@ async function main() {
         log.error("cue render benötigt ein Projektverzeichnis (mit scenes/*.html).");
         return 1;
       }
-      const result = await runRender({ projectDir: dir, cfg, logger: log });
+      const result = await runRender({ projectDir: dir, cfg, force: Boolean(args.flags.force), logger: log });
       if (args.flags.json) {
         process.stdout.write(JSON.stringify(result, null, 2) + "\n");
       }

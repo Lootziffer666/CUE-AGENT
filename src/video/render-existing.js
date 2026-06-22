@@ -20,7 +20,7 @@ const { runAudioRender } = require("./phase5-audio-render");
  * @param {object} [args.logger]
  * @returns {Promise<object>}
  */
-async function runRender({ projectDir, cfg, logger }) {
+async function runRender({ projectDir, cfg, force = false, logger }) {
   const log = logger || require("../util").makeLogger("RENDER");
 
   const abs = path.resolve(projectDir);
@@ -68,8 +68,8 @@ async function runRender({ projectDir, cfg, logger }) {
     return { clip: null };
   });
 
-  // Phase 4: Production (Lint + Render)
-  const production = await runProduction({ scenePaths, scenes: renderScenes, cfg, projectDir: abs, logger: log });
+  // Phase 4: Production (Lint + Render). force = alle Szenen neu, sonst Cache nutzen.
+  const production = await runProduction({ scenePaths, scenes: renderScenes, cfg, projectDir: abs, force, logger: log });
 
   // Phase 5: Audio (falls Storyboard Narration enthält)
   const audio = await runAudioRender({

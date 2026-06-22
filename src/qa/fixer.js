@@ -107,10 +107,9 @@ async function proposeFixes({ findings, repoPath, cfg, outDir, apply = false, lo
     return { proposed: [], applied: [] };
   }
 
-  // JSON extrahieren
-  let parsed = null;
-  const m = raw.match(/\{[\s\S]*\}/);
-  if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+  // JSON extrahieren (robuster Helfer aus findings.js — toleriert ```json-Blöcke etc.)
+  const { extractJson } = require("./findings");
+  const parsed = extractJson(raw);
   const files2 = parsed && Array.isArray(parsed.files) ? parsed.files : [];
 
   const proposed = [];

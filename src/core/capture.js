@@ -23,13 +23,14 @@ const { ensureDir, timestamp } = require("../util");
  * Führt einen einzelnen Flow-Schritt aus.
  * @returns {Promise<{tClick?:number, bbox?:object}>}
  */
-async function executeStep(page, step, videoStartTime) {
+async function executeStep(page, step, videoStartTime, opts = {}) {
   const result = {};
   const now = () => (Date.now() - videoStartTime) / 1000; // Sekunden seit Video-Start
+  const navTimeout = opts.navTimeoutMs || 30000;
 
   switch (step.action) {
     case "goto":
-      await page.goto(step.url, { waitUntil: "domcontentloaded", timeout: 30000 });
+      await page.goto(step.url, { waitUntil: step.waitUntil || "domcontentloaded", timeout: navTimeout });
       break;
 
     case "click": {
@@ -148,17 +149,20 @@ async function capture({
 
   const shouldA11y = collectA11yTree !== undefined ? collectA11yTree : intent === "qa";
   const log = logger || { info() {}, warn() {}, ok() {}, error() {} };
+  const viewport = (cfg && cfg.viewport) || { width: 1920, height: 1080 };
+  const navTimeoutMs = (cfg && cfg.navTimeoutMs) || 30000;
+  const settleMs = (cfg && cfg.settleMs) || 1000;
 
   log.info(`Capture-Engine gestartet (intent=${intent}, ${flow.steps.length} Schritte)`);
 
   // Browser starten
   const contextOpts = {
-    viewport: cfg.viewport,
+    viewport,
   };
   if (recordVideo) {
     contextOpts.recordVideo = {
       dir: path.join(outDir, "video-raw"),
-      size: cfg.viewport,
+      size: viewport,
     };
   }
 
@@ -199,15 +203,17 @@ async function capture({
       log.info(`  [${i + 1}/${flow.steps.length}] ${step.action} ${step.id}`);
 
       try {
-        const stepResult = await executeStep(page, step, videoStartTime);
+        const stepResult = await executeStep(page, step, videoStartTime, { navTimeoutMs });
 
         // Settle nach jedem Schritt
-        await page.waitForTimeout(cfg.settleMs || 1000);
+        await page.waitForTimeout(settleMs);
 
-        // Screenshot
+        // Screenshot — QA standardmäßig fullPage (erfasst auch below-the-fold),
+        // Video-Capture nur Viewport. Pro Schritt via step.fullPage übersteuerbar.
         const shotName = `${String(i).padStart(2, "0")}-${step.id}.png`;
         const shotPath = path.join(screenshotsDir, shotName);
-        await page.screenshot({ path: shotPath, fullPage: false });
+        const fullPage = step.fullPage !== undefined ? step.fullPage : intent === "qa";
+        await page.screenshot({ path: shotPath, fullPage });
 
         flowResults.push({
           step: step.id,
@@ -255,18 +261,22 @@ async function capture({
   // Endgültigen Video-Pfad in outDir kopieren (Playwright legt es in video-raw/ ab)
   let videoFile = null;
   if (videoPath) {
-    const fs = require("fs");
-    const dest = path.join(outDir, "capture.webm");
-    fs.copyFileSync(videoPath, dest);
-    videoFile = "capture.webm";
-    log.ok(`Video: ${dest}`);
+    try {
+      const fs = require("fs");
+      const dest = path.join(outDir, "capture.webm");
+      fs.copyFileSync(videoPath, dest);
+      videoFile = "capture.webm";
+      log.ok(`Video: ${dest}`);
+    } catch (err) {
+      log.warn(`Video konnte nicht kopiert werden: ${err.message}`);
+    }
   }
 
   const result = {
     intent,
     url,
     capturedAt: new Date().toISOString(),
-    viewport: cfg.viewport,
+    viewport,
     flow: flowResults,
     video: videoFile,
     console: consoleLogs,

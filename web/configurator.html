@@ -464,12 +464,16 @@ function refreshMedia() {
 }
 document.getElementById("mediaUpload").onchange = async (e) => {
   const files = Array.from(e.target.files || []);
+  let ok = 0;
   for (const f of files) {
-    const dataBase64 = await new Promise((resolve)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.readAsDataURL(f); });
-    await fetch("/api/media", { method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ name: f.name, dataBase64 }) }).catch(()=>{});
+    try {
+      const dataBase64 = await new Promise((resolve)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.readAsDataURL(f); });
+      const res = await fetch("/api/media", { method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ name: f.name, dataBase64 }) });
+      if (res.ok) ok++;
+    } catch (err) {}
   }
-  toast(files.length + " Datei(en) hochgeladen"); refreshMedia();
+  toast(ok > 0 ? (ok + " Datei(en) hochgeladen") : "Upload fehlgeschlagen"); refreshMedia();
 };
 
 // ---- Presets vom Server holen (sonst Fallback) ----

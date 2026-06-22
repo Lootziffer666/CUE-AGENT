@@ -20,6 +20,7 @@ class OpenAiProvider {
     this.model = o.model || cfg.model || "gpt-4o";
     this.apiKey = cfg.secrets.llmApiKey || "";
     this.maxTokens = cfg.maxTokens;
+    this.timeoutMs = (cfg.llm && cfg.llm.openai && cfg.llm.openai.timeoutMs) || 60000;
   }
 
   get endpoint() {
@@ -43,6 +44,7 @@ class OpenAiProvider {
           max_tokens: this.maxTokens,
           messages,
         }),
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (err) {
       throw new Error(

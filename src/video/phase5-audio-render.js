@@ -11,6 +11,7 @@
  * Bei fehlendem Key/Fehler: saubere Degradation (Video bleibt stumm).
  */
 
+const fs = require("fs");
 const path = require("path");
 const { generateVoiceover, fetchMusic, mixAudio, muxVideoAudio } = require("../audio");
 const { ensureSfx, mixSfx } = require("../audio/sfx");
@@ -66,7 +67,7 @@ async function runAudioRender({ storyboard, cfg, projectDir, silentMp4Path, dura
       const offsets = [];
       let acc = 0;
       for (const s of storyboard.scenes || []) {
-        acc += s.duration || s.clipDuration || 3;
+        acc += Number(s.duration || s.clipDuration || 3);
         offsets.push(acc);
       }
       const sfxOut = path.join(projectDir, "audio", "with-sfx.mp3");
@@ -78,18 +79,19 @@ async function runAudioRender({ storyboard, cfg, projectDir, silentMp4Path, dura
   // 4. Mux (Video + Audio → finales MP4)
   let finalMp4 = silentMp4Path;
   if (hasAudio && mixedPath) {
-    const finalPath = path.join(projectDir, "out", "final.mp4");
-    const silentBackup = path.join(projectDir, "out", "silent.mp4");
-    const fs = require("fs");
     if (fs.existsSync(silentMp4Path)) {
+      const finalPath = path.join(projectDir, "out", "final.mp4");
+      const silentBackup = path.join(projectDir, "out", "silent.mp4");
       fs.renameSync(silentMp4Path, silentBackup);
+      finalMp4 = muxVideoAudio({
+        videoPath: silentBackup,
+        audioPath: mixedPath,
+        outPath: finalPath,
+        logger: log,
+      });
+    } else {
+      log.warn(`Stummes Video unter ${silentMp4Path} nicht gefunden — Audio-Mux übersprungen.`);
     }
-    finalMp4 = muxVideoAudio({
-      videoPath: silentBackup,
-      audioPath: mixedPath,
-      outPath: finalPath,
-      logger: log,
-    });
   } else {
     log.info("Kein Audio verfügbar — Video bleibt stumm.");
   }

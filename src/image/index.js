@@ -37,7 +37,7 @@ async function generateImage({ prompt, outPath, cfg, logger }) {
   const endpoint = base.endsWith("/v1") ? `${base}/images/generations` : `${base}/v1/images/generations`;
   const model = img.model || "gpt-image-1";
   const size = img.size || "1024x1024";
-  const apiKey = cfg.secrets.imageApiKey || cfg.secrets.llmApiKey || "";
+  const apiKey = (cfg.secrets && (cfg.secrets.imageApiKey || cfg.secrets.llmApiKey)) || "";
 
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
@@ -61,6 +61,7 @@ async function generateImage({ prompt, outPath, cfg, logger }) {
     fs.writeFileSync(outPath, Buffer.from(item.b64_json, "base64"));
   } else if (item.url) {
     const imgRes = await fetch(item.url);
+    if (!imgRes.ok) throw new Error(`Bild-Download fehlgeschlagen: ${imgRes.status}`);
     const buf = Buffer.from(await imgRes.arrayBuffer());
     fs.writeFileSync(outPath, buf);
   } else {

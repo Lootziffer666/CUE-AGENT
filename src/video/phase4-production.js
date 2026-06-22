@@ -48,7 +48,7 @@ function lintScenes(scenePaths, logger) {
  * @param {object} [args.logger]
  * @returns {Promise<{mp4Path:string, frames:number, durationSec:number, lintWarnings:Array}>}
  */
-async function runProduction({ scenePaths, scenes, cfg, projectDir, logger }) {
+async function runProduction({ scenePaths, scenes, cfg, projectDir, force = false, logger }) {
   const log = logger || { info() {}, warn() {}, ok() {}, error() {} };
   log.info("Phase 4: Production");
 
@@ -61,6 +61,7 @@ async function runProduction({ scenePaths, scenes, cfg, projectDir, logger }) {
     scenes,
     cfg,
     outDir: projectDir,
+    force,
     logger: log,
   });
 

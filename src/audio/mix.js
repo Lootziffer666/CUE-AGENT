@@ -40,7 +40,7 @@ function mixAudio({ voiceoverPath, musicPath, durationSec, outDir, logger }) {
         "-i", voiceoverPath,
         "-i", musicPath,
         "-filter_complex",
-        `[0:a]loudnorm=I=-16:TP=-1.5:LRA=11[vo];[1:a]volume=0.15,afade=t=out:st=${fadeSt}:d=3[mu];[vo][mu]amix=inputs=2:duration=first:dropout_transition=2,apad[out]`,
+        `[0:a]loudnorm=I=-16:TP=-1.5:LRA=11[vo];[1:a]volume=0.15,afade=t=out:st=${fadeSt}:d=3[mu];[vo][mu]amix=inputs=2:duration=longest:dropout_transition=2,apad[out]`,
         "-map", "[out]",
         "-t", String(durationSec),
         "-c:a", "libmp3lame", "-q:a", "2",
