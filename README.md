@@ -6,8 +6,17 @@ QA-Bughunting **und** Videoersteller in einem Werkzeug. CUE-AGENT steuert einen 
 nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten App erstellen.
 
 > Roadmap & Konzept: [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
-> Status: M0–M5 umgesetzt (QA, Capture-Engine, Video-Pipeline, Audio, Aspect-Ratios,
-> Brand-Presets, Script-Support, Re-Render, **QA-Gate**).
+> Status: M0–M5 + Politur umgesetzt (QA, Capture-Engine, Video-Pipeline, Audio, Aspect-Ratios,
+> 6 Brand-Presets, Script-Support, Re-Render, QA-Gate, **echte Video-Clips** & **Tutorial-Highlights**).
+
+## Echte Video-Clips statt Standbilder
+
+Tutorial- und Showcase-Videos verwenden die **echte Bildschirmaufnahme** (Playwright
+`recordVideo`): pro Flow-Schritt wird der passende Ausschnitt aus dem aufgenommenen Video
+geschnitten, auf die Canvas skaliert, mit einem Brand-Overlay (Kapitel-Badge + Caption)
+versehen und sanft ein-/ausgeblendet. Der Renderer arbeitet **segment-basiert** (jede Szene
+→ eigenes MP4 → Concat), wodurch animierte Szenen und echte Clips nahtlos kombiniert werden.
+Fehlt eine Aufnahme, wird automatisch auf einen Screenshot zurückgefallen.
 
 ## QA-Gate: erst QA, dann Promo
 
@@ -100,7 +109,7 @@ cp .env.example .env   # und Keys eintragen
 ```bash
 --lang de|en                     # Sprache der Ausgaben
 --aspect 16:9|9:16|1:1|4:5       # Seitenverhältnis (Web / Reels / IG / Portrait)
---brand vercel|horror|linear     # Design-Preset
+--brand vercel|horror|linear|stripe|apple|notion   # Design-Preset
 --script datei.script.json       # eigenes Voiceover-/Storyboard-Script
 --flow datei.json                # deklarativer Flow (klicken/tippen/scrollen)
 --fail-on none|low|medium|high   # CI-Gate für QA

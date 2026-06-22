@@ -149,14 +149,20 @@ async function runVideo({
   // Render-Dimensionen aus Aspect
   const dims = cfg.viewport;
 
-  // Phase 3: Design (generiert HTML-Szenen)
-  const { scenePaths, designMdPath } = generateDesign({
+  // Video-Quelle für echte Clips (falls aufgenommen)
+  const videoSource = captureResult && captureResult.video
+    ? path.join(projectDir, captureResult.video)
+    : null;
+
+  // Phase 3: Design (generiert HTML-Szenen + ggf. Clip-Overlays)
+  const { scenePaths, renderScenes, designMdPath } = generateDesign({
     storyboard,
     context,
     projectDir,
     screenshotsDir: captureResult
       ? path.join(projectDir, captureResult.screenshotsDir || "screenshots")
       : null,
+    videoSource,
     dims,
     logger: log,
   });
@@ -165,6 +171,7 @@ async function runVideo({
   // Phase 4: Production (Lint + Render → stummes MP4)
   const production = await runProduction({
     scenePaths,
+    scenes: renderScenes,
     cfg,
     projectDir,
     logger: log,

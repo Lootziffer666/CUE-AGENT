@@ -8,11 +8,17 @@
 const vercel = require("./vercel");
 const horror = require("./horror");
 const linear = require("./linear");
+const stripe = require("./stripe");
+const apple = require("./apple");
+const notion = require("./notion");
 
 const PRESETS = {
   vercel,
   horror,
   linear,
+  stripe,
+  apple,
+  notion,
 };
 
 function getPreset(name) {
