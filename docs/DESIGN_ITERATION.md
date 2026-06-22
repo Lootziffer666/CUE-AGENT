@@ -55,14 +55,12 @@ Die *Fortschrittsfunktion* ist der **deterministische Baseline-Score** aus
 - **`iterateToBaseline(...)`** — die Loop-Engine (durch Stubs getestet:
   Konvergenz, NEVER-WORSE-Rollback, max-Iterations).
 
-## Nächste Wiring-Schritte (brauchen Render-/LLM-Umgebung)
-1. **Web-Adapter**: Playwright-`captureActual` + CSS-`applyEdits`/`rollback` → erster
-   vollständiger Live-Loop (am einfachsten, da Re-Render = Reload).
-2. **`proposeEdits` über den ANVIL-BELLOWS-Proxy** (free Gemini, multimodal:
-   Screenshot + Mockup + Abweichungsliste → konkrete Diffs).
-3. **`cue design-iterate`** CLI, die alles verdrahtet, auf einem Arbeits-Branch
-   läuft und am Ende die Diffs + das Iterations-Protokoll zur Review vorlegt.
-4. **Android-Adapter** (langsamer Build-Zyklus, daher nach Web).
+## Status der Wiring-Schritte
+- ✅ **Web-Adapter** (`src/web/dom-adapter.js`): Playwright-`captureActual` (DOM-BBox + Computed-Color + Text), `applyEdits`/`rollback` via injizierte CSS-Overrides (non-destruktiv, kein Quellcode der Zielseite berührt). **Live verifiziert**: Loop konvergiert auf echtem Chromium (Score 50→100 in 1 Iteration, finale CSS-Diff erzeugt).
+- ✅ **`cue design-iterate --url <url|file://> --baseline spec.json [--target 95] [--max 5] [--json]`**: verdrahtet Adapter + Proposer + Engine, schreibt `qa-reports/design-iterate-<ts>.{json,css}` (Protokoll + finale CSS-Diff).
+- ✅ **`proposeEdits`** (`src/qa/propose-edits.js`): OpenAI-kompatibel über den ANVIL-BELLOWS-Proxy (multimodal: Screenshot + Mockup + Abweichungen → CSS-JSON). **Greift, sobald `CUE_LLM_BASE_URL/MODEL` gesetzt sind** — sonst stoppt der Loop sauber (nur Messung).
+- ⏳ **Live-Lauf mit echtem LLM**: benötigt nur einen laufenden Proxy/Key (Code steht).
+- ⏳ **Android-Adapter** (`captureActual`/`applyEdits` via uiautomator/Layout) — nach Web (langsamer Build-Zyklus).
 
 ## Abgrenzung
 Das ist QA-Kern: das Produkt **aktiv** an die Vorgaben heranführen — gemessen,
