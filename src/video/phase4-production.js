@@ -48,16 +48,17 @@ function lintScenes(scenePaths, logger) {
  * @param {object} [args.logger]
  * @returns {Promise<{mp4Path:string, frames:number, durationSec:number, lintWarnings:Array}>}
  */
-async function runProduction({ scenePaths, cfg, projectDir, logger }) {
+async function runProduction({ scenePaths, scenes, cfg, projectDir, logger }) {
   const log = logger || { info() {}, warn() {}, ok() {}, error() {} };
   log.info("Phase 4: Production");
 
   // Anti-Slop-Lint
   const lintWarnings = lintScenes(scenePaths, log);
 
-  // Render
+  // Render (scenes enthält ggf. clip-Metadaten pro Szene)
   const result = await render({
     scenePaths,
+    scenes,
     cfg,
     outDir: projectDir,
     logger: log,

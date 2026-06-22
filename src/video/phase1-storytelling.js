@@ -26,6 +26,56 @@ function buildStoryboard({ context, flow, bundle, logger }) {
 
   const mode = context.mode;
   const scenes = [];
+  const hasVideo = Boolean(bundle && bundle.video);
+
+  // Berechnet ein Clip-Fenster (Start/Dauer) aus den videoStart-Zeitstempeln.
+  function clipWindow(bundleStep) {
+    if (!bundle || !bundle.flow) return null;
+    const idx = bundle.flow.indexOf(bundleStep);
+    const start = Math.max(0, bundleStep.videoStart || 0);
+    const next = bundle.flow[idx + 1];
+    let dur = next ? (next.videoStart - start) : 4;
+    // Pacing: zwischen 2.5s und 6s
+    dur = Math.min(6, Math.max(2.5, dur || 4));
+    return { start, duration: dur };
+  }
+
+  // Liefert eine Clip-Szene (echtes Video) wenn möglich, sonst Screenshot
+  // (mit Highlight-Spotlight + Zoom auf das geklickte Element, falls bbox vorhanden).
+  function walkthroughScene(bundleStep, { heading, caption, chapter }) {
+    const win = hasVideo ? clipWindow(bundleStep) : null;
+    if (win) {
+      return {
+        type: "clip",
+        id: `clip-${bundleStep.step}`,
+        heading, caption, chapter,
+        clipStart: win.start,
+        clipDuration: win.duration,
+        duration: win.duration,
+      };
+    }
+    // Highlight aus Bounding-Box (relativ zum Capture-Viewport)
+    let highlight = null;
+    const vp = bundle && bundle.viewport;
+    if (bundleStep.bbox && vp && vp.width && vp.height) {
+      const b = bundleStep.bbox;
+      highlight = {
+        xPct: Math.max(0, (b.x / vp.width) * 100),
+        yPct: Math.max(0, (b.y / vp.height) * 100),
+        wPct: Math.min(100, (b.width / vp.width) * 100),
+        hPct: Math.min(100, (b.height / vp.height) * 100),
+        zoom: Boolean(bundleStep.focus),
+      };
+    }
+    return {
+      type: "screenshot",
+      id: `shot-${bundleStep.step}`,
+      heading, caption, chapter,
+      screenshotFile: bundleStep.screenshot,
+      highlight,
+      duration: 4,
+    };
+  }
 
   if (mode === "promo") {
     // Hook (Title)
@@ -97,20 +147,16 @@ function buildStoryboard({ context, flow, bundle, logger }) {
           goal: step.goal,
           duration: 2.5,
         });
-        // Screenshot (wenn im Bundle vorhanden)
+        // Clip (echtes Video) oder Screenshot-Fallback
         const bundleStep = bundle && bundle.flow
           ? bundle.flow.find((b) => b.step === step.id)
           : null;
-        if (bundleStep && bundleStep.screenshot) {
-          scenes.push({
-            type: "screenshot",
-            id: `shot-${step.id}`,
+        if (bundleStep && (bundleStep.screenshot || hasVideo)) {
+          scenes.push(walkthroughScene(bundleStep, {
             heading: step.goal,
-            screenshotFile: bundleStep.screenshot,
             caption: step.caption || null,
             chapter: `Schritt ${chapterNum}`,
-            duration: 4,
-          });
+          }));
         }
       }
     });
@@ -138,15 +184,12 @@ function buildStoryboard({ context, flow, bundle, logger }) {
 
     if (bundle && bundle.flow) {
       bundle.flow.forEach((s) => {
-        if (s.screenshot) {
-          scenes.push({
-            type: "screenshot",
-            id: `shot-${s.step}`,
+        if (s.screenshot || hasVideo) {
+          scenes.push(walkthroughScene(s, {
             heading: s.goal || s.step,
-            screenshotFile: s.screenshot,
             caption: s.caption || null,
-            duration: 4,
-          });
+            chapter: null,
+          }));
         }
       });
     }

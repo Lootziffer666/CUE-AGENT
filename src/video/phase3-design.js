@@ -22,7 +22,7 @@ const templates = require("../templates/scenes");
  * @param {object} [args.logger]
  * @returns {{scenePaths:string[], designMdPath:string}}
  */
-function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims, logger }) {
+function generateDesign({ storyboard, context, projectDir, screenshotsDir, videoSource, dims, logger }) {
   const log = logger || { info() {}, ok() {} };
   log.info("Phase 3: Design");
 
@@ -32,11 +32,14 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims,
 
   const sceneDims = dims || { width: 1920, height: 1080 };
   const scenePaths = [];
+  const renderScenes = []; // aligned mit scenePaths; enthält ggf. clip-Metadaten
 
   storyboard.scenes.forEach((scene, i) => {
-    const filename = `${String(i).padStart(2, "0")}-${scene.id}.html`;
+    const isClip = scene.type === "clip";
+    const filename = `${String(i).padStart(2, "0")}-${scene.id}${isClip ? ".overlay" : ""}.html`;
     const filepath = path.join(scenesDir, filename);
     let html = "";
+    let clipMeta = null;
 
     const screenshotSrc = scene.screenshotFile
       ? (screenshotsDir
@@ -60,9 +63,23 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims,
           screenshotFile: screenshotSrc,
           caption: scene.caption,
           chapter: scene.chapter,
+          highlight: scene.highlight || null,
           dims: sceneDims,
           duration: scene.duration,
         });
+        break;
+
+      case "clip":
+        // Transparentes Overlay; der echte Video-Clip kommt vom Renderer (ffmpeg)
+        html = templates.clipOverlay(brand, {
+          heading: scene.heading,
+          caption: scene.caption,
+          chapter: scene.chapter,
+          dims: sceneDims,
+        });
+        clipMeta = videoSource
+          ? { source: videoSource, start: scene.clipStart || 0, duration: scene.clipDuration || 4 }
+          : null;
         break;
 
       case "features":
@@ -98,6 +115,8 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, dims,
 
     fs.writeFileSync(filepath, html, "utf-8");
     scenePaths.push(filepath);
+    // Wenn Clip aber keine Video-Quelle: auf Screenshot/animiert zurückfallen (clipMeta=null)
+    renderScenes.push({ clip: clipMeta });
   });
 
   // DESIGN.md
@@ -117,7 +136,7 @@ ${storyboard.scenes.map((s, i) => `${i + 1}. [${s.type}] ${s.id} (${s.duration}s
   writeText(designMdPath, designMd);
 
   log.ok(`${scenePaths.length} Szenen generiert + DESIGN.md`);
-  return { scenePaths, designMdPath };
+  return { scenePaths, renderScenes, designMdPath };
 }
 
 module.exports = { generateDesign };
