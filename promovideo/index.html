@@ -139,7 +139,8 @@
 
   </div><!-- /#root -->
 
-  <script src="public/js/gsap.min.js"></script>
+  <!-- Local GSAP bundle (render env); CDN fallback for cloners -->
+  <script src="public/js/gsap.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js';document.head.appendChild(s)"></script>
   <script>
     window.__timelines = window.__timelines || {};
     const tl = gsap.timeline({ paused: true });
