@@ -1,0 +1,57 @@
+# Beispiel-Workflow: CUE-AGENT QA in der CI eines beliebigen Repos.
+#
+# So nutzt DU es in deinem eigenen Repository:
+#   1. Diese Datei nach .github/workflows/cue-qa.yml in deinem Repo kopieren
+#      (das ".example" aus dem Namen entfernen).
+#   2. In den Repo-Settings -> Secrets and variables -> Actions hinterlegen:
+#        ANTHROPIC_API_KEY   (erforderlich)
+#        ELEVENLABS_API_KEY  (optional)
+#        FREESOUND_API_KEY   (optional)
+#   3. TARGET_URL anpassen (deine deployte App oder Preview-URL).
+#
+# Die Keys sind DEINE eigenen — CUE-AGENT speichert/verschickt sie nicht.
+
+name: CUE QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL, die geprueft werden soll"
+        required: true
+        default: "https://example.com"
+  # Optional: bei jedem Push gegen eine feste URL pruefen
+  # push:
+  #   branches: [ main ]
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ffmpeg installieren (fuer Video-Features; QA allein braucht es nicht)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: CUE-AGENT installieren (direkt aus GitHub)
+        run: npm install -g github:Lootziffer666/CUE-AGENT
+
+      - name: Browser installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: QA ausfuehren
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          FREESOUND_API_KEY: ${{ secrets.FREESOUND_API_KEY }}
+        run: cue qa "${{ github.event.inputs.url || 'https://example.com' }}" --fail-on high --json
+
+      - name: QA-Reports als Artefakt hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-reports
+          path: qa-reports/

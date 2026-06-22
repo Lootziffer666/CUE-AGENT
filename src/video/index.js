@@ -9,6 +9,7 @@
 
 const path = require("path");
 const { ensureDir, timestamp, slugify, writeJson } = require("../util");
+const { ASPECT_DIMENSIONS } = require("../config");
 const { capture } = require("../core/capture");
 const { defaultFlow, loadFlow } = require("../core/flow");
 const { writeBundle, readBundle } = require("../core/bundle");
@@ -17,13 +18,15 @@ const { buildStoryboard } = require("./phase1-storytelling");
 const { generateDesign } = require("./phase3-design");
 const { runProduction } = require("./phase4-production");
 const { runAudioRender } = require("./phase5-audio-render");
+const { loadScript } = require("./script");
 
 /**
  * @param {object} args
- * @param {string} args.url           Ziel-URL
+ * @param {string} args.url           Ziel-URL (optional, wenn Script ohne Screenshots)
  * @param {string} args.mode          "promo" | "tutorial" | "showcase"
  * @param {object} args.cfg           aufgelöste Config
  * @param {string} [args.flowFile]    optionaler Flow (für Tutorial besonders nützlich)
+ * @param {string} [args.scriptFile]  optionales Script (ersetzt Auto-Storyboard)
  * @param {string} [args.outDir]      Ausgabe-Verzeichnis
  * @param {boolean} [args.recordVideo] Video in Phase 2 aufnehmen
  * @param {object} [args.logger]
@@ -34,57 +37,100 @@ async function runVideo({
   mode = "promo",
   cfg,
   flowFile = null,
+  scriptFile = null,
   outDir = null,
   recordVideo = true,
   logger,
 }) {
   const log = logger || require("../util").makeLogger("VIDEO");
 
-  if (!url) {
-    throw new Error(cfg.lang === "en" ? "No URL provided." : "Keine URL angegeben.");
+  // Script laden (falls angegeben) — bestimmt Storyboard + ggf. Meta
+  let scriptResult = null;
+  if (scriptFile) {
+    scriptResult = loadScript(scriptFile);
+    log.info(`Script geladen: ${scriptResult.storyboard.totalScenes} Szenen (${scriptFile})`);
   }
+
+  // Script-Meta auf Config anwenden (brand, voice, aspect, lang)
+  if (scriptResult && scriptResult.meta) {
+    const meta = scriptResult.meta;
+    cfg = { ...cfg, video: { ...cfg.video }, audio: { ...cfg.audio } };
+    if (meta.brand) cfg.video.brand = meta.brand;
+    if (meta.aspect && ASPECT_DIMENSIONS[meta.aspect]) {
+      cfg.video.aspect = meta.aspect;
+      cfg.viewport = { ...ASPECT_DIMENSIONS[meta.aspect] };
+    }
+    if (meta.voice) cfg.audio.voice = meta.voice;
+    if (meta.lang) cfg.lang = meta.lang;
+  }
+
+  // URL ist optional, wenn ein Script ohne Screenshot-Szenen vorliegt
+  const needsCapture = !scriptResult || scriptResult.storyboard.scenes.some((s) => s.type === "screenshot");
+  if (!url && needsCapture) {
+    throw new Error(
+      cfg.lang === "en"
+        ? "No URL provided (required for capture / screenshot scenes)."
+        : "Keine URL angegeben (für Capture/Screenshot-Szenen erforderlich)."
+    );
+  }
+
+  const effectiveMode = (scriptResult && scriptResult.meta.mode) || mode;
+  const slugBase = url || (scriptResult && scriptResult.meta.title) || "script";
 
   // Projektverzeichnis
   const ts = timestamp();
-  const slug = slugify(url);
-  const projectDir = outDir || path.join(cfg.root, "video-projects", `${slug}-${mode}-${ts}`);
+  const slug = slugify(slugBase);
+  const projectDir = outDir || path.join(cfg.root, "video-projects", `${slug}-${effectiveMode}-${ts}`);
   ensureDir(projectDir);
 
-  log.info(`Video-Pipeline: ${mode} | ${url}`);
+  log.info(`Video-Pipeline: ${effectiveMode} | ${url || "(Script ohne URL)"}`);
   log.info(`Projekt: ${projectDir}`);
 
   // Flow
-  const flow = flowFile ? loadFlow(flowFile) : defaultFlow(url);
+  const flow = flowFile ? loadFlow(flowFile) : (url ? defaultFlow(url) : { steps: [], meta: {} });
 
   // Phase 0: Discovery
-  const context = runDiscovery({ url, cfg, mode, flow, logger: log });
+  const context = runDiscovery({ url: url || slugBase, cfg, mode: effectiveMode, flow, logger: log });
   writeJson(path.join(projectDir, "context.json"), context);
 
-  // Phase 2: Capture (vor Storytelling, damit wir Screenshots für Storyboard haben)
-  log.info("Phase 2: Capture");
-  const captureResult = await capture({
-    url,
-    cfg,
-    flow,
-    intent: mode,
-    outDir: projectDir,
-    recordVideo,
-    collectA11yTree: false,
-    logger: log,
-  });
-  const bundlePath = writeBundle(captureResult, projectDir);
-  log.ok(`Bundle: ${bundlePath}`);
+  // Phase 2: Capture (nur wenn nötig: URL vorhanden und Screenshots gebraucht)
+  let captureResult = null;
+  if (url && needsCapture) {
+    log.info("Phase 2: Capture");
+    captureResult = await capture({
+      url,
+      cfg,
+      flow,
+      intent: effectiveMode,
+      outDir: projectDir,
+      recordVideo,
+      collectA11yTree: false,
+      logger: log,
+    });
+    const bundlePath = writeBundle(captureResult, projectDir);
+    log.ok(`Bundle: ${bundlePath}`);
+  } else {
+    log.info("Phase 2: Capture übersprungen (Script ohne Screenshot-Szenen)");
+  }
 
-  // Phase 1: Storytelling (nutzt Bundle für Screenshot-Referenzen)
-  const storyboard = buildStoryboard({ context, flow, bundle: captureResult, logger: log });
+  // Phase 1: Storytelling — aus Script oder automatisch generiert
+  const storyboard = scriptResult
+    ? scriptResult.storyboard
+    : buildStoryboard({ context, flow, bundle: captureResult, logger: log });
   writeJson(path.join(projectDir, "storyboard.json"), storyboard);
+
+  // Render-Dimensionen aus Aspect
+  const dims = cfg.viewport;
 
   // Phase 3: Design (generiert HTML-Szenen)
   const { scenePaths, designMdPath } = generateDesign({
     storyboard,
     context,
     projectDir,
-    screenshotsDir: path.join(projectDir, captureResult.screenshotsDir || "screenshots"),
+    screenshotsDir: captureResult
+      ? path.join(projectDir, captureResult.screenshotsDir || "screenshots")
+      : null,
+    dims,
     logger: log,
   });
   log.ok(`Design: ${scenePaths.length} Szenen + ${designMdPath}`);
@@ -110,13 +156,16 @@ async function runVideo({
   // Projekt-Plan (Zusammenfassung)
   const plan = {
     tool: "cue-agent",
-    mode,
-    url,
+    mode: effectiveMode,
+    url: url || null,
+    source: scriptResult ? "script" : "auto",
+    brand: context.brand,
+    aspect: cfg.video.aspect,
     createdAt: new Date().toISOString(),
     phases: {
       discovery: "done",
-      storytelling: "done",
-      capture: "done",
+      storytelling: scriptResult ? "from-script" : "done",
+      capture: captureResult ? "done" : "skipped",
       design: "done",
       production: "done",
       audio: audio.hasAudio ? "done" : "skipped (no keys or failed)",

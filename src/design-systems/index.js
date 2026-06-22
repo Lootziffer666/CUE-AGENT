@@ -6,9 +6,13 @@
  */
 
 const vercel = require("./vercel");
+const horror = require("./horror");
+const linear = require("./linear");
 
 const PRESETS = {
   vercel,
+  horror,
+  linear,
 };
 
 function getPreset(name) {

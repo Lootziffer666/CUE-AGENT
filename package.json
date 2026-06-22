@@ -1,17 +1,29 @@
 {
   "name": "cue-agent",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "CUE-AGENT - QA-Bughunting & ultimativer Videoersteller (Playwright + Anthropic Claude Vision). QA-first Workflow, danach Promo-/Showcase-/Tutorial-Videos.",
   "main": "bin/cue.js",
   "bin": {
     "cue": "bin/cue.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "examples/",
+    "scripts/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
     "start": "node qa-agent.js",
     "cue": "node bin/cue.js",
     "qa": "node bin/cue.js qa",
     "doctor": "node bin/cue.js doctor",
-    "install-browsers": "npx playwright install --with-deps chromium"
+    "postinstall": "node bin/postinstall.js || true",
+    "install-browsers": "npx playwright install chromium"
   },
   "keywords": [
     "qa",
@@ -24,8 +36,13 @@
     "video",
     "promo-video",
     "tutorial",
-    "automation"
+    "automation",
+    "cli"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lootziffer666/CUE-AGENT.git"
+  },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

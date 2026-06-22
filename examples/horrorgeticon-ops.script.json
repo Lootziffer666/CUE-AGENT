@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "title": "HORRORGETICON OPS",
+    "mode": "promo",
+    "lang": "de",
+    "voice": "daniel",
+    "brand": "horror",
+    "aspect": "16:9",
+    "tone": "seriöses Produktvideo aus einem brennenden Kontrollraum, das niemand zugibt"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "id": "hook",
+      "title": "Ein Event zu planen ist einfach.",
+      "subtitle": "Bis Menschen auftauchen. Und Strom. Und Lieferanten.",
+      "narration": "Ein Event zu planen ist einfach. Bis Menschen auftauchen. Und Strom. Und Lieferanten. Und jemand fragt: Wo ist eigentlich der Zombiezug?",
+      "duration": 6
+    },
+    {
+      "type": "features",
+      "id": "intro-app",
+      "heading": "HORRORGETICON OPS",
+      "features": [
+        "Ablaufpläne statt 17 WhatsApp-Gruppen",
+        "Teams statt 3 Excel-Tabellen",
+        "Aufgaben statt laminiertem Zettel von 2019",
+        "Spontane Katastrophen inklusive"
+      ],
+      "narration": "HORRORGETICON OPS ist die Event-Management-App für alle, die Ablaufpläne, Teams, Aufgaben und spontane Katastrophen nicht mehr in siebzehn WhatsApp-Gruppen, drei Excel-Tabellen und einem laminierten Zettel aus dem Jahr 2019 verwalten möchten.",
+      "duration": 9
+    },
+    {
+      "type": "features",
+      "id": "operations",
+      "heading": "Operativ. Meistens.",
+      "features": [
+        "Schichten planen",
+        "Aufgaben verteilen",
+        "Stationen & Timings im Blick",
+        "Offene Baustellen — nicht nur metaphorisch"
+      ],
+      "narration": "Plane Schichten. Verteile Aufgaben. Behalte Stationen, Timings, Verantwortlichkeiten und offene Baustellen im Blick. Nicht metaphorisch. Also manchmal schon. Aber hauptsächlich operativ.",
+      "duration": 10
+    },
+    {
+      "type": "title",
+      "id": "clarity",
+      "title": "Jeder weiß, wo er hinmuss.",
+      "subtitle": "Was fehlt. Wer zuständig ist.",
+      "narration": "Jeder weiß, wo er hinmuss. Was fehlt. Wer zuständig ist. Und welche Entscheidung bitte nicht wieder von Kevin mit dem Generalschlüssel getroffen wird.",
+      "duration": 11
+    },
+    {
+      "type": "features",
+      "id": "dashboard",
+      "heading": "Live-Dashboard",
+      "features": [
+        "Aufbau, Einlass, Technik",
+        "Darsteller, Sicherheit, Backstage",
+        "Und der Bereich Sonstiges (80% der Realität)",
+        "Chaos wird nicht entfernt — es wird nummeriert"
+      ],
+      "narration": "Ob Aufbau, Einlass, Technik, Darsteller, Sicherheit, Backstage oder der rätselhafte Bereich Sonstiges, der erfahrungsgemäß achtzig Prozent der Realität enthält: HORRORGETICON OPS macht Chaos nicht weg. Es nummeriert es. Und das ist erschreckend viel wert.",
+      "duration": 11
+    },
+    {
+      "type": "features",
+      "id": "before-after",
+      "heading": "Weniger Chaos. Mehr Kontrolle.",
+      "features": [
+        "Weniger Suchen",
+        "Weniger Nachfragen",
+        "Weniger 'Ich dachte, das macht jemand anderes'",
+        "Mehr Zeit, so zu tun als wäre alles geplant"
+      ],
+      "narration": "Weniger Suchen. Weniger Nachfragen. Weniger Ich dachte das macht jemand anderes. Mehr Übersicht. Mehr Kontrolle. Mehr Zeit für das, worum es wirklich geht: professionell so zu tun, als wäre alles geplant gewesen.",
+      "duration": 11
+    },
+    {
+      "type": "title",
+      "id": "payoff",
+      "title": "Jede Minute zählt. Jede Rolle sitzt.",
+      "subtitle": "Selbst der Notfall bekommt einen Status.",
+      "narration": "HORRORGETICON OPS. Für Events, bei denen jede Minute zählt, jede Rolle sitzt und selbst der Notfall einen Status bekommt.",
+      "duration": 10
+    },
+    {
+      "type": "cta",
+      "id": "logo",
+      "heading": "HORRORGETICON OPS",
+      "url": "OPERATIONAL. MOSTLY.",
+      "narration": "HORRORGETICON OPS — weil Wahnsinn erst dann skalierbar wird, wenn er eine Benutzeroberfläche hat.",
+      "duration": 5
+    }
+  ]
+}
