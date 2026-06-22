@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "name": "Beispiel-Flow",
+    "description": "Demonstriert die Flow-Schritte der Capture-Engine",
+    "intent": "promo"
+  },
+  "steps": [
+    {
+      "id": "home",
+      "action": "goto",
+      "url": "https://example.com",
+      "goal": "Startseite laden",
+      "narration": "Willkommen auf der Startseite.",
+      "caption": "Startseite"
+    },
+    {
+      "id": "scroll-down",
+      "action": "scroll",
+      "scrollY": 400,
+      "goal": "Inhalte weiter unten zeigen",
+      "narration": "Scrollen wir nach unten zu den Features.",
+      "caption": "Mehr entdecken"
+    },
+    {
+      "id": "wait-settle",
+      "action": "wait",
+      "ms": 1500
+    }
+  ]
+}

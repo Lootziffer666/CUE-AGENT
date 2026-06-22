@@ -1,65 +1,68 @@
 "use strict";
 
 /**
- * QA-Capture (M0): repliziert das bisherige Verhalten — Vollseiten-Screenshot
- * plus Konsolen-/PageError-Logs via Playwright Chromium.
+ * QA-Capture-Adapter (M1).
  *
- * In M1 wird hieraus die geteilte Capture-Engine mit Flow-Runner, recordVideo,
- * A11y-Tree und Metriken. Die Signatur ist bereits darauf vorbereitet.
+ * Nutzt die geteilte Capture-Engine (src/core/capture.js) mit einem
+ * Default-Flow (nur goto + Screenshot) für Rückwärtskompatibilität.
+ *
+ * Liefert die gleiche Signatur wie M0 zurück, damit der QA-Orchestrator
+ * unverändert bleibt. Zusätzlich wird ein CaptureBundle geschrieben.
  */
 
 const path = require("path");
-const { chromium } = require("playwright");
-const { ensureDir } = require("../util");
+const { capture } = require("../core/capture");
+const { defaultFlow, loadFlow } = require("../core/flow");
+const { writeBundle } = require("../core/bundle");
 
 /**
  * @param {object} args
- * @param {string} args.url Ziel-URL
- * @param {object} args.cfg aufgelöste Config
- * @param {string} args.outDir Verzeichnis für Screenshot
- * @param {string} args.screenshotName Dateiname des Screenshots
+ * @param {string} args.url                Ziel-URL
+ * @param {object} args.cfg                aufgelöste Config
+ * @param {string} args.outDir             Verzeichnis für Screenshots + Bundle
+ * @param {string} args.screenshotName     Dateiname des Haupt-Screenshots (Kompatibilität)
+ * @param {string} [args.flowFile]         optionaler Pfad zu flow.json
  * @param {object} [args.logger]
- * @returns {Promise<{screenshotPath:string, consoleLogs:Array, navOk:boolean}>}
+ * @returns {Promise<{screenshotPath:string, consoleLogs:Array, navOk:boolean, bundlePath:string}>}
  */
-async function captureForQa({ url, cfg, outDir, screenshotName, logger }) {
-  ensureDir(outDir);
-  const screenshotPath = path.join(outDir, screenshotName);
+async function captureForQa({ url, cfg, outDir, screenshotName, flowFile, logger }) {
+  // Flow bestimmen
+  const flow = flowFile ? loadFlow(flowFile) : defaultFlow(url);
 
-  if (logger) logger.info("Browser wird gestartet ...");
+  // Capture-Engine laufen lassen
+  const result = await capture({
+    url,
+    cfg,
+    flow,
+    intent: "qa",
+    outDir,
+    recordVideo: false,  // QA braucht kein Video (nur Screenshots + Logs)
+    collectA11yTree: true,
+    logger,
+  });
 
-  const browser = await chromium.launch({ headless: true });
-  const consoleLogs = [];
-  let navOk = true;
+  // Bundle schreiben
+  const bundlePath = writeBundle(result, outDir);
+  if (logger) logger.ok(`QA-Bundle: ${bundlePath}`);
 
-  try {
-    const context = await browser.newContext({ viewport: cfg.viewport });
-    const page = await context.newPage();
-
-    page.on("console", (msg) => {
-      const type = msg.type();
-      if (type === "error" || type === "warning") {
-        consoleLogs.push({ type, text: msg.text() });
-      }
-    });
-    page.on("pageerror", (error) => {
-      consoleLogs.push({ type: "error", text: `[PageError] ${error.message}` });
-    });
-
-    try {
-      await page.goto(url, { waitUntil: "networkidle", timeout: cfg.navTimeoutMs });
-    } catch (err) {
-      navOk = false;
-      if (logger) logger.warn(`Navigation erreichte networkidle nicht: ${err.message}`);
+  // Kompatibilitäts-Screenshot: der letzte (bzw. erste) Schritt-Screenshot
+  // Für den alten Report-Pfad kopieren wir den ersten Screenshot nach screenshotName
+  const fs = require("fs");
+  const firstShot = result.flow.find((s) => s.screenshot);
+  let screenshotPath = path.join(outDir, screenshotName);
+  if (firstShot) {
+    const src = path.join(outDir, result.screenshotsDir, firstShot.screenshot);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, screenshotPath);
     }
-
-    await page.waitForTimeout(cfg.settleMs);
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-    if (logger) logger.ok(`Screenshot gespeichert: ${screenshotPath}`);
-  } finally {
-    await browser.close();
   }
 
-  return { screenshotPath, consoleLogs, navOk };
+  return {
+    screenshotPath,
+    consoleLogs: result.console,
+    navOk: result.navOk,
+    bundlePath,
+  };
 }
 
 module.exports = { captureForQa };
