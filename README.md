@@ -1,57 +1,96 @@
-# AI QA Agent
+# CUE-AGENT
 
-Automated QA pipeline that uses Playwright to capture full-page screenshots and browser console logs, then leverages Anthropic Claude 3.5 Sonnet (vision) to analyze the page for UI/UX bugs, visual issues, and technical errors. Results are saved as structured Markdown reports.
+QA-Bughunting **und** Videoersteller in einem Werkzeug. CUE-AGENT steuert einen Browser
+(Playwright), analysiert Seiten mit Anthropic Claude (Vision) und folgt einem klaren
+**QA-first-Workflow**: erst Qualität sichern (Bugs finden, UI verbessern), dann — und nur
+nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten App erstellen.
 
-## Prerequisites
+> Status: **M0 (Fundament & QA-Refactor)** ist umgesetzt. Die Video-Pipeline (M1–M5) ist
+> in der Roadmap beschrieben: siehe [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
 
-- Node.js 18+ (included in the devcontainer)
-- Anthropic API Key ([get one here](https://console.anthropic.com/))
+## Voraussetzungen
+
+- Node.js 18+
+- Anthropic API Key ([Konsole](https://console.anthropic.com/))
+- Playwright Chromium (`npm run install-browsers`)
+- Optional für die Video-Pipeline: `ffmpeg`, `ELEVENLABS_API_KEY`, `FREESOUND_API_KEY`
 
 ## Setup
 
-### Option A: GitHub Codespace (recommended)
-
-1. Open this repo in a GitHub Codespace - everything installs automatically via the devcontainer.
-2. Copy `.env.example` to `.env` and add your Anthropic API key.
-
-### Option B: Local Setup
-
 ```bash
 npm install
-npx playwright install --with-deps chromium
+npm run install-browsers
 cp .env.example .env
-# Edit .env and set your ANTHROPIC_API_KEY
+# .env bearbeiten und ANTHROPIC_API_KEY setzen
 ```
 
-## Usage
+## Verwendung
 
 ```bash
-# Analyze a specific URL
+# Umgebung pruefen (Node, ffmpeg, Browser, API-Keys)
+node bin/cue.js doctor
+
+# QA-Analyse einer URL
+node bin/cue.js qa https://example.com
+
+# Sprache umstellen (de | en) und CI-Gate aktivieren, JSON ausgeben
+node bin/cue.js qa https://example.com --lang en --fail-on high --json
+
+# Kompatibilitaet: der alte Aufruf funktioniert weiterhin
 node qa-agent.js https://example.com
-
-# Use the TARGET_URL from .env
-node qa-agent.js
-
-# Show help
-node qa-agent.js --help
+npm start
 ```
 
-## Output
+Nach globaler Installation (`npm link` oder veroeffentlicht) steht der Befehl als `cue` bereit:
 
-Reports are saved to `qa-reports/` and include:
+```bash
+cue qa https://example.com
+cue doctor
+```
 
-- Full-page screenshot (PNG)
-- Browser console errors/warnings
-- LLM analysis with identified issues and recommendations
+## CLI-Uebersicht
 
-## Integrating Into Other Repos
+| Command | Status | Zweck |
+|---|---|---|
+| `cue qa <url>` | ✅ | QA-Analyse: Screenshot + Konsolen-Logs + Claude-Vision |
+| `cue doctor` | ✅ | Umgebungs-Check |
+| `cue capture <url>` | 🔜 M1 | Capture-Engine → CaptureBundle |
+| `cue promo <url>` | 🔜 M2 | Promo-Video (QA-Gate erforderlich) |
+| `cue tutorial <url>` | 🔜 M2 | Tutorial-Video (Kapitel + Captions) |
+| `cue showcase <url>` | 🔜 M4 | Showcase-Video |
+| `cue render <dir>` | 🔜 M2 | Vorhandenes Projekt rendern |
 
-You can add this agent to any of your repositories:
+## Ausgabe
 
-1. Copy the relevant files (`qa-agent.js`, `package.json`, `.env.example`, `.devcontainer/`) into your repo or keep it as a standalone tool.
-2. Point it at your deployed app or local dev server URL.
-3. Run it as part of your CI pipeline or manually during development.
+QA-Reports landen in `qa-reports/`:
 
-## License
+- Vollseiten-Screenshot (PNG)
+- Browser-Konsolen-Fehler/-Warnungen
+- LLM-Analyse mit Befunden und Empfehlungen
+- **Markdown** (menschlich) **und JSON** (maschinenlesbar) mit Severity + Score
+- CI-Exit-Code via `--fail-on none|low|medium|high`
+
+## Konfiguration
+
+Optionale `cue.config.json` im Projekt-Root überschreibt Defaults (Sprache, Modell,
+Viewport, Pfade, Video-Optionen). Secrets kommen ausschließlich aus der Umgebung/`.env`,
+nie aus der Config-Datei.
+
+## Projektstruktur
+
+```
+bin/cue.js          CLI-Einstieg
+src/config/         Config-/Env-Loader
+src/util/           Helfer (Logging, fs, Slugs)
+src/i18n/           Sprachstrings + Prompts (de/en)
+src/llm/            Anthropic-Wrapper
+src/qa/             QA-Pipeline (capture, analyze, severity, report)
+src/doctor/         Umgebungs-Check
+docs/               Roadmap / Masterplan
+qa-reports/         QA-Ausgaben
+qa-agent.js         Kompatibilitaets-Shim (ruft src/qa auf)
+```
+
+## Lizenz
 
 MIT
