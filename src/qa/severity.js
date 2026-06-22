@@ -46,7 +46,9 @@ function assess({ consoleLogs = [], navOk = true }) {
  * @returns {boolean} true => Gate verletzt (Exit != 0)
  */
 function failsGate(level, failOn) {
-  if (!failOn || failOn === "none") return false;
+  // Ungültige/unbekannte Schwelle (z. B. --fail-on ohne Wert => true) ignorieren,
+  // sonst würde rank(failOn) === -1 jede Severity > 0 fälschlich blockieren.
+  if (!failOn || failOn === "none" || !LEVELS.includes(failOn)) return false;
   return rank(level) >= rank(failOn) && rank(level) > 0;
 }
 

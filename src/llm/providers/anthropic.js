@@ -21,7 +21,10 @@ class AnthropicProvider {
   }
 
   _firstText(response) {
-    const block = response && response.content && response.content.find((b) => b.type === "text");
+    const block =
+      response &&
+      Array.isArray(response.content) &&
+      response.content.find((b) => b && b.type === "text");
     return block && block.text ? block.text : "";
   }
 

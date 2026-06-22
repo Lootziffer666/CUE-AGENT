@@ -62,7 +62,7 @@ function evaluateRelease({ findings = [], score = 0, consoleLogs = [], network =
   }
 
   // 3) Konsolen-Fehler
-  const consoleErrors = (consoleLogs || []).filter((l) => l.type === "error").length;
+  const consoleErrors = (consoleLogs || []).filter((l) => l && l.type === "error").length;
   if (consoleErrors > 0 && !allowConsoleErrors) {
     blockers.push(
       lang === "en" ? `${consoleErrors} console error(s)` : `${consoleErrors} Konsolen-Fehler`
@@ -70,11 +70,11 @@ function evaluateRelease({ findings = [], score = 0, consoleLogs = [], network =
   }
 
   // 4) Netzwerk 5xx
-  const fivexx = (network || []).filter((n) => n.status >= 500).length;
+  const fivexx = (network || []).filter((n) => n && typeof n.status === "number" && n.status >= 500).length;
   if (fivexx > 0 && !allow5xx) {
     blockers.push(lang === "en" ? `${fivexx} server error(s) (5xx)` : `${fivexx} Server-Fehler (5xx)`);
   }
-  const fourxx = (network || []).filter((n) => n.status >= 400 && n.status < 500).length;
+  const fourxx = (network || []).filter((n) => n && typeof n.status === "number" && n.status >= 400 && n.status < 500).length;
   if (fourxx > 0) {
     warnings.push(lang === "en" ? `${fourxx} request(s) with 4xx` : `${fourxx} Requests mit 4xx`);
   }

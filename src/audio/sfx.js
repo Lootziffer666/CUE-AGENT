@@ -56,11 +56,11 @@ function ensureSfx({ cfg, outDir, logger }) {
  * @returns {string} outPath
  */
 function mixSfx({ basePath, sfxPath, offsets, durationSec, outPath, logger }) {
-  const log = logger || { info() {}, ok() {} };
-  const { execFileSync } = require("child_process");
+  const log = logger || { info() {}, warn() {}, ok() {} };
 
   // Begrenzte Anzahl Übergänge (Performance/Lesbarkeit)
   const points = (offsets || []).filter((o) => o > 0.1 && o < durationSec - 0.1).slice(0, 12);
+  if (points.length === 0) return basePath; // nichts zu mischen → kein Re-Encode
 
   const inputs = [];
   const filters = [];
@@ -95,7 +95,7 @@ function mixSfx({ basePath, sfxPath, offsets, durationSec, outPath, logger }) {
     log.ok(`SFX gemischt (${points.length} Übergänge): ${outPath}`);
     return outPath;
   } catch (err) {
-    log.warn ? log.warn(`SFX-Mix fehlgeschlagen: ${err.message}`) : null;
+    log.warn(`SFX-Mix fehlgeschlagen: ${err.message}`);
     return basePath;
   }
 }

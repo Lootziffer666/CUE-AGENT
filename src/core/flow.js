@@ -55,8 +55,8 @@ function validateStep(step, index) {
   if (["click", "type", "hover", "select"].includes(step.action) && !step.selector) {
     throw new Error(`Flow-Schritt "${step.id}": '${step.action}' benötigt 'selector'.`);
   }
-  if (step.action === "type" && step.text === undefined) {
-    throw new Error(`Flow-Schritt "${step.id}": 'type' benötigt 'text'.`);
+  if (["type", "select"].includes(step.action) && step.text === undefined) {
+    throw new Error(`Flow-Schritt "${step.id}": '${step.action}' benötigt 'text'.`);
   }
 }
 
@@ -71,6 +71,9 @@ function loadFlow(filePath) {
     throw new Error(`Flow-Datei nicht gefunden: ${abs}`);
   }
   const raw = JSON.parse(fs.readFileSync(abs, "utf-8"));
+  if (!raw || typeof raw !== "object") {
+    throw new Error(`Ungültiges JSON in Flow-Datei: ${abs}`);
+  }
   const steps = raw.steps || raw;
   if (!Array.isArray(steps) || steps.length === 0) {
     throw new Error(`Flow-Datei enthält keine Schritte: ${abs}`);

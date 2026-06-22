@@ -9,6 +9,18 @@
  * Renderer per Playwright geöffnet wird.
  */
 
+// HTML-Escaping für dynamische Textfelder (Titel, Captions, Features …),
+// damit Sonderzeichen wie < > & " ' das Template nicht zerbrechen.
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function wrapScene(brand, { body, gsapTimeline, duration = 3, dims, extraCss = "" }) {
   const p = brand.palette;
   const t = brand.typography;
@@ -71,8 +83,8 @@ function titleCard(brand, { title, subtitle, dims, duration }) {
   return wrapScene(brand, {
     dims,
     body: `
-  <h1 class="heading">${title}</h1>
-  ${subtitle ? `<p class="subheading">${subtitle}</p>` : ""}
+  <h1 class="heading">${escapeHtml(title)}</h1>
+  ${subtitle ? `<p class="subheading">${escapeHtml(subtitle)}</p>` : ""}
   <div class="accent-bar"></div>`,
     gsapTimeline: `
 tl.fromTo(".heading", {opacity:0, y:30}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);
@@ -101,10 +113,10 @@ function screenshotScene(brand, { heading, screenshotFile, caption, chapter, hig
     dims,
     extraCss: hlCss,
     body: `
-  ${chapter ? `<div class="chapter-badge">${chapter}</div>` : ""}
-  ${heading ? `<h2 class="heading" style="font-size:2.5rem">${heading}</h2>` : ""}
+  ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
+  ${heading ? `<h2 class="heading" style="font-size:2.5rem">${escapeHtml(heading)}</h2>` : ""}
   <div class="screenshot-wrap"><img src="${screenshotFile}" alt="">${hl}</div>
-  ${caption ? `<div class="caption-bar">${caption}</div>` : ""}`,
+  ${caption ? `<div class="caption-bar">${escapeHtml(caption)}</div>` : ""}`,
     gsapTimeline: `
 ${chapter ? `tl.fromTo(".chapter-badge", {opacity:0, x:-20}, {opacity:1, x:0, duration:${m.durationFast}, ease:"${m.easeOut}"}, 0.1);` : ""}
 ${heading ? `tl.fromTo(".heading", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);` : ""}
@@ -123,12 +135,12 @@ function featureList(brand, { heading, features = [], dims, duration }) {
   const m = brand.motion;
   const p = brand.palette;
   const items = features.map(
-    (f) => `<li class="feature-item"><span class="feat-icon">\u2713</span> ${f}</li>`
+    (f) => `<li class="feature-item"><span class="feat-icon">\u2713</span> ${escapeHtml(f)}</li>`
   ).join("\n    ");
   return wrapScene(brand, {
     dims,
     body: `
-  <h2 class="heading" style="font-size:2.8rem">${heading || "Features"}</h2>
+  <h2 class="heading" style="font-size:2.8rem">${escapeHtml(heading || "Features")}</h2>
   <ul class="feature-list">${items}</ul>`,
     gsapTimeline: `
 tl.fromTo(".heading", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);
@@ -146,8 +158,8 @@ function ctaScene(brand, { heading, url, buttonText, dims, duration }) {
   return wrapScene(brand, {
     dims,
     body: `
-  <h2 class="heading" style="font-size:3rem">${heading || "Jetzt starten"}</h2>
-  <div class="cta-button" style="margin-top:40px;padding:16px 48px;background:${p.accent};color:#fff;font-size:1.25rem;font-weight:600;border-radius:8px;opacity:0;">${buttonText || url || "Los geht's"}</div>`,
+  <h2 class="heading" style="font-size:3rem">${escapeHtml(heading || "Jetzt starten")}</h2>
+  <div class="cta-button" style="margin-top:40px;padding:16px 48px;background:${p.accent};color:#fff;font-size:1.25rem;font-weight:600;border-radius:8px;opacity:0;">${escapeHtml(buttonText || url || "Los geht's")}</div>`,
     gsapTimeline: `
 tl.fromTo(".heading", {opacity:0, scale:0.9}, {opacity:1, scale:1, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.3);
 tl.fromTo(".cta-button", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.7);`,
@@ -163,8 +175,8 @@ function chapterCard(brand, { number, goal, dims, duration }) {
   return wrapScene(brand, {
     dims,
     body: `
-  <div class="chapter-badge" style="position:static;font-size:1.25rem;">Schritt ${number}</div>
-  <h2 class="heading" style="font-size:2.8rem;margin-top:24px;">${goal}</h2>
+  <div class="chapter-badge" style="position:static;font-size:1.25rem;">Schritt ${escapeHtml(number)}</div>
+  <h2 class="heading" style="font-size:2.8rem;margin-top:24px;">${escapeHtml(goal)}</h2>
   <div class="accent-bar"></div>`,
     gsapTimeline: `
 tl.fromTo(".chapter-badge", {opacity:0, y:-10}, {opacity:1, y:0, duration:${m.durationFast}, ease:"${m.easeOut}"}, 0.2);
@@ -201,9 +213,9 @@ html, body { width:${W}px; height:${H}px; background:transparent; overflow:hidde
 </head>
 <body>
 <div class="layer">
-  ${chapter ? `<div class="chapter-badge">${chapter}</div>` : ""}
-  ${heading ? `<div class="heading">${heading}</div>` : ""}
-  ${caption ? `<div class="caption-wrap"><div class="caption"><span class="bar"></span><br>${caption}</div></div>` : ""}
+  ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
+  ${heading ? `<div class="heading">${escapeHtml(heading)}</div>` : ""}
+  ${caption ? `<div class="caption-wrap"><div class="caption"><span class="bar"></span><br>${escapeHtml(caption)}</div></div>` : ""}
 </div>
 </body>
 </html>`;

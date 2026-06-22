@@ -42,7 +42,9 @@ function parseFindings(text) {
     return { summary: "", score: null, findings: [], parsed: false, raw: text };
   }
   const findings = Array.isArray(json.findings) ? json.findings : [];
-  const normalized = findings.map((f, i) => ({
+  const normalized = findings
+    .filter((f) => f && typeof f === "object")
+    .map((f, i) => ({
     id: f.id || `finding-${i + 1}`,
     title: f.title || f.id || `Befund ${i + 1}`,
     severity: normalizeSeverity(f.severity),
@@ -74,4 +76,4 @@ function countBySeverity(findings) {
   return c;
 }
 
-module.exports = { parseFindings, highestSeverity, countBySeverity, SEVERITIES, normalizeSeverity };
+module.exports = { extractJson, parseFindings, highestSeverity, countBySeverity, SEVERITIES, normalizeSeverity };

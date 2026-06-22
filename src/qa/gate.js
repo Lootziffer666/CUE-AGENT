@@ -53,7 +53,8 @@ function findLatestQaReport(url, cfg) {
     try {
       const report = JSON.parse(fs.readFileSync(file, "utf-8"));
       if (normalizeUrl(report.url) !== target) continue;
-      const ts = new Date(report.timestamp).getTime();
+      const ts = report.timestamp ? new Date(report.timestamp).getTime() : NaN;
+      if (isNaN(ts)) continue; // ungültiger/fehlender Zeitstempel → überspringen
       if (!best || ts > best.ts) {
         best = { report, file, ts };
       }

@@ -174,8 +174,10 @@ function loadConfig(overrides = {}) {
   // Installationsordner. Daher: Projekt-Root = aktuelles Arbeitsverzeichnis.
   const root = overrides.root || process.cwd();
 
-  let cfg = deepMerge(DEFAULTS, {});
-  cfg = deepMerge(cfg, readConfigFile(root));
+  // DEFAULTS tief klonen, damit verschachtelte Objekte nie global mutiert werden.
+  let cfg = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), {});
+  const configFile = readConfigFile(root);
+  cfg = deepMerge(cfg, configFile);
   cfg = deepMerge(cfg, fromEnv());
   cfg = deepMerge(cfg, overrides);
 
@@ -184,8 +186,9 @@ function loadConfig(overrides = {}) {
     cfg.video.aspect = "16:9";
   }
 
-  // Viewport aus Aspect ableiten (Render-Canvas), außer explizit überschrieben
-  if (!overrides.viewport) {
+  // Viewport aus Aspect ableiten (Render-Canvas) — außer explizit gesetzt
+  // (per CLI-Override oder in cue.config.json).
+  if (!overrides.viewport && !configFile.viewport) {
     cfg.viewport = { ...ASPECT_DIMENSIONS[cfg.video.aspect] };
   }
 
