@@ -150,12 +150,16 @@ function compareToBaseline({ spec, actual }) {
     // Text
     const textOk = textMatches(el.text, act.text);
     if (!textOk) deviations.push(`Text erwartet "${el.text}", tatsächlich "${act.text || "—"}"`);
-    // Farbe
+    // Farbe (nur prüfen, wenn der Adapter eine Farbe liefert; sonst Hinweis)
     let colorOk = true;
     if (el.color) {
-      const cd = colorDistance(el.color, act.color);
-      colorOk = cd <= tol.color;
-      if (!colorOk) deviations.push(`Farbe Abstand ${cd === Infinity ? "n/a" : cd.toFixed(0)} (Toleranz ${tol.color})`);
+      if (act.color == null) {
+        deviations.push("Farbe nicht gemessen (Adapter ohne Farbwert)");
+      } else {
+        const cd = colorDistance(el.color, act.color);
+        colorOk = cd <= tol.color;
+        if (!colorOk) deviations.push(`Farbe Abstand ${cd === Infinity ? "n/a" : cd.toFixed(0)} (Toleranz ${tol.color})`);
+      }
     }
 
     const pass = posOk && sizeOk && textOk && colorOk;

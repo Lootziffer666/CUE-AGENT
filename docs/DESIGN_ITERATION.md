@@ -60,7 +60,8 @@ Die *Fortschrittsfunktion* ist der **deterministische Baseline-Score** aus
 - ✅ **`cue design-iterate --url <url|file://> --baseline spec.json [--target 95] [--max 5] [--json]`**: verdrahtet Adapter + Proposer + Engine, schreibt `qa-reports/design-iterate-<ts>.{json,css}` (Protokoll + finale CSS-Diff).
 - ✅ **`proposeEdits`** (`src/qa/propose-edits.js`): OpenAI-kompatibel über den ANVIL-BELLOWS-Proxy (multimodal: Screenshot + Mockup + Abweichungen → CSS-JSON). **Greift, sobald `CUE_LLM_BASE_URL/MODEL` gesetzt sind** — sonst stoppt der Loop sauber (nur Messung).
 - ⏳ **Live-Lauf mit echtem LLM**: benötigt nur einen laufenden Proxy/Key (Code steht).
-- ⏳ **Android-Adapter** (`captureActual`/`applyEdits` via uiautomator/Layout) — nach Web (langsamer Build-Zyklus).
+- ✅ **Android-Adapter** (`src/android/design-adapter.js`): Mess-Hälfte `captureActual` via uiautomator (resource-id/Text → BBox; Farbe=null → Comparator überspringt Farb-Check mit Hinweis). Edit-Hälfte = Source-Patch (`applyEdits`/`rollback` auf echten Dateien, getestet) + `makeRerender` (rebuild+install). **Loop verifiziert** mit echtem Android-`applyEdits`/`rollback` (0→100).
+- ⏳ **Android live**: läuft im Emulator/CI/Homelab (langsamer rebuild-Zyklus); offen sind der Android-Proposer (LLM → Source-Patches `{file,find,replace}`) und die `design-iterate --platform android`-CLI-Anbindung.
 
 ## Abgrenzung
 Das ist QA-Kern: das Produkt **aktiv** an die Vorgaben heranführen — gemessen,
