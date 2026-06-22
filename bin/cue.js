@@ -20,9 +20,9 @@ const { loadConfig } = require("../src/config");
 const { makeLogger } = require("../src/util");
 const { runQa } = require("../src/qa");
 const { runDoctor } = require("../src/doctor");
+const { runCapture } = require("../src/core");
 
 const PLANNED = {
-  capture: "Capture-Engine + CaptureBundle",
   promo: "Promo-Video (Hook \u2192 Pain \u2192 Solution \u2192 Features \u2192 CTA)",
   showcase: "Showcase-Video (Intro \u2192 Walkthrough \u2192 Highlights \u2192 Closer)",
   tutorial: "Tutorial-Video (Cold-Open \u2192 Schritte \u2192 Recap)",
@@ -62,8 +62,8 @@ Verwendung:
 
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
+  capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
-  capture <url>     [geplant] Capture-Engine -> CaptureBundle
   promo <url>       [geplant] Promo-Video (QA-Gate erforderlich)
   showcase <url>    [geplant] Showcase-Video
   tutorial <url>    [geplant] Tutorial-Video
@@ -84,6 +84,7 @@ Umgebungsvariablen:
 Beispiele:
   cue qa https://example.com
   cue qa https://example.com --lang en --fail-on high --json
+  cue capture https://example.com --intent promo --flow flow.json
   cue doctor
 `);
 }
@@ -132,7 +133,27 @@ async function main() {
       return result.exitCode;
     }
 
-    case "capture":
+    case "capture": {
+      if (args.flags.help) {
+        console.log("cue capture <url> [--intent qa|promo|tutorial] [--flow flow.json] [--out dir] [--no-video] [--json]");
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runCapture({
+        url,
+        cfg,
+        intent: args.flags.intent || "qa",
+        flowFile: args.flags.flow || null,
+        outDir: args.flags.out || null,
+        recordVideo: args.flags["no-video"] ? false : true,
+        logger: log,
+      });
+      if (args.flags.json) {
+        process.stdout.write(JSON.stringify(result.bundle, null, 2) + "\n");
+      }
+      return 0;
+    }
+
     case "promo":
     case "showcase":
     case "tutorial":
