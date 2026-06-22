@@ -88,7 +88,26 @@ const DEFAULTS = {
     engine: "auto", // auto | elevenlabs | kokoro | openai
     voice: "matilda",
     ttsModel: "tts-1", // nur für engine=openai
+    // Toggles
+    voiceover: true, // Sprachausgabe an/aus
+    music: true, // Hintergrundmusik an/aus (Freesound)
+    sfx: false, // Soundeffekte (Transition-Whoosh) an/aus
+    // Eigene Assets importieren (haben Vorrang vor Freesound/generiert)
+    musicFile: "", // Pfad zu eigener Musik (mp3/wav/...)
+    sfxFile: "", // Pfad zu eigenem Transition-Soundeffekt
   },
+
+  // Bildgenerierung (BYOK, OpenAI-kompatibel)
+  image: {
+    mode: "off", // off | auto  (auto: generiert Bilder für image-Szenen ohne Asset)
+    baseUrl: "", // leer => nutzt llm.openai.baseUrl
+    model: "gpt-image-1",
+    size: "1024x1024",
+    theme: "", // globales Thema für Auto-Generierung
+  },
+
+  // Medienordner (Referenzen / eigene Assets)
+  mediaDir: "media",
 };
 
 function deepMerge(base, override) {
@@ -183,6 +202,8 @@ function loadConfig(overrides = {}) {
       "",
     elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || process.env["ElevenLabs API"] || process.env.ELEVENLABS_KEY || "",
     freesoundApiKey: process.env.FREESOUND_API_KEY || process.env["Freesound API"] || "",
+    // Bild-API-Key (eigener, sonst Fallback auf llmApiKey)
+    imageApiKey: process.env.CUE_IMAGE_API_KEY || process.env.OPENAI_API_KEY || "",
   };
 
   cfg.targetUrl = overrides.targetUrl || process.env.TARGET_URL || "";

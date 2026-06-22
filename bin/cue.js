@@ -160,7 +160,7 @@ async function main() {
     case "showcase":
     case "tutorial": {
       if (args.flags.help) {
-        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear|stripe|apple|notion] [--aspect 16:9|9:16|1:1|4:5] [--tts auto|elevenlabs|kokoro|openai] [--voice matilda|rachel|daniel|josh] [--skip-qa-gate] [--no-video] [--json]`);
+        console.log(`cue ${command} <url> [--script s.json] [--flow f.json] [--out dir] [--brand ...] [--aspect ...] [--tts auto|elevenlabs|kokoro|openai] [--voice ...] [--no-voice] [--no-music] [--sfx] [--music-file f] [--sfx-file f] [--images auto|off] [--theme "..."] [--media dir] [--skip-qa-gate] [--no-video] [--json]`);
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
@@ -175,6 +175,19 @@ async function main() {
       // TTS-Engine / Stimme
       if (args.flags.tts) mergedCfg.audio = { ...mergedCfg.audio, engine: args.flags.tts };
       if (args.flags.voice) mergedCfg.audio = { ...mergedCfg.audio, voice: args.flags.voice };
+      // Audio-Toggles (--no-voice / --no-music / --sfx) + eigene Dateien
+      const a = { ...mergedCfg.audio };
+      if (args.flags["no-voice"] || args.flags.voiceover === "off") a.voiceover = false;
+      if (args.flags["no-music"] || args.flags.music === "off") a.music = false;
+      if (args.flags.sfx && args.flags.sfx !== "off") a.sfx = true;
+      if (args.flags["music-file"]) a.musicFile = args.flags["music-file"];
+      if (args.flags["sfx-file"]) { a.sfxFile = args.flags["sfx-file"]; a.sfx = true; }
+      mergedCfg.audio = a;
+      // Bildgenerierung + Medien
+      if (args.flags.images) mergedCfg.image = { ...mergedCfg.image, mode: args.flags.images };
+      if (args.flags.theme) mergedCfg.image = { ...mergedCfg.image, theme: args.flags.theme };
+      if (args.flags["image-model"]) mergedCfg.image = { ...mergedCfg.image, model: args.flags["image-model"] };
+      if (args.flags.media) mergedCfg.mediaDir = args.flags.media;
 
       const result = await runVideo({
         url,

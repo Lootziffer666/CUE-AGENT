@@ -141,6 +141,32 @@ cue qa-loop https://deine-app.tld --repo ./mein-repo --apply --rebuild "npm run 
 
 **Sicherheit:** Ohne `--repo` keine Code-Änderung. Ohne `--apply` nur Vorschläge (Dry-Run, gespeichert unter `proposed-fixes/`). Es werden nur existierende Dateien **innerhalb** des Repos geschrieben.
 
+## Bilder, eigene Medien & Audio-Toggles
+
+**AI-Bildgenerierung** (BYOK, OpenAI-kompatibel `/v1/images/generations` — auch über deinen Proxy):
+```bash
+# Bilder automatisch aus einem Thema generieren (für image-Szenen ohne Asset)
+cue promo --script my.script.json --images auto --theme "futuristisches dunkles Dashboard"
+```
+
+**Eigene Medien** (Referenzbilder, Musik, Soundeffekte) — leg sie in `media/` (oder `--media <dir>`):
+```bash
+cue promo --script my.script.json --media ./media \
+  --music-file mymusic.mp3 --sfx --sfx-file myclick.wav
+```
+Eine `image`-Szene kann ein lokales Asset nutzen (`"mediaFile": "ref.png"`) **oder** per `prompt` automatisch generieren.
+
+**Audio-Toggles:**
+```bash
+--no-voice          # Sprachausgabe aus
+--no-music          # Musik aus
+--sfx               # Soundeffekte an (Transition-Whoosh; eigene via --sfx-file)
+--music-file <f>    # eigene Musik (Vorrang vor Freesound)
+--sfx-file <f>      # eigener Soundeffekt
+```
+
+Eigene Musik/SFX haben Vorrang vor Freesound/generiert. Im **Configurator-GUI** lassen sich Toggles setzen, Medien hochladen und Bild-Szenen anlegen.
+
 ## Sprachausgabe (TTS) — auch ganz ohne Key
 
 CUE-AGENT wählt die TTS-Engine automatisch:

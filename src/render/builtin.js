@@ -103,10 +103,13 @@ async function renderClipSegment({ context, scenePath, clip, segPath, fps, viewp
     `crop=${width}:${height},setsar=1`;
   const fade = `fade=t=in:st=0:d=0.4,fade=t=out:st=${fadeOut}:d=0.4`;
 
-  const args = [
-    "-ss", String(clip.start), "-t", String(dur),
-    "-i", clip.source,
-  ];
+  const args = [];
+  if (clip.kind === "image") {
+    // Statisches Bild als Quelle (geloopt für die Szenendauer)
+    args.push("-loop", "1", "-t", String(dur), "-i", clip.source);
+  } else {
+    args.push("-ss", String(clip.start), "-t", String(dur), "-i", clip.source);
+  }
 
   if (hasOverlay) {
     args.push("-i", overlayPng);
