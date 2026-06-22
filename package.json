@@ -1,19 +1,29 @@
 {
-  "name": "qa-agent",
-  "version": "1.0.0",
-  "description": "AI-powered QA Agent using Playwright and Anthropic Claude Vision for automated bug detection",
-  "main": "qa-agent.js",
+  "name": "cue-agent",
+  "version": "1.1.0",
+  "description": "CUE-AGENT - QA-Bughunting & ultimativer Videoersteller (Playwright + Anthropic Claude Vision). QA-first Workflow, danach Promo-/Showcase-/Tutorial-Videos.",
+  "main": "bin/cue.js",
+  "bin": {
+    "cue": "bin/cue.js"
+  },
   "scripts": {
     "start": "node qa-agent.js",
+    "cue": "node bin/cue.js",
+    "qa": "node bin/cue.js qa",
+    "doctor": "node bin/cue.js doctor",
     "install-browsers": "npx playwright install --with-deps chromium"
   },
   "keywords": [
     "qa",
     "testing",
+    "bughunting",
     "playwright",
     "anthropic",
     "claude",
     "vision",
+    "video",
+    "promo-video",
+    "tutorial",
     "automation"
   ],
   "license": "MIT",

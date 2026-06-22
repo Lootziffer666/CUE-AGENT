@@ -1,5 +1,11 @@
 node_modules/
 .env
+
+# QA-Ausgaben (Artefakte) nicht versionieren, .gitkeep behalten
 qa-reports/*.png
 qa-reports/*.md
+qa-reports/*.json
 !qa-reports/.gitkeep
+
+# Video-Projektordner (generierte Artefakte)
+video-projects/
