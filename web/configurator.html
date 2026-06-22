@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CUE-AGENT Configurator</title>
+<style>
+  :root {
+    --bg: #0b0d10; --surface: #14181d; --surface2: #1b2127; --border: #2a323b;
+    --text: #e8edf2; --muted: #8b97a4; --accent: #0070f3; --accent2: #7928ca;
+    --ok: #28c76f; --warn: #f0a020; --danger: #e0455e; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(11,13,16,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  header .badge { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  header .spacer { flex: 1; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 18px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 14px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 11px; font: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 64px; }
+  .field { margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 120px; }
+  button { cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 8px; padding: 9px 14px; font: inherit; font-weight: 600; transition: .15s; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: #0060d6; }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--danger); }
+  button.sm { padding: 5px 9px; font-size: 12px; }
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(255,255,255,0.2); }
+  /* Timeline */
+  .timeline { display: flex; height: 46px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .seg { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; overflow: hidden; white-space: nowrap; border-right: 1px solid rgba(0,0,0,0.3); cursor: pointer; opacity: .9; }
+  .seg:hover { opacity: 1; }
+  .timeline-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  /* Scene cards */
+  .scene { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .scene-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .scene-head .idx { font-size: 12px; color: var(--muted); width: 22px; }
+  .scene-head .type-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .scene-head .ctrls { margin-left: auto; display: flex; gap: 6px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .cmd { background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: ui-monospace, monospace; font-size: 13px; color: var(--ok); white-space: pre-wrap; word-break: break-all; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 18px; opacity: 0; transition: .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .typebar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom: 10px; }
+  .feat-row { display:flex; gap:8px; margin-bottom:6px; }
+  .feat-row input { flex:1; }
+  #log { background:#000; border:1px solid var(--border); border-radius:8px; padding:12px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); max-height:240px; overflow:auto; white-space:pre-wrap; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CUE-AGENT</h1>
+  <span class="badge">Configurator</span>
+  <div class="spacer"></div>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+  <button class="ghost" onclick="document.getElementById('importFile').click()">Import</button>
+  <button class="ghost" id="exportSettings">Settings export</button>
+  <button class="primary" id="exportScript">Script export</button>
+</header>
+
+<div class="wrap">
+  <!-- Projekt-Einstellungen -->
+  <div class="card">
+    <h2>Projekt</h2>
+    <div class="field">
+      <label>Titel</label>
+      <input id="m_title" placeholder="z. B. HORRORGETICON OPS">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Modus</label>
+        <select id="m_mode">
+          <option value="promo">Promo</option>
+          <option value="tutorial">Tutorial</option>
+          <option value="showcase">Showcase</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Brand-Preset</label>
+        <select id="m_brand"></select>
+      </div>
+      <div class="field">
+        <label>Seitenverhältnis</label>
+        <select id="m_aspect">
+          <option value="16:9">16:9 — Web</option>
+          <option value="9:16">9:16 — Reels/TikTok</option>
+          <option value="1:1">1:1 — Feed</option>
+          <option value="4:5">4:5 — Portrait</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Sprache</label>
+        <select id="m_lang"><option value="de">Deutsch</option><option value="en">English</option></select>
+      </div>
+      <div class="field">
+        <label>Stimme (ElevenLabs)</label>
+        <select id="m_voice">
+          <option value="matilda">Matilda</option>
+          <option value="rachel">Rachel</option>
+          <option value="daniel">Daniel</option>
+          <option value="josh">Josh</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ziel-URL (optional)</label>
+        <input id="m_url" placeholder="https://deine-app.tld">
+      </div>
+    </div>
+    <div class="hint">Ziel-URL nur nötig, wenn Screenshots/Clips der App ins Video sollen. Reine Script-Videos brauchen keine URL.</div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="card">
+    <h2>Timeline</h2>
+    <div class="timeline" id="timeline"></div>
+    <div class="timeline-meta">
+      <span id="tl_count">0 Szenen</span>
+      <span id="tl_total">0.0 s gesamt</span>
+    </div>
+  </div>
+
+  <!-- Szenen / Zeitsegmente -->
+  <div class="card">
+    <h2>Szenen &amp; Zeitsegmente</h2>
+    <div class="typebar">
+      <button class="sm" data-add="title">+ Title</button>
+      <button class="sm" data-add="features">+ Features</button>
+      <button class="sm" data-add="screenshot">+ Screenshot</button>
+      <button class="sm" data-add="chapter">+ Kapitel</button>
+      <button class="sm" data-add="clip">+ Clip</button>
+      <button class="sm" data-add="cta">+ CTA</button>
+    </div>
+    <div id="scenes"></div>
+  </div>
+
+  <!-- Befehl + Erzeugen -->
+  <div class="card">
+    <h2>Verwenden</h2>
+    <div class="field">
+      <label>CLI-Befehl (kopieren &amp; ausführen)</label>
+      <div class="cmd" id="cmd"></div>
+    </div>
+    <div class="row">
+      <button id="copyCmd">Befehl kopieren</button>
+      <button class="primary" id="generate">Video jetzt erzeugen</button>
+    </div>
+    <div class="hint">„Video jetzt erzeugen" funktioniert nur, wenn der Configurator über <code>cue configurator</code> läuft (lokaler Server). Es nutzt deine eigenen Keys aus der Umgebung.</div>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- Fallback-Brand-Paletten (falls /api/presets nicht erreichbar, z. B. file://) ----
+let PRESETS = {
+  vercel: { label: "Vercel", bg: "#000000", accent: "#0070F3" },
+  horror: { label: "Horror Ops", bg: "#0A0A0B", accent: "#C1121F" },
+  linear: { label: "Linear", bg: "#08090A", accent: "#5E6AD2" },
+  stripe: { label: "Stripe", bg: "#0A2540", accent: "#635BFF" },
+  apple:  { label: "Apple", bg: "#000000", accent: "#2997FF" },
+  notion: { label: "Notion", bg: "#FFFFFF", accent: "#2383E2" },
+};
+const TYPE_COLORS = { title:"#0070f3", features:"#7928ca", screenshot:"#28c76f", chapter:"#f0a020", clip:"#e0455e", cta:"#19b5c9" };
+
+let scenes = [];
+
+// ---- Defaults ----
+function defaultScene(type) {
+  const base = { type, id: type + "-" + Math.random().toString(36).slice(2,6), duration: type==="chapter"?2.5:(type==="cta"?3:4) };
+  if (type==="title") return {...base, title:"Überschrift", subtitle:"Untertitel", narration:""};
+  if (type==="features") return {...base, heading:"Features", features:["Punkt 1","Punkt 2","Punkt 3"], narration:"", duration:8};
+  if (type==="screenshot") return {...base, heading:"Ansicht", caption:"", narration:""};
+  if (type==="chapter") return {...base, number:1, goal:"Was wird getan?", narration:""};
+  if (type==="clip") return {...base, heading:"Clip", caption:"", clipStart:0, clipDuration:4, narration:""};
+  if (type==="cta") return {...base, heading:"Jetzt starten", url:"", narration:""};
+  return base;
+}
+
+// ---- Brand-Dropdown füllen ----
+function fillBrands() {
+  const sel = document.getElementById("m_brand");
+  sel.innerHTML = "";
+  Object.keys(PRESETS).forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = PRESETS[k].label || k;
+    sel.appendChild(o);
+  });
+}
+
+// ---- Timeline rendern ----
+function renderTimeline() {
+  const tl = document.getElementById("timeline");
+  tl.innerHTML = "";
+  const total = scenes.reduce((s,x)=>s+(+x.duration||0),0) || 1;
+  scenes.forEach((s,i) => {
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    seg.style.width = ((+s.duration||0)/total*100) + "%";
+    seg.style.background = TYPE_COLORS[s.type] || "#444";
+    seg.textContent = (+s.duration||0) + "s";
+    seg.title = s.type + " — " + (+s.duration||0) + "s";
+    seg.onclick = () => document.getElementById("scene-"+i).scrollIntoView({behavior:"smooth", block:"center"});
+    tl.appendChild(seg);
+  });
+  document.getElementById("tl_count").textContent = scenes.length + " Szenen";
+  document.getElementById("tl_total").textContent = total.toFixed(1) + " s gesamt";
+}
+
+// ---- Szenen rendern ----
+function field(label, value, oninput, type) {
+  const id = "f" + Math.random().toString(36).slice(2,8);
+  const wrap = document.createElement("div"); wrap.className = "field";
+  const lab = document.createElement("label"); lab.textContent = label; wrap.appendChild(lab);
+  let el;
+  if (type === "textarea") { el = document.createElement("textarea"); }
+  else { el = document.createElement("input"); el.type = type || "text"; }
+  el.value = value == null ? "" : value;
+  el.oninput = () => oninput(el.value);
+  wrap.appendChild(el);
+  return wrap;
+}
+
+function renderScenes() {
+  const c = document.getElementById("scenes");
+  c.innerHTML = "";
+  scenes.forEach((s, i) => {
+    const card = document.createElement("div"); card.className = "scene"; card.id = "scene-"+i;
+    const head = document.createElement("div"); head.className = "scene-head";
+    const dot = document.createElement("span"); dot.className="type-dot"; dot.style.background = TYPE_COLORS[s.type]||"#444";
+    head.appendChild(dot);
+    const idx = document.createElement("span"); idx.className="idx"; idx.textContent = "#"+(i+1); head.appendChild(idx);
+    const ttl = document.createElement("strong"); ttl.textContent = s.type.toUpperCase(); head.appendChild(ttl);
+    const ctrls = document.createElement("div"); ctrls.className = "ctrls";
+    const up = document.createElement("button"); up.className="sm ghost"; up.textContent="↑"; up.onclick=()=>{ if(i>0){ [scenes[i-1],scenes[i]]=[scenes[i],scenes[i-1]]; renderAll(); } };
+    const down = document.createElement("button"); down.className="sm ghost"; down.textContent="↓"; down.onclick=()=>{ if(i<scenes.length-1){ [scenes[i+1],scenes[i]]=[scenes[i],scenes[i+1]]; renderAll(); } };
+    const del = document.createElement("button"); del.className="sm danger ghost"; del.textContent="✕"; del.onclick=()=>{ scenes.splice(i,1); renderAll(); };
+    ctrls.append(up,down,del); head.appendChild(ctrls);
+    card.appendChild(head);
+
+    const row = document.createElement("div"); row.className = "row";
+    row.appendChild(field("ID", s.id, v=>s.id=v));
+    row.appendChild(field("Dauer (s)", s.duration, v=>{ s.duration=parseFloat(v)||0; renderTimeline(); }, "number"));
+    card.appendChild(row);
+
+    if (s.type==="title") {
+      card.appendChild(field("Titel", s.title, v=>s.title=v));
+      card.appendChild(field("Untertitel", s.subtitle, v=>s.subtitle=v));
+    } else if (s.type==="features") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      const fl = document.createElement("div");
+      const lab = document.createElement("label"); lab.textContent="Features"; fl.appendChild(lab);
+      (s.features||[]).forEach((f,fi)=>{
+        const fr = document.createElement("div"); fr.className="feat-row";
+        const inp = document.createElement("input"); inp.value=f; inp.oninput=()=>s.features[fi]=inp.value;
+        const rm = document.createElement("button"); rm.className="sm danger ghost"; rm.textContent="✕"; rm.onclick=()=>{ s.features.splice(fi,1); renderScenes(); };
+        fr.append(inp,rm); fl.appendChild(fr);
+      });
+      const add = document.createElement("button"); add.className="sm"; add.textContent="+ Feature"; add.onclick=()=>{ s.features=s.features||[]; s.features.push("Neuer Punkt"); renderScenes(); };
+      fl.appendChild(add); card.appendChild(fl);
+    } else if (s.type==="screenshot") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Caption", s.caption, v=>s.caption=v));
+    } else if (s.type==="chapter") {
+      const r2 = document.createElement("div"); r2.className="row";
+      r2.appendChild(field("Nummer", s.number, v=>s.number=parseInt(v)||1, "number"));
+      r2.appendChild(field("Ziel", s.goal, v=>s.goal=v));
+      card.appendChild(r2);
+    } else if (s.type==="clip") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Caption", s.caption, v=>s.caption=v));
+      const r3 = document.createElement("div"); r3.className="row";
+      r3.appendChild(field("Clip-Start (s)", s.clipStart, v=>s.clipStart=parseFloat(v)||0, "number"));
+      r3.appendChild(field("Clip-Dauer (s)", s.clipDuration, v=>{ s.clipDuration=parseFloat(v)||0; s.duration=s.clipDuration; renderTimeline(); }, "number"));
+      card.appendChild(r3);
+      card.insertAdjacentHTML("beforeend", '<div class="hint">Clip nutzt die aufgenommene capture.webm (Ziel-URL erforderlich).</div>');
+    } else if (s.type==="cta") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Button/URL-Text", s.url, v=>s.url=v));
+    }
+
+    card.appendChild(field("Voice-over (Narration)", s.narration, v=>s.narration=v, "textarea"));
+    c.appendChild(card);
+  });
+}
+
+function renderCmd() {
+  const url = document.getElementById("m_url").value.trim();
+  const mode = document.getElementById("m_mode").value;
+  let cmd = "cue " + mode + " ";
+  if (url) cmd += url + " ";
+  cmd += "--script my-video.script.json";
+  const aspect = document.getElementById("m_aspect").value;
+  if (aspect !== "16:9") cmd += " --aspect " + aspect;
+  document.getElementById("cmd").textContent = cmd;
+}
+
+function renderAll() { renderTimeline(); renderScenes(); renderCmd(); }
+
+// ---- Modell <-> UI ----
+function buildScript() {
+  return {
+    meta: {
+      title: document.getElementById("m_title").value || "Mein Video",
+      mode: document.getElementById("m_mode").value,
+      lang: document.getElementById("m_lang").value,
+      voice: document.getElementById("m_voice").value,
+      brand: document.getElementById("m_brand").value,
+      aspect: document.getElementById("m_aspect").value,
+    },
+    scenes: scenes,
+  };
+}
+function buildSettings() {
+  return {
+    lang: document.getElementById("m_lang").value,
+    video: {
+      aspect: document.getElementById("m_aspect").value,
+      brand: document.getElementById("m_brand").value,
+      renderer: "builtin",
+    },
+    audio: { voice: document.getElementById("m_voice").value },
+  };
+}
+function loadScript(data) {
+  const m = data.meta || {};
+  if (m.title) document.getElementById("m_title").value = m.title;
+  if (m.mode) document.getElementById("m_mode").value = m.mode;
+  if (m.lang) document.getElementById("m_lang").value = m.lang;
+  if (m.voice) document.getElementById("m_voice").value = m.voice;
+  if (m.brand) document.getElementById("m_brand").value = m.brand;
+  if (m.aspect) document.getElementById("m_aspect").value = m.aspect;
+  if (Array.isArray(data.scenes)) scenes = data.scenes;
+  renderAll();
+}
+
+function download(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+}
+function toast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+// ---- Events ----
+document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { scenes.push(defaultScene(b.dataset.add)); renderAll(); });
+["m_url","m_mode","m_aspect"].forEach(id => document.getElementById(id).addEventListener("input", renderCmd));
+document.getElementById("exportScript").onclick = () => download("my-video.script.json", buildScript());
+document.getElementById("exportSettings").onclick = () => download("cue.config.json", buildSettings());
+document.getElementById("copyCmd").onclick = () => { navigator.clipboard.writeText(document.getElementById("cmd").textContent); toast("Befehl kopiert"); };
+document.getElementById("importFile").onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { loadScript(JSON.parse(r.result)); toast("Importiert"); } catch(err){ toast("Ungültiges JSON"); } };
+  r.readAsText(f);
+};
+document.getElementById("generate").onclick = async () => {
+  const log = document.getElementById("log"); log.style.display="block"; log.textContent = "Erzeuge Video … (das kann dauern)";
+  try {
+    const res = await fetch("/api/generate", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ script: buildScript(), url: document.getElementById("m_url").value.trim() }) });
+    const data = await res.json();
+    log.textContent = (data.log || "") + "\n\n" + (data.ok ? ("✓ Fertig: " + data.mp4) : ("✗ Fehler: " + data.error));
+  } catch (err) { log.textContent = "Server nicht erreichbar (läuft der Configurator über `cue configurator`?).\n" + err.message; }
+};
+
+// ---- Presets vom Server holen (sonst Fallback) ----
+fetch("/api/presets").then(r=>r.json()).then(p => { if (p && Object.keys(p).length) PRESETS = p; fillBrands(); }).catch(()=>fillBrands());
+
+// ---- Start mit Beispiel-Szenen ----
+fillBrands();
+scenes = [ defaultScene("title"), defaultScene("features"), defaultScene("cta") ];
+renderAll();
+</script>
+</body>
+</html>

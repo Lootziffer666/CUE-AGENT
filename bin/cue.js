@@ -23,6 +23,7 @@ const { runDoctor } = require("../src/doctor");
 const { runCapture } = require("../src/core");
 const { runVideo } = require("../src/video");
 const { runRender } = require("../src/video/render-existing");
+const { startConfigurator } = require("../src/configurator/server");
 
 function parseArgs(argv) {
   const args = { _: [], flags: {} };
@@ -61,6 +62,7 @@ Commands:
   promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
   tutorial <url>    Tutorial-Video (Cold-Open -> Schritte -> Recap)
   showcase <url>    Showcase-Video (Intro -> Walkthrough -> Highlights -> Closer)
+  configurator      Web-GUI zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
   render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html)
 
@@ -182,6 +184,15 @@ async function main() {
         process.stdout.write(JSON.stringify(result.plan, null, 2) + "\n");
       }
       return 0;
+    }
+
+    case "configurator":
+    case "config":
+    case "gui": {
+      const port = args.flags.port ? parseInt(args.flags.port, 10) : 4477;
+      await startConfigurator({ cfg, port, logger: log });
+      // Server offen halten
+      return new Promise(() => {});
     }
 
     case "render": {
