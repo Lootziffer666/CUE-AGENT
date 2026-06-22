@@ -54,6 +54,20 @@
   .feat-row { display:flex; gap:8px; margin-bottom:6px; }
   .feat-row input { flex:1; }
   #log { background:#000; border:1px solid var(--border); border-radius:8px; padding:12px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); max-height:240px; overflow:auto; white-space:pre-wrap; display:none; }
+  /* Interaktive Timeline + Player */
+  .track { position:relative; display:flex; height:66px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--surface2); user-select:none; }
+  .block { position:relative; display:flex; flex-direction:column; justify-content:center; padding:6px 10px; color:#fff; overflow:hidden; white-space:nowrap; border-right:1px solid rgba(0,0,0,0.35); cursor:pointer; min-width:40px; }
+  .block.sel { box-shadow: inset 0 0 0 2px #fff; }
+  .block .ref { font-weight:800; font-size:12px; }
+  .block .blabel { font-size:11px; opacity:.9; text-overflow:ellipsis; overflow:hidden; }
+  .block .bdur { font-size:10px; opacity:.8; }
+  .block .grip { position:absolute; top:0; right:0; width:12px; height:100%; cursor:ew-resize; background:linear-gradient(to right, transparent, rgba(255,255,255,.4)); }
+  .player { margin-top:14px; }
+  .preview-wrap { width:100%; max-width:640px; margin:0 auto; background:#000; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .preview-wrap iframe { display:block; width:100%; height:100%; border:0; background:#000; }
+  .transport { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .transport input[type=range] { flex:1; }
+  .refchip { cursor:pointer; border:1px solid rgba(255,255,255,.35); border-radius:999px; padding:0 6px; font-size:10px; margin-left:6px; }
 </style>
 </head>
 <body>
@@ -104,15 +118,6 @@
         <select id="m_lang"><option value="de">Deutsch</option><option value="en">English</option></select>
       </div>
       <div class="field">
-        <label>Stimme (ElevenLabs)</label>
-        <select id="m_voice">
-          <option value="matilda">Matilda</option>
-          <option value="rachel">Rachel</option>
-          <option value="daniel">Daniel</option>
-          <option value="josh">Josh</option>
-        </select>
-      </div>
-      <div class="field">
         <label>Ziel-URL (optional)</label>
         <input id="m_url" placeholder="https://deine-app.tld">
       </div>
@@ -127,6 +132,26 @@
       <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_voice" checked style="width:auto"> Sprache (Voiceover)</label>
       <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_music" checked style="width:auto"> Musik</label>
       <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_sfx" style="width:auto"> Soundeffekte</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Sprach-Engine (TTS)</label>
+        <select id="a_engine">
+          <option value="auto">Auto (ElevenLabs → Kokoro)</option>
+          <option value="kokoro">Kokoro (lokal, key-frei)</option>
+          <option value="elevenlabs">ElevenLabs (Key)</option>
+          <option value="openai">OpenAI-kompatibel (Proxy)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Stimme</label>
+        <select id="a_voicepick">
+          <option value="matilda">Matilda (w, warm)</option>
+          <option value="rachel">Rachel (w, klar)</option>
+          <option value="daniel">Daniel (m, autoritativ)</option>
+          <option value="josh">Josh (m, locker)</option>
+        </select>
+      </div>
     </div>
     <div class="row" style="margin-top:10px">
       <div class="field">
@@ -160,13 +185,47 @@
     <div id="mediaList" class="hint"></div>
   </div>
 
-  <!-- Timeline -->
+  <!-- API-Keys (verschlüsselt gespeichert) -->
   <div class="card">
-    <h2>Timeline</h2>
-    <div class="timeline" id="timeline"></div>
+    <h2>API-Keys &nbsp;<span id="keyEnc" class="badge" style="text-transform:none"></span></h2>
+    <div class="hint" style="margin-top:0;margin-bottom:12px">Wird verschlüsselt (AES-256-GCM) in <code>~/.cue/keys.enc</code> gespeichert — nie im Repo, nie im Klartext zurückgegeben. Für höchste Sicherheit <code>CUE_KEYS_PASSPHRASE</code> setzen.</div>
+    <div class="row">
+      <div class="field"><label>Anthropic API Key <span id="st_anthropic"></span></label><input type="password" id="k_anthropic" placeholder="sk-ant-..." autocomplete="off"></div>
+      <div class="field"><label>ElevenLabs API Key <span id="st_elevenlabs"></span></label><input type="password" id="k_elevenlabs" placeholder="..." autocomplete="off"></div>
+      <div class="field"><label>Freesound API Key <span id="st_freesound"></span></label><input type="password" id="k_freesound" placeholder="..." autocomplete="off"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Bild-API Key <span id="st_imageApiKey"></span></label><input type="password" id="k_imageApiKey" placeholder="optional" autocomplete="off"></div>
+      <div class="field"><label>LLM-Proxy Key (BYOK) <span id="st_llmApiKey"></span></label><input type="password" id="k_llmApiKey" placeholder="z. B. sk-anvil-safe-key" autocomplete="off"></div>
+      <div class="field"><label>LLM-Provider</label><select id="k_llmProvider"><option value="">—</option><option value="anthropic">anthropic</option><option value="openai">openai</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:2"><label>LLM Base-URL (Proxy)</label><input id="k_llmBaseUrl" placeholder="http://localhost:4000"></div>
+      <div class="field"><label>LLM Modell</label><input id="k_llmModel" placeholder="gpt-4o"></div>
+    </div>
+    <div class="row">
+      <button class="primary" id="saveKeys">Keys verschlüsselt speichern</button>
+    </div>
+  </div>
+
+  <!-- Timeline & Player -->
+  <div class="card">
+    <h2>Timeline &amp; Player</h2>
+    <div class="track" id="track"></div>
     <div class="timeline-meta">
       <span id="tl_count">0 Szenen</span>
       <span id="tl_total">0.0 s gesamt</span>
+    </div>
+    <div class="player">
+      <div class="preview-wrap" id="previewWrap">
+        <iframe id="preview" title="Szenen-Vorschau"></iframe>
+      </div>
+      <div class="transport">
+        <button class="sm" id="playBtn" title="Abspielen/Pause">►</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0">
+        <span id="ptime" class="hint" style="margin:0;min-width:92px;text-align:right">0.0 / 0.0 s</span>
+      </div>
+      <div class="hint">Block anklicken = auswählen &amp; Vorschau. Griff am rechten Rand ziehen = Dauer ändern. Der <b>@N</b>-Chip fügt eine Szenen-Referenz ins zuletzt fokussierte Text-/Prompt-Feld ein.</div>
     </div>
   </div>
 
@@ -217,6 +276,11 @@ const TYPE_COLORS = { title:"#0070f3", features:"#7928ca", screenshot:"#28c76f",
 
 let scenes = [];
 let mediaFiles = [];
+let selectedScene = 0;
+let lastField = null;          // zuletzt fokussiertes Text-/Prompt-Feld (für @N)
+let previewDuration = 0;
+let playing = false;
+let playRAF = null;
 
 // ---- Defaults ----
 function defaultScene(type) {
@@ -242,23 +306,144 @@ function fillBrands() {
   });
 }
 
-// ---- Timeline rendern ----
+// ---- Interaktive Track-Timeline (Blöcke, Resize-Griff, Auswahl, @N) ----
 function renderTimeline() {
-  const tl = document.getElementById("timeline");
-  tl.innerHTML = "";
+  const track = document.getElementById("track");
+  track.innerHTML = "";
   const total = scenes.reduce((s,x)=>s+(+x.duration||0),0) || 1;
+  const trackW = track.clientWidth || 800;
   scenes.forEach((s,i) => {
-    const seg = document.createElement("div");
-    seg.className = "seg";
-    seg.style.width = ((+s.duration||0)/total*100) + "%";
-    seg.style.background = TYPE_COLORS[s.type] || "#444";
-    seg.textContent = (+s.duration||0) + "s";
-    seg.title = s.type + " — " + (+s.duration||0) + "s";
-    seg.onclick = () => document.getElementById("scene-"+i).scrollIntoView({behavior:"smooth", block:"center"});
-    tl.appendChild(seg);
+    const b = document.createElement("div");
+    b.className = "block" + (i===selectedScene ? " sel" : "");
+    b.style.width = ((+s.duration||0)/total*100) + "%";
+    b.style.background = TYPE_COLORS[s.type] || "#444";
+    const label = s.title || s.heading || s.goal || s.id || s.type;
+    b.innerHTML = '<span class="ref">@'+(i+1)+' <span class="refchip" title="Referenz einfügen">+@</span></span>' +
+                  '<span class="blabel">'+escapeText(String(label))+'</span>' +
+                  '<span class="bdur">'+(+s.duration||0).toFixed(1)+'s · '+s.type+'</span>';
+    // Auswahl / Vorschau
+    b.addEventListener("click", (e) => {
+      if (e.target.classList.contains("refchip")) { insertRef(i+1); e.stopPropagation(); return; }
+      if (e.target.classList.contains("grip")) return;
+      selectScene(i);
+    });
+    // Resize-Griff (Dauer ziehen)
+    const grip = document.createElement("div"); grip.className = "grip";
+    grip.addEventListener("mousedown", (e) => startResize(e, i, total, trackW));
+    b.appendChild(grip);
+    track.appendChild(b);
   });
   document.getElementById("tl_count").textContent = scenes.length + " Szenen";
   document.getElementById("tl_total").textContent = total.toFixed(1) + " s gesamt";
+}
+
+function escapeText(str){ const d=document.createElement("div"); d.textContent=str; return d.innerHTML; }
+
+function startResize(e, i, totalAtStart, trackW) {
+  e.preventDefault(); e.stopPropagation();
+  const pxPerSec = trackW / totalAtStart;
+  const startX = e.clientX;
+  const startDur = +scenes[i].duration || 0;
+  function move(ev) {
+    let d = startDur + (ev.clientX - startX) / pxPerSec;
+    d = Math.max(1, Math.round(d * 2) / 2); // auf 0.5s runden, min 1s
+    scenes[i].duration = d;
+    if (scenes[i].type === "clip") scenes[i].clipDuration = d;
+    renderTimeline();
+    document.getElementById("tl_total").textContent =
+      scenes.reduce((a,x)=>a+(+x.duration||0),0).toFixed(1) + " s gesamt";
+  }
+  function up() {
+    document.removeEventListener("mousemove", move);
+    document.removeEventListener("mouseup", up);
+    renderScenes(); // Dauer-Eingabefelder synchronisieren
+  }
+  document.addEventListener("mousemove", move);
+  document.addEventListener("mouseup", up);
+}
+
+function insertRef(n) {
+  const ref = "@" + n;
+  const el = lastField;
+  if (el && typeof el.selectionStart === "number") {
+    const a = el.value.slice(0, el.selectionStart);
+    const b = el.value.slice(el.selectionEnd);
+    el.value = a + ref + b;
+    el.dispatchEvent(new Event("input"));
+    el.focus();
+    toast("Referenz " + ref + " eingefügt");
+  } else {
+    toast("Erst ein Text-/Prompt-Feld anklicken, dann @N");
+  }
+}
+
+// ---- Scrub-Player (nutzt die GSAP-Timeline der Szene) ----
+function selectScene(i) {
+  selectedScene = i;
+  renderTimeline();
+  const card = document.getElementById("scene-"+i);
+  if (card) card.scrollIntoView({behavior:"smooth", block:"center"});
+  loadPreview(i);
+}
+
+async function loadPreview(i) {
+  stopPlay();
+  const s = scenes[i]; if (!s) return;
+  const meta = buildScript().meta;
+  // Seitenverhältnis der Vorschau anpassen
+  const ar = { "16:9":"16/9", "9:16":"9/16", "1:1":"1/1", "4:5":"4/5" }[meta.aspect] || "16/9";
+  const wrap = document.getElementById("previewWrap"); wrap.style.aspectRatio = ar;
+  try {
+    const res = await fetch("/api/scene-html", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ scene: s, meta, scenes }) });
+    const data = await res.json();
+    if (!data.ok) { toast("Vorschau: " + (data.error||"Fehler")); return; }
+    const iframe = document.getElementById("preview");
+    iframe.onload = () => {
+      try {
+        const win = iframe.contentWindow;
+        previewDuration = (win && win.__duration) || (+s.duration||3);
+        document.getElementById("scrub").value = 0;
+        seekPreview(0);
+      } catch(_) { previewDuration = +s.duration||3; }
+    };
+    iframe.srcdoc = data.html;
+  } catch (err) {
+    toast("Vorschau nur via `cue configurator` (Server) verfügbar.");
+  }
+}
+
+function seekPreview(tSec) {
+  const iframe = document.getElementById("preview");
+  try {
+    const win = iframe.contentWindow;
+    if (win && win.__timeline) win.__timeline.seek(tSec);
+  } catch(_) {}
+  document.getElementById("ptime").textContent = tSec.toFixed(1) + " / " + previewDuration.toFixed(1) + " s";
+}
+
+function stopPlay() {
+  playing = false;
+  if (playRAF) cancelAnimationFrame(playRAF);
+  const btn = document.getElementById("playBtn"); if (btn) btn.textContent = "►";
+}
+
+function togglePlay() {
+  if (playing) { stopPlay(); return; }
+  if (!previewDuration) return;
+  playing = true;
+  document.getElementById("playBtn").textContent = "❚❚";
+  const startWall = performance.now();
+  const startT = (document.getElementById("scrub").value/1000) * previewDuration;
+  function step(now) {
+    if (!playing) return;
+    let t = startT + (now - startWall)/1000;
+    if (t >= previewDuration) { t = previewDuration; seekPreview(t); document.getElementById("scrub").value = 1000; stopPlay(); return; }
+    seekPreview(t);
+    document.getElementById("scrub").value = Math.round((t/previewDuration)*1000);
+    playRAF = requestAnimationFrame(step);
+  }
+  playRAF = requestAnimationFrame(step);
 }
 
 // ---- Szenen rendern ----
@@ -271,6 +456,7 @@ function field(label, value, oninput, type) {
   else { el = document.createElement("input"); el.type = type || "text"; }
   el.value = value == null ? "" : value;
   el.oninput = () => oninput(el.value);
+  el.addEventListener("focus", () => { lastField = el; });
   wrap.appendChild(el);
   return wrap;
 }
@@ -372,6 +558,7 @@ function buildScript() {
       voice: document.getElementById("m_voice").value,
       brand: document.getElementById("m_brand").value,
       aspect: document.getElementById("m_aspect").value,
+      voice: document.getElementById("a_voicepick").value,
     },
     scenes: scenes,
   };
@@ -384,7 +571,10 @@ function buildSettings() {
       brand: document.getElementById("m_brand").value,
       renderer: "builtin",
     },
-    audio: { voice: document.getElementById("m_voice").value },
+    audio: {
+      engine: document.getElementById("a_engine").value,
+      voice: document.getElementById("a_voicepick").value,
+    },
   };
 }
 function loadScript(data) {
@@ -392,7 +582,7 @@ function loadScript(data) {
   if (m.title) document.getElementById("m_title").value = m.title;
   if (m.mode) document.getElementById("m_mode").value = m.mode;
   if (m.lang) document.getElementById("m_lang").value = m.lang;
-  if (m.voice) document.getElementById("m_voice").value = m.voice;
+  if (m.voice) document.getElementById("a_voicepick").value = m.voice;
   if (m.brand) document.getElementById("m_brand").value = m.brand;
   if (m.aspect) document.getElementById("m_aspect").value = m.aspect;
   if (Array.isArray(data.scenes)) scenes = data.scenes;
@@ -416,6 +606,15 @@ document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { scenes.
 document.getElementById("exportScript").onclick = () => download("my-video.script.json", buildScript());
 document.getElementById("exportSettings").onclick = () => download("cue.config.json", buildSettings());
 document.getElementById("copyCmd").onclick = () => { navigator.clipboard.writeText(document.getElementById("cmd").textContent); toast("Befehl kopiert"); };
+// Player-Transport
+document.getElementById("scrub").addEventListener("input", (e) => {
+  stopPlay();
+  if (!previewDuration) return;
+  seekPreview((e.target.value/1000) * previewDuration);
+});
+document.getElementById("playBtn").addEventListener("click", togglePlay);
+// Aspect-Wechsel → Vorschau neu laden
+document.getElementById("m_aspect").addEventListener("change", () => { if (scenes.length) loadPreview(selectedScene); });
 document.getElementById("importFile").onchange = (e) => {
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
@@ -426,6 +625,8 @@ document.getElementById("generate").onclick = async () => {
   const log = document.getElementById("log"); log.style.display="block"; log.textContent = "Erzeuge Video … (das kann dauern)";
   const settings = {
     audio: {
+      engine: document.getElementById("a_engine").value,
+      voice: document.getElementById("a_voicepick").value,
       voiceover: document.getElementById("a_voice").checked,
       music: document.getElementById("a_music").checked,
       sfx: document.getElementById("a_sfx").checked,
@@ -479,11 +680,56 @@ document.getElementById("mediaUpload").onchange = async (e) => {
 // ---- Presets vom Server holen (sonst Fallback) ----
 fetch("/api/presets").then(r=>r.json()).then(p => { if (p && Object.keys(p).length) PRESETS = p; fillBrands(); }).catch(()=>fillBrands());
 refreshMedia();
+refreshKeys();
+
+// ---- API-Keys: Status + Speichern (verschlüsselt) ----
+function setStatusDot(id, on) {
+  const el = document.getElementById(id); if (!el) return;
+  el.textContent = on ? "● gesetzt" : "○ leer";
+  el.style.color = on ? "var(--ok)" : "var(--muted)";
+  el.style.fontSize = "11px";
+}
+function refreshKeys() {
+  fetch("/api/keys").then(r=>r.json()).then(s => {
+    ["anthropic","elevenlabs","freesound","imageApiKey","llmApiKey"].forEach(f => setStatusDot("st_"+f, s[f] && s[f].set));
+    document.getElementById("keyEnc").textContent = s._encrypted ? (s._passphrase ? "verschlüsselt (Passphrase)" : "verschlüsselt") : "";
+    if (s._readable === false) {
+      document.getElementById("keyEnc").textContent = "⚠ vorhanden, NICHT entschlüsselbar — Speichern gesperrt (Passphrase prüfen)";
+      document.getElementById("keyEnc").style.color = "var(--danger)";
+    }
+    // Nicht-geheime Werte vorbefüllen
+    if (s.llmProvider && s.llmProvider.value) document.getElementById("k_llmProvider").value = s.llmProvider.value;
+    if (s.llmBaseUrl && s.llmBaseUrl.value) document.getElementById("k_llmBaseUrl").value = s.llmBaseUrl.value;
+    if (s.llmModel && s.llmModel.value) document.getElementById("k_llmModel").value = s.llmModel.value;
+  }).catch(()=>{ document.getElementById("keyEnc").textContent = "(nur via `cue configurator`)"; });
+}
+const sk = document.getElementById("saveKeys");
+if (sk) sk.onclick = async () => {
+  const payload = {
+    anthropic: document.getElementById("k_anthropic").value,
+    elevenlabs: document.getElementById("k_elevenlabs").value,
+    freesound: document.getElementById("k_freesound").value,
+    imageApiKey: document.getElementById("k_imageApiKey").value,
+    llmApiKey: document.getElementById("k_llmApiKey").value,
+    llmProvider: document.getElementById("k_llmProvider").value,
+    llmBaseUrl: document.getElementById("k_llmBaseUrl").value,
+    llmModel: document.getElementById("k_llmModel").value,
+  };
+  try {
+    const res = await fetch("/api/keys", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!data.ok) { toast("⚠ " + (data.error || "Speichern abgebrochen")); refreshKeys(); return; }
+    // Eingabefelder (Geheimnisse) nur bei Erfolg leeren
+    ["k_anthropic","k_elevenlabs","k_freesound","k_imageApiKey","k_llmApiKey"].forEach(id=>document.getElementById(id).value="");
+    toast("Keys verschlüsselt gespeichert"); refreshKeys();
+  } catch (err) { toast("Speichern fehlgeschlagen (Server nötig)"); }
+};
 
 // ---- Start mit Beispiel-Szenen ----
 fillBrands();
 scenes = [ defaultScene("title"), defaultScene("features"), defaultScene("cta") ];
 renderAll();
+if (scenes.length) selectScene(0);
 </script>
 </body>
 </html>

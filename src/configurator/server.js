@@ -97,6 +97,50 @@ function startConfigurator({ cfg, port = 4477, logger }) {
         return sendJson(res, 200, { ok: true, file: safe });
       }
 
+      // Live-Vorschau einer einzelnen Szene (für den Timeline-Player)
+      // API-Keys: Status (nie Klartext-Geheimnisse) bzw. verschlüsselt speichern
+      if (req.method === "GET" && url === "/api/keys") {
+        const ks = require("../config/keystore");
+        return sendJson(res, 200, ks.status());
+      }
+      if (req.method === "POST" && url === "/api/keys") {
+        const ks = require("../config/keystore");
+        const body = JSON.parse(await readBody(req));
+        try {
+          const saved = ks.saveKeys(body || {});
+          ks.applyToEnv(); // sofort für laufende Sitzung wirksam
+          return sendJson(res, 200, { ok: true, status: saved });
+        } catch (err) {
+          // z. B. unlesbarer Store → NICHT überschrieben, klare Meldung zurück
+          return sendJson(res, 200, { ok: false, error: err.message, status: ks.status() });
+        }
+      }
+
+      if (req.method === "POST" && url === "/api/scene-html") {
+        const body = JSON.parse(await readBody(req));
+        const scene = body.scene;
+        const meta = body.meta || {};
+        if (!scene || !scene.type) {
+          return sendJson(res, 400, { ok: false, error: "scene mit 'type' erforderlich" });
+        }
+        try {
+          const { getPreset } = require("../design-systems");
+          const { ASPECT_DIMENSIONS } = require("../config");
+          const { renderSceneHtml } = require("../templates/render-scene");
+          const { resolveStoryboardRefs } = require("../video/refs");
+          // @N-Referenzen für die Vorschau auflösen (nutzt alle Szenen, falls mitgesendet)
+          if (Array.isArray(body.scenes)) {
+            resolveStoryboardRefs({ scenes: body.scenes });
+          }
+          const brand = getPreset(meta.brand || "vercel");
+          const dims = ASPECT_DIMENSIONS[meta.aspect] || ASPECT_DIMENSIONS["16:9"];
+          const html = renderSceneHtml({ scene, brand, dims });
+          return sendJson(res, 200, { ok: true, html, dims });
+        } catch (err) {
+          return sendJson(res, 200, { ok: false, error: err.message });
+        }
+      }
+
       if (req.method === "POST" && url === "/api/generate") {
         const body = JSON.parse(await readBody(req));
         const script = body.script;
@@ -135,6 +179,7 @@ function startConfigurator({ cfg, port = 4477, logger }) {
             if (typeof s.audio.music === "boolean") effCfg.audio.music = s.audio.music;
             if (typeof s.audio.sfx === "boolean") effCfg.audio.sfx = s.audio.sfx;
             if (s.audio.engine) effCfg.audio.engine = s.audio.engine;
+            if (s.audio.voice) effCfg.audio.voice = s.audio.voice;
             if (s.audio.musicFile) effCfg.audio.musicFile = path.join(cfg.root, "media", path.basename(s.audio.musicFile));
             if (s.audio.sfxFile) effCfg.audio.sfxFile = path.join(cfg.root, "media", path.basename(s.audio.sfxFile));
           }
