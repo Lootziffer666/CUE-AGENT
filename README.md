@@ -6,8 +6,31 @@ QA-Bughunting **und** Videoersteller in einem Werkzeug. CUE-AGENT steuert einen 
 nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten App erstellen.
 
 > Roadmap & Konzept: [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
-> Status: M0–M4 umgesetzt (QA, Capture-Engine, Video-Pipeline, Audio, Aspect-Ratios,
-> Brand-Presets, Script-Support, Re-Render).
+> Status: M0–M5 umgesetzt (QA, Capture-Engine, Video-Pipeline, Audio, Aspect-Ratios,
+> Brand-Presets, Script-Support, Re-Render, **QA-Gate**).
+
+## QA-Gate: erst QA, dann Promo
+
+CUE-AGENT bewirbt nie eine ungeprüfte App. Bevor `cue promo|tutorial|showcase` für eine
+**URL** ein Video erzeugt, prüft das Gate den jüngsten QA-Report zu dieser URL:
+
+- existiert ein Report? (sonst: erst `cue qa <url>`)
+- ist er frisch genug? (`maxAgeHours`, Default 24h)
+- Score ≥ Minimum? (`minScore`, Default 70)
+- keine offenen High-Severity-Bugs? (`failOnSeverity`, Default `high`)
+
+Besteht das Gate nicht, wird die Video-Erzeugung **blockiert** (Exit-Code 1) mit klarer
+Begründung. Bewusst überspringen: `--skip-qa-gate` (mit Warnung). Der Gate-Beleg landet in
+`project-plan.json` und im `*-bundle.json` (`qaGate`).
+
+```bash
+cue qa https://deine-app.tld          # 1) Qualität prüfen
+# ... Bugs fixen ...
+cue promo https://deine-app.tld       # 2) Promo — nur wenn QA bestanden
+```
+
+Konfigurierbar in `cue.config.json` unter `qa.gate`. Für Script-Videos ohne URL greift das
+Gate nicht (es wird keine laufende App beworben).
 
 ## In jedes Repo installieren (mit deinen eigenen Keys)
 
@@ -81,6 +104,7 @@ cp .env.example .env   # und Keys eintragen
 --script datei.script.json       # eigenes Voiceover-/Storyboard-Script
 --flow datei.json                # deklarativer Flow (klicken/tippen/scrollen)
 --fail-on none|low|medium|high   # CI-Gate für QA
+--skip-qa-gate                   # Video OHNE bestandene QA erzwingen (Warnung)
 --no-video                       # Capture ohne Video-Aufnahme
 --json                           # maschinenlesbares Ergebnis
 ```

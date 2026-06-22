@@ -67,6 +67,7 @@ Commands:
 Globale Optionen:
   --lang de|en      Sprache der Ausgaben (Default: de bzw. CUE_LANG)
   --fail-on L       CI-Gate: none|low|medium|high
+  --skip-qa-gate    Promo/Video OHNE bestandene QA erzwingen (mit Warnung)
   --json            Maschinenlesbares JSON-Ergebnis ausgeben
   --help, -h        Diese Hilfe
 
@@ -153,7 +154,7 @@ async function main() {
     case "showcase":
     case "tutorial": {
       if (args.flags.help) {
-        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear] [--aspect 16:9|9:16|1:1|4:5] [--no-video] [--json]`);
+        console.log(`cue ${command} <url> [--script script.json] [--flow flow.json] [--out dir] [--brand vercel|horror|linear] [--aspect 16:9|9:16|1:1|4:5] [--skip-qa-gate] [--no-video] [--json]`);
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
@@ -174,6 +175,7 @@ async function main() {
         scriptFile: args.flags.script || null,
         outDir: args.flags.out || null,
         recordVideo: !args.flags["no-video"],
+        skipGate: Boolean(args.flags["skip-qa-gate"]),
         logger: log,
       });
       if (args.flags.json) {
