@@ -1,11 +1,16 @@
-# CUE-AGENT — Master-Plan: Der ultimative Videoersteller
+# CUE-AGENT — Plan: Die (optionale) Video-Pipeline
 
-> Ziel: CUE-AGENT (heute ein QA-/Bughunting-Agent) und die Idee von
-> [`nebrass/hve-spielberg`](https://github.com/nebrass/hve-spielberg) (6-Phasen-Promo-Video-Pipeline)
-> zu **einem** Werkzeug verschmelzen, das aus **einer einzigen Browser-Aufnahme** sowohl
-> **Bug-Reports** als auch **fertige Promo-/Showcase-/Tutorial-Videos** erzeugt.
+> **CUE-AGENT ist ein eigenständiger QA-first-Bughunting-Agent.** Sein Kern ist
+> Qualitätssicherung: **Requirements prüfen, alles Kaputte dokumentieren und den
+> gewollten vs. tatsächlichen Userflow verifizieren** (landet ein Tap auf Button X
+> auch in Screen X — oder in Screen Y, oder nirgends?).
 >
-> *Inhalt aus hve-spielberg wurde aus Lizenz-Compliance-Gründen paraphrasiert.*
+> Dieses Dokument plant eine **sekundäre** Fähigkeit: aus denselben, QA-geprüften
+> Aufnahmen optional Promo-/Showcase-/Tutorial-Videos zu erzeugen. Leitprinzip
+> bleibt **erst QA, dann Promo** — es wird nie eine kaputte App beworben.
+>
+> *(Zur Inspirationsquelle des Video-Teils siehe „Honourable Mentions" am Ende.
+> Dort paraphrasierte Inhalte aus Lizenz-Compliance-Gründen.)*
 
 ---
 
@@ -21,16 +26,16 @@ Daten: QA und Promo fahren bewusst unterschiedliche Flows.**
 
 Damit lösen wir das, was bei beiden Projekten heute fehlt:
 
-| Heute CUE-AGENT | Heute hve-spielberg | Ultimate CUE-AGENT |
-|---|---|---|
-| Nur QA, nur 1 Screenshot | Nur Video, statische Screenshots | QA **und** Promo, verkettet per Gate |
-| Solide Code-Basis (Node) | Reines Prompt-Markdown (Claude-Code-Skill) | Deterministischer Node-Code + LLM nur für kreative/analytische Schritte |
-| Kein Video | Externe Abhängigkeit `hyperframes` CLI + Claude-Code-Skills | Self-contained Renderer, `hyperframes` optional als Plugin |
-| Keine Bewegung | Screencast optional, fragil | **Native Playwright-Video-Aufnahme** = echte Bewegung |
+| Bisher (CUE-AGENT) | Ziel (CUE-AGENT) |
+|---|---|
+| QA mit Einzel-Screenshot | QA mit echtem Flow-Video + Multi-Step-Capture |
+| Statische Analyse | **Gewollter vs. tatsächlicher Userflow verifiziert** (Soll-Ist je Schritt) |
+| Markdown-Report | Maschinenlesbar (JSON) + Markdown + annotierte Frames |
+| Kein Video | Optionale, ans QA-Gate gekoppelte Video-Pipeline |
 
 ---
 
-## 1. Was an hve-spielberg gut ist (übernehmen)
+## 1. Design-Prinzipien der Video-Pipeline (eigenständig)
 
 1. **6-Phasen-Denkmodell**: Discovery → Storytelling → Capture → Design → Production → Audio/Render. Klar, nachvollziehbar, mit Freigabe-Checkpoints.
 2. **Drei Modi**: Promo (Hook→Pain→Solution→Features→CTA), Showcase (Intro→Walkthrough→Highlights→Closer), Tutorial (Cold-Open→Schritte→Recap).
@@ -140,7 +145,7 @@ bestandener QA-Lauf vorlag — ohne ihn (oder bei `passed:false`) bricht die Vid
 | Sprache/Runtime | **Node.js 20+** (vorhanden via nvm) | bestehende Code-Basis, Playwright-nativ |
 | Browser/Capture | **Playwright Chromium** (vorhanden) | bereits genutzt; `recordVideo`, Tracing, A11y-Tree out of the box |
 | LLM | **Anthropic Claude** (`@anthropic-ai/sdk`, vorhanden) | bereits genutzt; Vision für QA, Text für Script/Design |
-| Szenenformat | **HTML + CSS + GSAP** | wie hve-spielberg: editierbar, deterministisch, kein proprietäres Format |
+| Szenenformat | **HTML + CSS + GSAP** | editierbar, deterministisch seekbar, kein proprietäres Format |
 | Render (Standard) | **Eingebaut**: GSAP-Timeline deterministisch durchscrubben → Playwright-Screenshots pro Frame → `ffmpeg` → H.264/AAC MP4 | keine externe CLI-Abhängigkeit, volle Kontrolle |
 | Render (Plugin) | **`hyperframes` CLI** optional | Kompatibilität / Komfort, falls installiert |
 | TTS | **ElevenLabs** (Default) → Fallback lokal/aus | Qualität; sauber gekapselt mit Key-Check |
@@ -203,7 +208,7 @@ CUE-AGENT/
 └── README.md
 ```
 
-**Video-Projekt-Ordner** (pro Lauf, angelehnt an hve-spielberg):
+**Video-Projekt-Ordner** (pro Lauf):
 ```
 video-projects/<slug>-<timestamp>/
 ├── project-plan.json     # Phasen-Tracker + Entscheidungs-Log
@@ -243,7 +248,7 @@ cue render video-projects/<slug>/
 # Umgebungs-Check (Node, ffmpeg, Browser, Keys)
 cue doctor
 
-# Resume / Sprung (wie hve-spielberg-Modi)
+# Resume / Sprung
 cue promo <url> --resume
 cue promo <url> --jump-to design
 ```
@@ -263,7 +268,7 @@ Gemeinsame Flags: `--interactive|--auto`, `--out`, `--config`, `--verbose`.
 | 4 Production | `scenes/`, `storyboard.json` | GSAP-Wurzelkomposition, Transitions, Caption-Wiring; Lint/Validate | `index.html` | teils |
 | 5 Audio+Render | `index.html`, Script | TTS → (Whisper-Timing) → Musik → ffmpeg-Mix → Frames → MP4 | `out/final.mp4` | nein |
 
-**Anti-Slop-Regeln aus hve-spielberg werden als Lint-Checks in Phase 4 kodiert** (z. B. keine `clipPath`-Transitions, kein `tl.from()`-Opacity-Stagger, keine `display`/`visibility`-Animation), damit sie nicht nur „Empfehlung" sind, sondern automatisch erzwungen werden.
+**Anti-Slop-Lint-Regeln werden in Phase 4 als automatische Checks kodiert** (z. B. keine `clipPath`-Transitions, kein `tl.from()`-Opacity-Stagger, keine `display`/`visibility`-Animation), damit sie nicht nur „Empfehlung" sind, sondern erzwungen werden.
 
 ---
 
@@ -443,3 +448,15 @@ Captions, ruhigeres Tempo). Beide ziehen aus demselben sauberen `promo-bundle.js
 ---
 
 *Dieser Plan ist die Arbeitsgrundlage. Nach deiner Freigabe (bzw. Antworten auf §12) beginne ich mit dem gewählten Meilenstein.*
+
+---
+
+## Honourable Mentions
+
+- **[`nebrass/hve-spielberg`](https://github.com/nebrass/hve-spielberg)** — hat die *Idee*
+  einer mehrphasigen Promo-Video-Pipeline angestoßen, die den (sekundären) Video-Teil von
+  CUE-AGENT inspiriert hat. Wertschätzung dafür. CUE-AGENT ist davon **unabhängig** und geht
+  bewusst weit darüber hinaus: deterministischer Node-Code statt Prompt-Skill, echte
+  Flow-Aufnahme, eingebauter Renderer — und vor allem ein **QA-first-Kern**, der täglichen
+  Schmerz lindert (Requirements, Bug-Doku, Soll-Ist-Userflow), statt nur hübsche Videos zu
+  bauen. Aus Lizenz-Compliance-Gründen wurden etwaige übernommene Inhalte paraphrasiert.
