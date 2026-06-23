@@ -9,7 +9,32 @@
  * Renderer per Playwright geöffnet wird.
  */
 
+const fs = require("fs");
+const path = require("path");
 const templates_polish = require("../render/polish");
+
+// GSAP wird lokal gevendort und inline in jede Szene eingebettet — kein CDN.
+// Das macht den Render deterministisch und offline-fähig (das Kernversprechen
+// des Tools): in gesandboxten Render-Umgebungen kann der Headless-Browser oft
+// keine externen HTTPS-Ressourcen laden (z. B. ERR_CERT_AUTHORITY_INVALID),
+// wodurch GSAP fehlte und Szenen statisch auf 3s kollabierten.
+let _gsapSourceCache = null;
+function gsapInlineScript() {
+  if (_gsapSourceCache === null) {
+    const vendorPath = path.join(__dirname, "..", "render", "vendor", "gsap.min.js");
+    try {
+      _gsapSourceCache = fs.readFileSync(vendorPath, "utf-8");
+    } catch (err) {
+      throw new Error(
+        `GSAP-Vendor-Datei fehlt (${vendorPath}). ` +
+          `Erwartet als Teil des Pakets — Szenen-Animationen brauchen GSAP lokal.`
+      );
+    }
+  }
+  // </script> im GSAP-Quelltext würde das umschließende Inline-Script vorzeitig
+  // beenden — defensiv neutralisieren (kommt in GSAP nicht vor, aber sicher ist sicher).
+  return `<script>${_gsapSourceCache.replace(/<\/script>/gi, "<\\/script>")}</script>`;
+}
 
 // HTML-Escaping für dynamische Textfelder (Titel, Captions, Features …),
 // damit Sonderzeichen wie < > & " ' das Template nicht zerbrechen.
@@ -55,7 +80,7 @@ html, body { width:${W}px; height:${H}px; overflow:hidden; background:${p.bg}; c
 #fade-overlay { position:absolute; inset:0; background:${p.bg}; opacity:1; pointer-events:none; z-index:100; }
 ${extraCss}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+${gsapInlineScript()}
 </head>
 <body>
 <div class="scene">
