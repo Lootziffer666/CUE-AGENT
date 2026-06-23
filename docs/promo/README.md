@@ -9,6 +9,15 @@ poliert von der eigenen Pipeline.
 - 🖼️ **Vorschau-GIF:** [`cue-agent-promo.gif`](./cue-agent-promo.gif) — via `cue gif` exportiert
 - 🧰 **Echte Produkt-GUI** als Quelle: [`configurator-gui.png`](./configurator-gui.png)
 
+## Tutorial — „CUE-AGENT in 90 Sekunden"
+Gleiche Pipeline, Modus `tutorial`: Kapitel-Karten, GUI-Walkthrough mit geführtem
+Cursor und die echten CLI-Befehle.
+
+![Tutorial-Vorschau](./cue-agent-tutorial.gif)
+
+- 🎬 **Video (mit Stimme):** [`cue-agent-tutorial.mp4`](./cue-agent-tutorial.mp4) — 1280×720, ~78 s, h264 + AAC
+- 🖼️ **Vorschau-GIF:** [`cue-agent-tutorial.gif`](./cue-agent-tutorial.gif)
+
 ## Was darin gezeigt wird (alles aus dieser Pipeline)
 - **12 Szenen** (Title / Features / Screenshot / Clip / CTA), 6 Brand-Looks (hier: `linear`).
 - **Cursor-Overlay + Auto-Zoom** (Polish-B) auf der echten Configurator-GUI-Szene.
@@ -21,6 +30,9 @@ poliert von der eigenen Pipeline.
 ```bash
 # nimmt die echte Configurator-GUI auf, rendert + exportiert GIF
 node scripts/build-self-promo.js examples/cue-agent-promo-v2.script.json
+
+# Tutorial-Variante
+node scripts/build-self-promo.js examples/cue-agent-tutorial.script.json
 
 # Optional in voller Auflösung (1080p@30):
 SELF_PROMO_FULL=1 node scripts/build-self-promo.js
