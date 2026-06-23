@@ -18,9 +18,15 @@
     },
     {
       "id": "submit",
-      "description": "'Anmelden' fuehrt ins Dashboard",
+      "description": "'Anmelden' fuehrt ins Dashboard — und der Dashboard-Screen muss zur Design-Baseline passen",
       "action": { "type": "tap", "text": "Anmelden" },
-      "expect": { "activity": "DashboardActivity", "hasText": "Willkommen", "screen": "Dashboard" }
+      "expect": {
+        "activity": "DashboardActivity",
+        "hasText": "Willkommen",
+        "screen": "Dashboard",
+        "baseline": "design-baseline.example.json",
+        "_baseline_doc": "Pfad relativ zur Flow-Datei ODER Inline-Spec ({screen,elements,...}). Optional 'minScore' (Default 90). Der Schritt schlaegt fehl, wenn der Design-Score darunter liegt."
+      }
     },
     {
       "id": "open-settings",

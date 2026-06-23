@@ -9,6 +9,8 @@
  * Renderer per Playwright geöffnet wird.
  */
 
+const templates_polish = require("../render/polish");
+
 // HTML-Escaping für dynamische Textfelder (Titel, Captions, Features …),
 // damit Sonderzeichen wie < > & " ' das Template nicht zerbrechen.
 function escapeHtml(str) {
@@ -97,7 +99,7 @@ tl.fromTo(".accent-bar", {opacity:0, scaleX:0}, {opacity:1, scaleX:1, duration:$
 /**
  * Screenshot-Szene: zeigt einen App-Screenshot mit optionaler Überschrift + Caption.
  */
-function screenshotScene(brand, { heading, screenshotFile, caption, chapter, highlight, dims, duration }) {
+function screenshotScene(brand, { heading, screenshotFile, caption, chapter, highlight, frame, dims, duration }) {
   const m = brand.motion;
   const p = brand.palette;
   const hl = highlight && highlight.wPct
@@ -106,22 +108,28 @@ function screenshotScene(brand, { heading, screenshotFile, caption, chapter, hig
   const hlCss = highlight && highlight.wPct
     ? `.screenshot-wrap{position:relative;} .hl-spot{position:absolute;border:3px solid ${p.accent};border-radius:8px;box-shadow:0 0 0 4000px rgba(0,0,0,0.45),0 0 24px ${p.accent};opacity:0;pointer-events:none;}`
     : "";
-  const zoomTween = highlight && highlight.zoom
-    ? `tl.to(".screenshot-wrap", {scale:1.12, duration:${m.durationSlow}, ease:"${m.easeInOut}", transformOrigin:"${(highlight.xPct + highlight.wPct / 2).toFixed(1)}% ${(highlight.yPct + highlight.hPct / 2).toFixed(1)}%"}, 1.2);`
-    : "";
+  // Polish-Phase A: Studio-Frame (optional) + deterministischer Auto-Zoom (rein→halten→raus)
+  const frameCss = frame ? templates_polish.framePresentationCss(brand, frame) : "";
+  const zoomTween = highlight && highlight.zoom ? templates_polish.autoZoomTimeline(highlight, m) : "";
+  // Polish-Phase B: Cursor-Overlay (optional) — fährt zum Highlight + Klick-Puls
+  const useCursor = highlight && highlight.wPct && highlight.cursor;
+  const cursorCss = useCursor ? templates_polish.cursorOverlayCss(brand) : "";
+  const cursorHtml = useCursor ? templates_polish.cursorMarkup() : "";
+  const cursorTween = useCursor ? templates_polish.cursorTimeline(highlight, m) : "";
   return wrapScene(brand, {
     dims,
-    extraCss: hlCss,
+    extraCss: hlCss + frameCss + cursorCss,
     body: `
   ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
   ${heading ? `<h2 class="heading" style="font-size:2.5rem">${escapeHtml(heading)}</h2>` : ""}
-  <div class="screenshot-wrap"><img src="${screenshotFile}" alt="">${hl}</div>
+  <div class="screenshot-wrap"><img src="${screenshotFile}" alt="">${hl}${cursorHtml}</div>
   ${caption ? `<div class="caption-bar">${escapeHtml(caption)}</div>` : ""}`,
     gsapTimeline: `
 ${chapter ? `tl.fromTo(".chapter-badge", {opacity:0, x:-20}, {opacity:1, x:0, duration:${m.durationFast}, ease:"${m.easeOut}"}, 0.1);` : ""}
 ${heading ? `tl.fromTo(".heading", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);` : ""}
 tl.fromTo(".screenshot-wrap", {opacity:0, y:30}, {opacity:1, y:0, duration:${m.durationSlow}, ease:"${m.easeOut}"}, 0.4);
 ${hl ? `tl.fromTo(".hl-spot", {opacity:0}, {opacity:1, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 1.0);` : ""}
+${cursorTween}
 ${zoomTween}
 ${caption ? `tl.fromTo(".caption-bar", {opacity:0}, {opacity:1, duration:${m.durationFast}}, 1.2);` : ""}`,
     duration: duration || 4,

@@ -36,14 +36,14 @@ exakt** (Playwright-Click-Events / ADB-Taps / Flow-Schritte). Daraus folgt:
 | **Manuelle Zoom-Regionen** | Zoom-Region als Timeline-Segment im Configurator | `web/configurator.html` (Timeline), Storyboard | **A** |
 | **Styled Frame: Wallpaper/Solid/Gradient, Padding, Rounded, Blur, Shadow** | CSS-Frame-Wrapper um die Szene (rein deklarativ, deterministisch seekbar) | `src/templates/render-scene.js`, Brand-Presets | **A** |
 | **Aspect-Presets fürs Endbild** | bereits vorhanden (16:9, 9:16, 1:1, 4:5) → Frame-Wrapper respektiert sie | `src/config` ASPECT_DIMENSIONS | ✅ teils |
-| **Cursor-Politur: Smoothing, Motion-Blur, Click-Bounce, Sway, Größe, Loop** | Synthetischer Cursor-Layer (SVG/CSS), GSAP-Tween entlang bekannter Klickpunkte; Bounce/Blur als CSS/Filter | neuer `src/render/cursor.js` + GSAP | **B** |
+| **Cursor-Politur: Smoothing, Motion-Blur, Click-Bounce, Sway, Größe, Loop** | ✅ Synthetischer Cursor-Layer (SVG/CSS), GSAP-Tween zum Highlight + Klick-Puls/Ring | `src/render/polish.js`, `scene.highlight.cursor` | ✅ **B** |
 | **Webcam-Bubble (Position, Mirror, Roundness, Shadow, zoom-reaktiv)** | optionaler Overlay-Layer (Video/Bild) als CSS-Kreis mit Presets; zoom-reaktiv via GSAP | `render-scene.js` Overlay-Slot | **C** |
-| **Speed-Regions (Speed-up/Slow-down)** | Zeit-Remap-Segmente: beim Frame-Scrubbing `t`-Mapping pro Region | `src/render/builtin.js` (Scrub-Loop) | **B** |
+| **Speed-Regions (Speed-up/Slow-down)** | ✅ ffmpeg `setpts`-Stage (Skalar `clip.speed` oder `clip.speedRegions`), Dauer wird nachgeführt | `src/render/speed.js`, `src/render/builtin.js` | ✅ **B** |
 | **Annotationen (Text/Bild/Figur)** | Overlay-Annotations als Szenen-Elemente mit Timing | `render-scene.js`, Storyboard | **C** |
 | **Trims** | Segment-Cut im Storyboard/Timeline | Configurator | **B** |
 | **Extra-Audio-Regionen** | zusätzliche Audiospuren im Mix | `src/audio/mix.js` | **C** |
 | **Crop** | CSS-Crop / Capture-Clip | `render-scene.js` | **C** |
-| **GIF-Export (fps, Loop, Größen-Presets)** | ffmpeg-GIF-Pfad (palettegen/paletteuse) neben MP4 | `src/render/builtin.js` / neuer `export.js` | **B** |
+| **GIF-Export (fps, Loop, Größen-Presets)** | ✅ ffmpeg-GIF (palettegen/paletteuse) — `cue gif` / `cue render --gif` | `src/render/gif.js`, `bin/cue.js` | ✅ **B** |
 | **Export-Qualität / Dimensionen** | ffmpeg-CRF/Skalierung als Optionen | Render-Optionen | **B** |
 | **Projektdatei (.recordly = Media + Editor-State)** | bereits vorhanden: `video-projects/<slug>/` + `*-bundle.json` + `storyboard.json` | bestehend | ✅ |
 | **Community-Extensions/Marketplace** | bewusst out-of-scope (kein Plugin-Markt nötig) | — | — |
@@ -54,16 +54,18 @@ exakt** (Playwright-Click-Events / ADB-Taps / Flow-Schritte). Daraus folgt:
 
 ## Phasen (inkrementell, jede für sich lauffähig)
 
-**Polish-Phase A — „Sofort sichtbarer Sprung"**
-- Deterministischer **Auto-Zoom** auf geklickte Elemente (BBox + `tClick` aus der Aufnahme).
-- **Styled-Frame-Wrapper** (Wallpaper/Gradient/Solid, Padding, Rounded, Blur, Shadow) als CSS um jede Szene.
-- Manuelle Zoom-Region im Configurator-Timeline-Player.
-- *Akzeptanz:* ein Promo-Clip wirkt „studio-poliert" (Frame + sanfte Zooms) — rein deterministisch gerendert.
+**Polish-Phase A — „Sofort sichtbarer Sprung"** ✅ *(umgesetzt & live verifiziert)*
+- ✅ Deterministischer **Auto-Zoom** auf die bekannte Highlight-BBox (rein→halten→raus, Transform am Wrapper) — `src/render/polish.js::autoZoomTimeline`, integriert in `screenshotScene`.
+- ✅ **Styled-Frame-Wrapper** (Gradient/Wallpaper-Backdrop, Radius, Schatten, optional Blur) — `framePresentationCss`, via `scene.frame`/`brand.frame`.
+- ⏳ Manuelle Zoom-Region im Configurator-Timeline-Player (UI) — offen.
+- *Live verifiziert (Chromium):* Frame-Gradient aktiv; Auto-Zoom scale 1.17→1.01 über die GSAP-Timeline.
 
-**Polish-Phase B — Bewegung & Export**
-- Synthetischer **Cursor-Layer** (Smoothing/Bounce/Größe).
-- **Speed-Regions** (Zeit-Remap) + **Trims**.
-- **GIF-Export** + Qualitäts-/Dimensions-Optionen.
+**Polish-Phase B — Bewegung & Export** ✅ *(umgesetzt & verifiziert)*
+- ✅ Synthetischer **Cursor-Layer**: SVG-Cursor fährt zur Highlight-BBox + Klick-Puls + auslaufender Ring — `src/render/polish.js::cursorTimeline/cursorMarkup/cursorOverlayCss`, aktiv via `scene.highlight.cursor: true`. Cursor liegt im `.screenshot-wrap`, d. h. seine %-Koordinaten = Highlight-Koordinaten.
+- ✅ **Speed-Ramping** (Zeit-Remap via ffmpeg `setpts`) — `src/render/speed.js::buildSpeedStage`, integriert in `renderClipSegment`. Zwei Modi: `clip.speed` (Skalar, z. B. `0.5` Slow-Mo / `2` schnell) oder `clip.speedRegions: [{start,end,speed}]` (Regionen, Lücken werden mit 1× aufgefüllt). Effektive Clip-Dauer wird automatisch nachgeführt (Fade-Out + Concat-Timing).
+- ✅ **GIF-Export** (zwei-Pass `palettegen`/`paletteuse`, hohe Qualität) — `src/render/gif.js::exportGif`. CLI: `cue gif <mp4> [--out --fps --width --start --duration --loop]` oder `cue render <dir> --gif [--gif-fps --gif-width]`.
+- ⏳ **Trims** als Timeline-Segment im Configurator (UI) — offen (Speed/Regions decken den Großteil ab; reiner Schnitt folgt mit der Timeline-UI).
+- *Verifiziert:* Speed-Skalar 4 s→2.0 s & Region 6 s→7.0 s (echte ffmpeg-Läufe, ffprobe-geprüft); GIF 89a real erzeugt; Cursor-Szene live in Chromium (Timeline seekbar, Cursor bewegt sich, Anti-Slop-Lint sauber).
 
 **Polish-Phase C — Reichhaltigkeit**
 - **Webcam-Bubble**-Overlay, **Annotationen**, **Crop**, Extra-Audio-Regionen.

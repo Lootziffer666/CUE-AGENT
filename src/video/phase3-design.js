@@ -91,7 +91,14 @@ function generateDesign({ storyboard, context, projectDir, screenshotsDir, video
           dims: sceneDims,
         });
         clipMeta = videoSource
-          ? { source: videoSource, start: scene.clipStart || 0, duration: scene.clipDuration || 4 }
+          ? {
+              source: videoSource,
+              start: scene.clipStart || 0,
+              duration: scene.clipDuration || 4,
+              // Polish-B: Speed-Ramping aus dem Script an den Renderer durchreichen
+              ...(scene.speed != null ? { speed: scene.speed } : {}),
+              ...(scene.speedRegions ? { speedRegions: scene.speedRegions } : {}),
+            }
           : null;
         break;
 

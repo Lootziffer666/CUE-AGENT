@@ -39,6 +39,7 @@ const pad = (n) => String(n).padStart(2, "0");
 async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile = null, logger }) {
   const log = logger || makeLogger("ANDROID-QA");
   const flow = flowFile ? flowmod.loadAndroidFlow(flowFile) : null;
+  const flowBaseDir = flowFile ? path.dirname(path.resolve(flowFile)) : process.cwd();
 
   if (!adb.isAdbAvailable()) {
     throw new Error("adb nicht verfügbar. Android platform-tools installieren oder ADB_PATH setzen.");
@@ -122,13 +123,33 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
       }
       if (cr.crashed) { res.pass = false; res.reasons.push("App abgestürzt"); }
 
+      // expect.baseline: Design-Messlatte des Ziel-Screens prüfen (optional).
+      let design = null;
+      if (step.expect && step.expect.baseline) {
+        try {
+          const b = flowmod.assertBaselineFromXml(step.expect.baseline, xmlAfter, flowBaseDir);
+          design = { score: b.score, severity: b.severity, minScore: b.minScore, passed: b.compare.passed, failed: b.compare.failed, missing: b.compare.missing };
+          if (!b.pass) {
+            res.pass = false;
+            res.reasons.push(...b.reasons);
+            flowSeverity = bumpRank(flowSeverity, b.severity === "high" ? "high" : "medium");
+          }
+        } catch (e) {
+          res.pass = false;
+          res.reasons.push(`Baseline-Fehler: ${e.message}`);
+          flowSeverity = bumpRank(flowSeverity, "medium");
+        }
+      }
+
       steps.push({
         n: i + 1, id: step.id, screenshot: shotRel, action: actionDesc,
         expected: step.expect || {}, actual: { activity }, pass: res.pass,
         reasons: res.reasons, landedNowhere: !!res.landedNowhere,
+        design,
       });
       observations.push(
         `${res.pass ? "✓ PASS" : "✗ FAIL"} [${step.id}] ${actionDesc} → ${activity || "—"}` +
+        (design ? ` | Design ${design.score}/100` : "") +
         (res.reasons.length ? ` | ${res.reasons.join("; ")}` : "")
       );
       if (!res.pass) flowSeverity = bumpRank(flowSeverity, res.landedNowhere ? "high" : "medium");

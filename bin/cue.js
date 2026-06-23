@@ -62,6 +62,8 @@ Verwendung:
 Commands:
   qa <url>          QA-Analyse einer URL (Screenshot + Claude-Vision)
   android-qa [apk]  Android-App-QA (Emulator via ADB + multimodale Analyse)
+  design-check      Ist-UI gegen Design-Baseline (Mockup) prüfen
+  design-iterate    Autonom gegen Design-Baseline iterieren (Web/Playwright)
   release-check <url>  Pruefen, ob das Produkt veroeffentlichungsreif ist
   qa-loop <url>     AI-QA-Loop: testen -> fixen -> rebuilden -> erneut testen
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
@@ -70,7 +72,8 @@ Commands:
   showcase <url>    Showcase-Video (Intro -> Walkthrough -> Highlights -> Closer)
   configurator      Web-GUI zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
-  render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html)
+  render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html); [--gif] exportiert zusätzlich ein GIF
+  gif <mp4>         Video in ein optimiertes GIF umwandeln (--fps --width --start --duration --loop)
 
 Globale Optionen:
   --lang de|en      Sprache der Ausgaben (Default: de bzw. CUE_LANG)
@@ -156,6 +159,157 @@ async function main() {
         process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       }
       return result.exitCode;
+    }
+
+    case "design-check": {
+      if (args.flags.help) {
+        console.log("cue design-check --baseline <spec.json> --actual <elements.json> [--fail-on none|low|medium|high] [--json]");
+        return 0;
+      }
+      const baselineFile = args.flags.baseline;
+      const actualFile = args.flags.actual;
+      if (!baselineFile || !actualFile) {
+        log.error("--baseline <spec.json> und --actual <elements.json> erforderlich.");
+        return 2;
+      }
+      const fs = require("fs");
+      const path = require("path");
+      const { loadBaselineSpec, compareToBaseline } = require("../src/qa/design-baseline");
+      const { failsGate } = require("../src/qa/severity");
+      const { writeJson, writeText, timestamp, ensureDir } = require("../src/util");
+
+      const spec = loadBaselineSpec(baselineFile);
+      const parsed = JSON.parse(fs.readFileSync(actualFile, "utf-8"));
+      const actual = Array.isArray(parsed) ? parsed : parsed.elements || [];
+      const res = compareToBaseline({ spec, actual });
+
+      const ts = timestamp();
+      ensureDir(cfg.absPaths.qaReports);
+      const jsonPath = path.join(cfg.absPaths.qaReports, `design-${ts}.json`);
+      const mdPath = path.join(cfg.absPaths.qaReports, `design-${ts}.md`);
+      writeJson(jsonPath, { tool: "cue-agent", intent: "design-check", timestamp: new Date().toISOString(), baseline: baselineFile, ...res });
+      const md = [
+        `# Design-Baseline-Report — ${res.screen || "(screen)"}`,
+        "",
+        `Score: **${res.score}/100** · Severity: **${res.severity}** · ${res.passed} PASS / ${res.failed} FAIL (${res.missing} fehlend)`,
+        "",
+        "| Element | Status | Abweichungen |",
+        "|---|---|---|",
+        ...res.results.map((r) => `| ${r.label || r.id} | ${r.pass ? "✓" : r.missing ? "✗ fehlt" : "✗"} | ${(r.deviations || []).join("; ") || "—"} |`),
+      ].join("\n");
+      writeText(mdPath, md);
+
+      log.ok(`Design-Report: ${mdPath} (Score ${res.score}, ${res.severity})`);
+      if (args.flags.json) process.stdout.write(JSON.stringify(res, null, 2) + "\n");
+      const failOn = args.flags["fail-on"] || cfg.qa.failOn;
+      return failsGate(res.severity, failOn) ? 1 : 0;
+    }
+
+    case "design-iterate": {
+      if (args.flags.help) {
+        console.log("cue design-iterate --url <url|file://> --baseline <spec.json> [--platform web|android] [--target 95] [--max 5] [--fail-on ...] [--json]");
+        console.log("  web (default): --url <url|file://>");
+        console.log("  android:       --serial <id> --repo <dir> --sources a.xml,b.xml --build \"cmd\" --install \"cmd\" --relaunch \"cmd\"");
+        return 0;
+      }
+      const platform = (args.flags.platform || "web").toLowerCase();
+      const baselineFile = args.flags.baseline;
+      if (!baselineFile) {
+        log.error("--baseline <spec.json> erforderlich.");
+        return 2;
+      }
+      const path = require("path");
+      const { loadBaselineSpec } = require("../src/qa/design-baseline");
+      const { iterateToBaseline } = require("../src/qa/design-iterate");
+      const { writeJson, writeText, timestamp, ensureDir } = require("../src/util");
+      const { failsGate } = require("../src/qa/severity");
+      const spec = loadBaselineSpec(baselineFile);
+      const target = args.flags.target ? Number(args.flags.target) : 95;
+      const maxIterations = args.flags.max != null ? Number(args.flags.max) : 5;
+      const ts = timestamp();
+      ensureDir(cfg.absPaths.qaReports);
+
+      if (platform === "android") {
+        const fs = require("fs");
+        const adb = require("../src/android/adb");
+        const designAdapter = require("../src/android/design-adapter");
+        const { proposeAndroidEdits, isConfigured } = require("../src/qa/propose-edits");
+
+        if (!adb.isAdbAvailable()) { log.error("adb nicht verfügbar (platform-tools/ADB_PATH)."); return 2; }
+        const devices = adb.listDevices();
+        const serial = args.flags.serial || devices[0];
+        if (!serial) { log.error("Kein Gerät verbunden — --serial <id> angeben oder Emulator starten."); return 2; }
+        const repo = args.flags.repo || process.cwd();
+        const sourceFiles = typeof args.flags.sources === "string" ? args.flags.sources.split(",").map((s) => s.trim()).filter(Boolean) : [];
+        if (!isConfigured()) log.warn("CUE_LLM_* nicht gesetzt → es kann nur gemessen werden (kein Patch-Vorschlag).");
+        if (!args.flags.build) log.warn("Kein --build/--install/--relaunch → ohne Rebuild wirken Quelltext-Patches NICHT auf das laufende Gerät.");
+
+        const rerender = args.flags.build || args.flags.install || args.flags.relaunch
+          ? designAdapter.makeRerender({ buildCmd: args.flags.build || null, installCmd: args.flags.install || null, relaunchCmd: args.flags.relaunch || null, cwd: repo, logger: log })
+          : undefined;
+
+        designAdapter._resetStack();
+        const result = await iterateToBaseline({
+          spec,
+          captureActual: () => designAdapter.captureActual(serial, spec),
+          proposeEdits: async ({ deviations }) => {
+            const sources = sourceFiles.map((f) => ({ file: f, content: fs.existsSync(path.resolve(repo, f)) ? fs.readFileSync(path.resolve(repo, f), "utf-8") : "" }));
+            return proposeAndroidEdits({ spec, deviations, sources });
+          },
+          applyEdits: (edits) => designAdapter.applyEdits(edits.map((e) => ({ ...e, file: path.resolve(repo, e.file) }))),
+          rollback: () => designAdapter.rollback(),
+          rerender,
+          targetScore: target,
+          maxIterations,
+          logger: log,
+        });
+        const jsonPath = path.join(cfg.absPaths.qaReports, `design-iterate-android-${ts}.json`);
+        writeJson(jsonPath, { tool: "cue-agent", intent: "design-iterate", platform: "android", serial, baseline: baselineFile, ...result });
+        log.ok(`Iterations-Report: ${jsonPath}`);
+        log.ok(`Konvergiert: ${result.converged} | bester Score: ${result.bestScore} (Iteration ${result.bestIteration})`);
+        if (args.flags.json) process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+        const failOn = args.flags["fail-on"] || cfg.qa.failOn;
+        return failsGate(result.finalSeverity, failOn) ? 1 : 0;
+      }
+
+      // ── Web (default) ──────────────────────────────────────────────────────
+      const url = args.flags.url;
+      if (!url) { log.error("--url <url|file://> erforderlich (Web-Plattform)."); return 2; }
+      const { proposeEdits, isConfigured } = require("../src/qa/propose-edits");
+      const dom = require("../src/web/dom-adapter");
+      if (!isConfigured()) {
+        log.warn("CUE_LLM_BASE_URL/MODEL nicht gesetzt → es kann nur gemessen werden (kein Vorschlag).");
+      }
+      const { browser, page } = await dom.launch();
+      const history = [];
+      try {
+        await dom.open(page, url);
+        const result = await iterateToBaseline({
+          spec,
+          captureActual: () => dom.captureActual(page, spec),
+          proposeEdits: async ({ deviations }) => {
+            const shot = await page.screenshot();
+            return proposeEdits({ spec, screenshotB64: shot.toString("base64"), deviations });
+          },
+          applyEdits: (edits) => dom.applyEdits(page, edits, history),
+          rollback: () => dom.rollback(page, history),
+          targetScore: target,
+          maxIterations,
+          logger: log,
+        });
+        const jsonPath = path.join(cfg.absPaths.qaReports, `design-iterate-${ts}.json`);
+        const cssPath = path.join(cfg.absPaths.qaReports, `design-iterate-${ts}.css`);
+        writeJson(jsonPath, { tool: "cue-agent", intent: "design-iterate", platform: "web", url, baseline: baselineFile, ...result });
+        writeText(cssPath, dom.buildCss(history));
+        log.ok(`Iterations-Report: ${jsonPath}`);
+        log.ok(`Finale CSS-Diff:   ${cssPath}`);
+        log.ok(`Konvergiert: ${result.converged} | bester Score: ${result.bestScore} (Iteration ${result.bestIteration})`);
+        if (args.flags.json) process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+        const failOn = args.flags["fail-on"] || cfg.qa.failOn;
+        return failsGate(result.finalSeverity, failOn) ? 1 : 0;
+      } finally {
+        await browser.close();
+      }
     }
 
     case "capture": {
@@ -290,9 +444,48 @@ async function main() {
         return 1;
       }
       const result = await runRender({ projectDir: dir, cfg, force: Boolean(args.flags.force), logger: log });
+      // Polish-B: optionaler GIF-Export des fertigen Videos (--gif).
+      if (args.flags.gif && result && result.mp4Path) {
+        const { exportGif } = require("../src/render/gif");
+        const num = (v) => (v == null ? undefined : Number(v));
+        const gifOut = typeof args.flags.gif === "string" ? args.flags.gif : result.mp4Path.replace(/\.[^.]+$/, "") + ".gif";
+        const g = exportGif(result.mp4Path, gifOut, { fps: num(args.flags["gif-fps"]), width: num(args.flags["gif-width"]) });
+        log.ok(`GIF: ${g.out} (${(g.bytes / 1024 / 1024).toFixed(2)} MB)`);
+        result.gifPath = g.out;
+      }
       if (args.flags.json) {
         process.stdout.write(JSON.stringify(result, null, 2) + "\n");
       }
+      return 0;
+    }
+
+    case "gif": {
+      if (args.flags.help) {
+        console.log("cue gif <input.mp4> [--out x.gif] [--fps 15] [--width 720] [--start s] [--duration s] [--loop 0]");
+        return 0;
+      }
+      const input = args._[1];
+      if (!input) {
+        log.error("cue gif benötigt eine Eingabedatei (z. B. final.mp4).");
+        return 1;
+      }
+      const fs = require("fs");
+      if (!fs.existsSync(input)) {
+        log.error(`Eingabedatei nicht gefunden: ${input}`);
+        return 1;
+      }
+      const { exportGif } = require("../src/render/gif");
+      const num = (v) => (v == null ? undefined : Number(v));
+      const out = args.flags.out || input.replace(/\.[^.]+$/, "") + ".gif";
+      const r = exportGif(input, out, {
+        fps: num(args.flags.fps),
+        width: num(args.flags.width),
+        start: num(args.flags.start),
+        duration: num(args.flags.duration),
+        loop: num(args.flags.loop),
+      });
+      log.ok(`GIF: ${r.out} (${(r.bytes / 1024 / 1024).toFixed(2)} MB, ${r.fps}fps, ${r.width}px breit)`);
+      if (args.flags.json) process.stdout.write(JSON.stringify(r, null, 2) + "\n");
       return 0;
     }
 

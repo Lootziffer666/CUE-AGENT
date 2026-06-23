@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "title": "CUE-AGENT Tutorial",
+    "mode": "tutorial",
+    "lang": "de",
+    "voice": "daniel",
+    "brand": "notion",
+    "aspect": "16:9",
+    "tone": "ruhig, klar, anleitend — ein freundliches Onboarding"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "id": "intro",
+      "title": "CUE-AGENT in 90 Sekunden",
+      "subtitle": "Vom Setup bis zum fertigen Promo",
+      "narration": "Willkommen. In neunzig Sekunden gehen wir gemeinsam durch CUE-AGENT: vom Setup über die QA bis zum fertigen Promo-Video.",
+      "duration": 6.5
+    },
+    {
+      "type": "chapter",
+      "id": "ch1",
+      "number": 1,
+      "goal": "Installieren & prüfen",
+      "narration": "Kapitel eins: Installieren und prüfen.",
+      "duration": 4.5
+    },
+    {
+      "type": "features",
+      "id": "install",
+      "heading": "Sofort startklar",
+      "features": [
+        "npx github:Lootziffer666/CUE-AGENT",
+        "cue doctor  — prüft Umgebung",
+        "Playwright und ffmpeg automatisch",
+        "Keine Cloud-Pflicht, kein Key nötig"
+      ],
+      "narration": "Du startest direkt mit npx, ganz ohne Installation. Cue doctor prüft, ob alles bereit ist. Browser und ffmpeg richtet CUE-AGENT selbst ein.",
+      "duration": 9
+    },
+    {
+      "type": "chapter",
+      "id": "ch2",
+      "number": 2,
+      "goal": "QA starten",
+      "narration": "Kapitel zwei: die QA starten.",
+      "duration": 4.5
+    },
+    {
+      "type": "features",
+      "id": "qa-cmd",
+      "heading": "Ein Befehl, echte Befunde",
+      "features": [
+        "cue qa https://deine-app.de",
+        "--loop  — autonom finden und fixen",
+        "--fail-on high  — Gate für CI",
+        "Report mit Score und Screenshots"
+      ],
+      "narration": "Ein Befehl genügt: cue qa, gefolgt von deiner URL. Mit Loop findet und behebt CUE-AGENT Bugs autonom. Mit fail-on baust du ein QA-Gate in deine CI.",
+      "duration": 9
+    },
+    {
+      "type": "screenshot",
+      "id": "gui-qa",
+      "heading": "Oder ganz visuell",
+      "screenshotFile": "gui-main.png",
+      "caption": "cue configurator — alles im Browser",
+      "highlight": { "xPct": 8, "yPct": 28, "wPct": 40, "hPct": 34, "cursor": true, "zoom": true },
+      "narration": "Lieber visuell? Cue configurator öffnet ein Web-GUI, in dem du alles per Klick einstellst.",
+      "duration": 8
+    },
+    {
+      "type": "chapter",
+      "id": "ch3",
+      "number": 3,
+      "goal": "Design gegen Mockup",
+      "narration": "Kapitel drei: das Design gegen dein Mockup prüfen.",
+      "duration": 4.5
+    },
+    {
+      "type": "features",
+      "id": "baseline-cmd",
+      "heading": "Pixelgenau messen",
+      "features": [
+        "cue design-check --baseline spec.json",
+        "cue design-iterate  — bis der Score sitzt",
+        "--platform web oder android",
+        "Position, Größe, Text, Farbe"
+      ],
+      "narration": "Mit design-check vergleichst du deine App gegen ein Mockup. Design-iterate verbessert das Layout automatisch, bis der Score passt — im Web wie auf Android.",
+      "duration": 9
+    },
+    {
+      "type": "chapter",
+      "id": "ch4",
+      "number": 4,
+      "goal": "Promo rendern",
+      "narration": "Kapitel vier: das Promo rendern.",
+      "duration": 4.5
+    },
+    {
+      "type": "screenshot",
+      "id": "gui-promo",
+      "heading": "Marke, Stimme, Format",
+      "screenshotFile": "gui-main.png",
+      "caption": "Ein Klick auf Erzeugen",
+      "highlight": { "xPct": 54, "yPct": 30, "wPct": 38, "hPct": 40, "cursor": true, "zoom": true },
+      "narration": "Wähle Marke, Stimme und Seitenverhältnis. Ein Klick auf Erzeugen, und die Pipeline baut dein Video — inklusive Stimme und Politur.",
+      "duration": 8
+    },
+    {
+      "type": "clip",
+      "id": "walk",
+      "heading": "Alles an einem Ort",
+      "caption": "Configurator-Walkthrough",
+      "clipStart": 0,
+      "clipDuration": 5,
+      "speedRegions": [{ "start": 1.8, "end": 2.8, "speed": 0.5 }],
+      "narration": "Vom Bug bis zum Marketing-Video: alles an einem Ort, ohne Tool-Wechsel.",
+      "duration": 6.5
+    },
+    {
+      "type": "cta",
+      "id": "cta",
+      "heading": "Jetzt ausprobieren",
+      "url": "npx github:Lootziffer666/CUE-AGENT",
+      "narration": "Probier es aus. CUE-AGENT — teste härter, zeig es schöner.",
+      "duration": 5
+    }
+  ]
+}

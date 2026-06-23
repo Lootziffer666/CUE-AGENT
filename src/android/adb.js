@@ -121,6 +121,29 @@ function parseClickables(xml) {
   return nodes;
 }
 
+/**
+ * Extrahiert ALLE Knoten mit Bounds (nicht nur klickbare) — für Baseline-Matching.
+ * @returns {Array<{id:string,text:string,cls:string,bbox:[number,number,number,number]}>}
+ */
+function parseAllNodes(xml) {
+  const nodes = [];
+  const re = /<node\b[^>]*>/g;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    const tag = m[0];
+    const b = tag.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+    if (!b) continue;
+    const [x1, y1, x2, y2] = b.slice(1).map(Number);
+    nodes.push({
+      id: (tag.match(/resource-id="([^"]*)"/) || [, ""])[1],
+      text: (tag.match(/text="([^"]*)"/) || [, ""])[1],
+      cls: (tag.match(/class="([^"]*)"/) || [, ""])[1],
+      bbox: [x1, y1, x2 - x1, y2 - y1],
+    });
+  }
+  return nodes;
+}
+
 function tap(x, y, serial) {
   run(withSerial(serial, ["shell", "input", "tap", String(x), String(y)]));
 }
@@ -202,6 +225,7 @@ module.exports = {
   screencapPng,
   uiDumpXml,
   parseClickables,
+  parseAllNodes,
   tap,
   swipe,
   inputText,
