@@ -188,10 +188,10 @@ Eigene Musik/SFX haben Vorrang vor Freesound/generiert. Im **Configurator-GUI** 
 CUE-AGENT wählt die TTS-Engine automatisch:
 
 - **`elevenlabs`** — höchste Qualität (braucht `ELEVENLABS_API_KEY`)
-- **`kokoro`** — **lokal, key-frei, Apache-2.0** ([Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)); lädt beim ersten Lauf ein ~300 MB-Modell, läuft dann offline auf der CPU
+- **`kokoro`** — **lokal, key-frei, Apache-2.0** ([Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)); lädt beim ersten Lauf ein ~300 MB-Modell, läuft dann offline auf der CPU. **Nur Englisch** (`--lang en`) — das Modell ist englisch-zentriert.
 - **`openai`** — OpenAI-kompatibler `/v1/audio/speech`-Endpoint (z. B. über deinen Proxy)
 
-**Auto-Verhalten**: ElevenLabs (falls Key & gültig) → sonst/​bei Fehler automatisch **Kokoro**. So bekommst du natürliche Stimmen ohne jeden Key. Erzwingen mit `--tts kokoro`.
+**Auto-Verhalten**: ElevenLabs (falls Key & gültig) → sonst/​bei Fehler automatisch **Kokoro** (nur für Englisch). So bekommst du natürliche englische Stimmen ohne jeden Key. Erzwingen mit `--tts kokoro`. Für **nicht-englische** Sprachen wird Kokoro übersprungen — dann einen Key (ElevenLabs/OpenAI) setzen, sonst bleibt das Video stumm (mit klarer Meldung).
 
 ```bash
 cue promo --script my-video.script.json --tts kokoro --voice daniel

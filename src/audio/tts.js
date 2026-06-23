@@ -101,6 +101,32 @@ function resolveEngineChain(cfg) {
   return [explicit];
 }
 
+function isEnglish(cfg) {
+  return String((cfg && cfg.lang) || "en").toLowerCase().startsWith("en");
+}
+
+/**
+ * Engine-Kette nach Sprache gefiltert. **Kokoro nur für Englisch** — das Modell
+ * ist englisch-zentriert und klingt auf anderen Sprachen holprig. Für nicht-
+ * englische Sprachen wird Kokoro daher aus der Kette entfernt.
+ */
+function effectiveEngineChain(cfg) {
+  const chain = resolveEngineChain(cfg);
+  if (isEnglish(cfg)) return chain;
+  return chain.filter((e) => e !== "kokoro");
+}
+
+/** Warnt EINMAL, wenn nach dem Sprachfilter keine TTS-Engine übrig bleibt
+ *  (z. B. nicht-englische Sprache ohne ElevenLabs/OpenAI). @returns {boolean} */
+function warnIfNoEngineForLanguage(cfg, log) {
+  if (effectiveEngineChain(cfg).length > 0 || resolveEngineChain(cfg).length === 0) return false;
+  log.warn(
+    `Kokoro spricht nur Englisch — für lang="${(cfg.lang || "").toLowerCase()}" ist kein lokaler TTS verfügbar. ` +
+      `ELEVENLABS_API_KEY/OpenAI setzen oder --lang en nutzen. Video bleibt stumm.`
+  );
+  return true;
+}
+
 /**
  * Synthetisiert EIN Audio-Stück aus Text über die Engine-Kette (mit Fallback).
  * @returns {Promise<{path:string, engine:string}|null>} null = alle Engines fehlgeschlagen
@@ -109,7 +135,7 @@ async function synthesizeSpeech({ text, cfg, audioDir, baseName, logger }) {
   const log = logger || { info() {}, warn() {}, ok() {} };
   const voice = (cfg.audio && cfg.audio.voice) || "matilda";
   const elevenKey = cfg.secrets && cfg.secrets.elevenLabsApiKey;
-  const chain = resolveEngineChain(cfg);
+  const chain = effectiveEngineChain(cfg);
   ensureDir(audioDir);
 
   async function tryEngine(engine) {
@@ -162,6 +188,10 @@ async function generateVoiceover({ storyboard, cfg, outDir, logger }) {
     log.warn("Kein Voiceover-Text im Storyboard gefunden.");
     return { voiceoverPath: null, script: "", skipped: true };
   }
+  if (warnIfNoEngineForLanguage(cfg, log)) {
+    fs.writeFileSync(path.join(outDir, "voiceover-script.txt"), script, "utf-8");
+    return { voiceoverPath: null, script, skipped: true };
+  }
 
   log.info(`Voiceover-Script: ${script.length} Zeichen, ${parts.length} Abschnitte`);
   const audioDir = path.join(outDir, "audio");
@@ -187,6 +217,10 @@ async function generateTimedVoiceover({ storyboard, cfg, outDir, logger }) {
   const log = logger || { info() {}, warn() {}, ok() {} };
   const scenes = storyboard.scenes || [];
   const audioDir = path.join(outDir, "audio");
+
+  if (warnIfNoEngineForLanguage(cfg, log)) {
+    return { clips: [], script: "", skipped: true };
+  }
 
   const clips = [];
   const scriptParts = [];
@@ -227,6 +261,7 @@ module.exports = {
   synthesizeSpeech,
   sceneNarrationText,
   resolveEngineChain,
+  effectiveEngineChain,
   elevenLabsTTS,
   VOICES,
 };
