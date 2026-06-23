@@ -4,8 +4,15 @@
  * Audio-Modul Einstieg.
  */
 
-const { generateVoiceover } = require("./tts");
+const { generateVoiceover, generateTimedVoiceover } = require("./tts");
 const { fetchMusic } = require("./music");
-const { mixAudio, muxVideoAudio } = require("./mix");
+const { mixAudio, mixTimedAudio, muxVideoAudio } = require("./mix");
 
-module.exports = { generateVoiceover, fetchMusic, mixAudio, muxVideoAudio };
+module.exports = {
+  generateVoiceover,
+  generateTimedVoiceover,
+  fetchMusic,
+  mixAudio,
+  mixTimedAudio,
+  muxVideoAudio,
+};

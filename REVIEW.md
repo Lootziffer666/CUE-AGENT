@@ -28,6 +28,45 @@ und das neue Logo sind verdrahtet und visuell geprüft.
 | Test-Videos (`demo/`, `docs/promo/`) | ✓ visuell geprüft: saubere Title-/Feature-Szenen, echte GUI-Captures im Tutorial |
 | Generierte Bilder (Site-Hero, Editorial etc.) | ✓ stimmig zum „warme-Werkstatt"-Thema, keine Artefakte |
 
+## Verifizierungs-Sweep (Runde 2): „mehr als nur Video"
+
+CUE-AGENT ist deutlich mehr als ein Videogenerator. Die übrigen Fähigkeiten
+wurden — soweit ohne fremde Keys/Hardware möglich — tatsächlich ausgeführt:
+
+| Fähigkeit | Ergebnis |
+|---|---|
+| **Design-Check / -Iterate** (pixelgenaue UI-Verifikation gegen Baseline, **key-frei**) | ✓ End-to-end: PASS-Fall Score 100, Abweichungs-Fall Score 0 mit exakten Befunden („Position 526px daneben", „Farbe Abstand 229"). Live-DOM-Erfassung (bbox/Farbe) + deterministischer Vergleich. |
+| **Interaktive Flow-Capture** (klicken/tippen/scrollen) | ✓ 4-Schritt-Flow (goto→scroll→click→wait) ausgeführt; Klick öffnete nachweislich das Preis-Sheet; Video + Bundle (console/network/a11y/metrics) geschrieben. |
+| **Kokoro-TTS** (lokal, key-frei, offline) | ✓ Modell geladen, deutsche Sprachausgabe erzeugt — das Offline-Versprechen hält. |
+| **SFX** (per ffmpeg synthetisiert) | ✓ key-frei, an Szenen-Übergängen gemischt. |
+| **GIF-Export** (`cue gif`) | ✓ |
+| **release-check / qa-loop / android-qa** | ⚠ LLM- bzw. Emulator-gebunden: brechen ohne Key/Gerät **sauber mit klarer Meldung** ab (kein Crash). „Release-Reife" braucht bewusst die volle Vision-Analyse. |
+
+### Zweiter ernster Fund + Fix: die Audio-Pipeline war kaputt
+
+Beim Vertonen (Kokoro + SFX) zeigte die Wellenform-Analyse drei Defekte, die
+**blind unmöglich zu bemerken** waren:
+
+1. **Voiceover front-geladen** — die gesamte Narration lief ab Sekunde 0 am Stück
+   und endete nach ~27 s; die restlichen ~60 % des Videos waren still.
+2. **Mix fast stumm (-55 dB)** — `amix` teilte durch die Input-Anzahl; zusätzlich
+   crashte `loudnorm,apad` den `libmp3lame`-Encoder (`calc_energy`-Assertion) und
+   erzeugte eine korrupte `mixed.mp3`.
+3. **Video abgeschnitten** — `-shortest` kürzte das 68-s-Video an der kaputten
+   63,5-s-Tonspur.
+
+**Fix (neuer, robuster Audiopfad):** szenen-synchrone Vertonung
+(`generateTimedVoiceover` + `mixTimedAudio`): pro Szene ein eigener TTS-Clip,
+per `adelay` an den Szenen-Start gesetzt; `amix … normalize=0` (kein
+1/N-Leiserwerden); PCM-Zwischenformat statt libmp3lame; sanfter Gain +
+True-Peak-Limiter statt des auf lückenhaftem Audio unzuverlässigen `loudnorm`;
+exakte Videolänge. Verifiziert: Stimme **gleichmäßig über alle 68 s** (~-22 dB
+konstant), keine Übersteuerung, volle Länge. Das alte zusammenhängende Voiceover
+bleibt als Fallback. Smoke-Test `test/audio-mix.test.js` schützt die Verteilung.
+
+Das committete `demo/cue-agent-promo.mp4` wurde mit der korrigierten, synchronen
+Tonspur neu erzeugt.
+
 ## Der kritische Fix: GSAP wurde vom CDN geladen
 
 **Symptom:** Beim ersten Render warnte der Renderer für *jede* Szene
