@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 240" role="img" aria-label="CUE-AGENT logo lockup">
+  <title>CUE-AGENT — Lockup</title>
+  <!-- Marke (Forged Cue) -->
+  <g fill="none" stroke="#8a1c1c" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 130 L82 174 L166 64" stroke-width="26"/>
+    <path d="M166 64 L192 40" stroke-width="9"/>
+    <path d="M170 44 L180 28" stroke-width="7"/>
+    <path d="M188 70 L208 60" stroke-width="7"/>
+  </g>
+  <g fill="#8a1c1c">
+    <circle cx="198" cy="34" r="5"/>
+    <circle cx="208" cy="50" r="4"/>
+  </g>
+  <!-- Wortmarke: zweizeilig, linksbuendig (wie 'INK & IRON GLOW.' / 'FORGED INK') -->
+  <g font-family="'Arial Narrow','Helvetica Neue',Arial,sans-serif" fill="#111111">
+    <text x="250" y="120" font-size="76" font-weight="800" letter-spacing="1">CUE.</text>
+    <text x="252" y="158" font-size="30" font-weight="600" letter-spacing="6">QA · FORGED TRUE</text>
+  </g>
+</svg>
