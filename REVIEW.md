@@ -77,16 +77,31 @@ Solide, durchdachte Arbeit für ein „Nebenprojekt". Stärken:
 - **Marketing-Paket** (Site, Deck, PRD, Pricing) ist überraschend ausgereift und
   ästhetisch konsistent.
 
-## Offene Punkte / Empfehlungen
+## Empfehlungen — Status
 
-1. **Logo final ersetzen** (aktuell bewusst Platzhalter). Bei Bedarf eine echte
-   SVG-Version für scharfe Skalierung statt PNG-Colorkey-Transparenz.
-2. **`cue qa` key-frei nützlicher machen:** Es könnte Capture + Konsolen-/
-   Netzwerk-/a11y-Befunde auch ohne LLM liefern und nur die Vision-Analyse
-   überspringen, statt vorab abzubrechen. (Heute: harter Abbruch ohne Key.)
-3. **ffmpeg-Hinweis im Doctor schärfen:** ffmpeg ist faktisch Pflicht für jedes
-   Video; aktuell als „optional" markiert.
-4. **Tests:** keine automatisierten Tests im Repo. Ein paar Smoke-Tests
-   (Render eines Mini-Scripts, Capture gegen `about:blank`) würden Regressionen
-   wie den GSAP-Bug früh fangen.
-</content>
+Die drei Empfehlungen aus der ersten Review sind **umgesetzt**:
+
+1. **✓ Echtes SVG-Logo.** `brand/cue-logo.svg` aus dem PNG per Farb-Layer-Trace
+   (potrace) erzeugt — skalierbar, ~6 KB, statt PNG-Colorkey. Inline im
+   Configurator-Header, als Wordmark in der Marketing-Site (Nav + Footer) und als
+   SVG-Favicon verdrahtet. Raster-PNGs bleiben als Social-/Fallback-Assets.
+2. **✓ `cue qa` ohne Key nützlich.** Fehlt der LLM-Key, bricht QA nicht mehr ab,
+   sondern liefert Capture + Konsolen-, **Netzwerk-** und Accessibility-Befunde
+   plus Score/Report (Exit 0); nur die Vision-Analyse wird sauber übersprungen
+   und im Report gekennzeichnet. Netzwerk-Fehler (4xx/5xx) fließen jetzt in die
+   Severity ein (`src/qa/severity.js`, `index.js`, `report.js`).
+3. **✓ Smoke-Tests.** `test/` mit Nodes eingebautem Runner (keine neue
+   Dependency), via `npm test`: Severity-Logik inkl. Netzwerk, „Szene bettet GSAP
+   inline ein (kein CDN)" und ein End-to-End-Render-Test, der prüft, dass eine
+   5s-Szene 5s bleibt (fängt die GSAP-Kollaps-Regression). Alle grün.
+
+### Noch offen
+
+- **Logo final ersetzen:** `cue-logo.svg` ist eine getreue Vektorisierung des
+  Platzhalters; ein von Hand gezeichnetes „echtes" Marken-SVG kann es jederzeit
+  ablösen (alle Stellen referenzieren dieselbe Quelle).
+- **ffmpeg im Doctor:** weiterhin als „optional" gelabelt, obwohl faktisch
+  Pflicht für jedes Video — bewusst nicht geändert, um die Exit-Code-Semantik des
+  Doctors (Pflicht- vs. optionale Checks) nicht umzudeuten. Kandidat fürs nächste
+  Release.
+

@@ -31,12 +31,16 @@ async function runQa({ url, cfg, logger }) {
         : "Keine URL angegeben. URL übergeben oder TARGET_URL in .env setzen."
     );
   }
+  // Vision-Analyse braucht einen LLM-Key. Fehlt er, läuft QA trotzdem:
+  // Capture + Konsolen-/Netzwerk-/a11y-Befunde + Score werden geliefert,
+  // nur die Vision-Analyse wird übersprungen (statt hart abzubrechen).
   const llm = hasValidLlmCredentials(cfg);
-  if (!llm.ok) {
-    throw new Error(
+  const visionEnabled = llm.ok;
+  if (!visionEnabled) {
+    log.warn(
       cfg.lang === "en"
-        ? `No valid LLM credentials for provider "${llm.provider}": ${llm.reason}.`
-        : `Keine gültigen LLM-Credentials für Provider "${llm.provider}": ${llm.reason}.`
+        ? `No LLM key for "${llm.provider}" (${llm.reason}) — running QA without vision analysis (capture, console, network & a11y only).`
+        : `Kein LLM-Key für "${llm.provider}" (${llm.reason}) — QA läuft ohne Vision-Analyse (nur Capture, Konsole, Netzwerk & a11y).`
     );
   }
 
@@ -46,7 +50,7 @@ async function runQa({ url, cfg, logger }) {
   log.info(`Ziel-URL: ${url}`);
 
   // 1) Capture
-  const { screenshotPath, consoleLogs, navOk } = await captureForQa({
+  const { screenshotPath, consoleLogs, network, metrics, navOk } = await captureForQa({
     url,
     cfg,
     outDir: cfg.absPaths.qaReports,
@@ -54,13 +58,21 @@ async function runQa({ url, cfg, logger }) {
     logger: log,
   });
 
-  // 2) Analyse
-  log.info(`Analyse via LLM (${(cfg.llm && cfg.llm.provider) || "anthropic"}, Vision) ...`);
-  const analysis = await analyze({ cfg, url, screenshotPath, consoleLogs });
-  log.ok("Analyse erhalten.");
+  // 2) Analyse (nur mit gültigem Key)
+  let analysis;
+  if (visionEnabled) {
+    log.info(`Analyse via LLM (${(cfg.llm && cfg.llm.provider) || "anthropic"}, Vision) ...`);
+    analysis = await analyze({ cfg, url, screenshotPath, consoleLogs });
+    log.ok("Analyse erhalten.");
+  } else {
+    analysis =
+      cfg.lang === "en"
+        ? "_Vision analysis skipped — no LLM key configured. Set ANTHROPIC_API_KEY (or another provider) to enable the visual review. Capture, console, network and accessibility findings above are still complete._"
+        : "_Vision-Analyse übersprungen — kein LLM-Key konfiguriert. Setze ANTHROPIC_API_KEY (oder einen anderen Provider) für die visuelle Begutachtung. Capture-, Konsolen-, Netzwerk- und Accessibility-Befunde oben sind dennoch vollständig._";
+  }
 
-  // 3) Severity
-  const assessment = assess({ consoleLogs, navOk });
+  // 3) Severity (inkl. Netzwerk-Befunde)
+  const assessment = assess({ consoleLogs, navOk, network });
 
   // 4) Report
   const { mdPath, jsonPath, json } = writeReports({
@@ -69,8 +81,11 @@ async function runQa({ url, cfg, logger }) {
     url,
     screenshotName,
     consoleLogs,
+    network,
+    metrics,
     analysis,
     assessment,
+    visionSkipped: !visionEnabled,
   });
   log.ok(`Report (Markdown): ${mdPath}`);
   log.ok(`Report (JSON): ${jsonPath}`);

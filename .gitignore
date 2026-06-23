@@ -5,6 +5,9 @@ node_modules/
 qa-reports/*.png
 qa-reports/*.md
 qa-reports/*.json
+qa-reports/*.webm
+qa-reports/screenshots/
+qa-reports/video-raw/
 !qa-reports/.gitkeep
 
 # Video-Projektordner (generierte Artefakte)

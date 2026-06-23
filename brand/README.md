@@ -7,9 +7,10 @@
 ## Dateien
 | Datei | Zweck |
 |---|---|
-| `cue-logo.png` | **AKTUELLES PRIMÄR-LOGO** (Platzhalter, wird ersetzt) — Hammer-Check + Krone + Füllerfeder, weißer Grund. Vom Nutzer beigesteuert. |
-| `cue-logo-transparent.png` | Dasselbe mit transparentem Hintergrund (für dunkle Flächen: Configurator-Header, Site-Footer). |
-| `cue-logo-256.png` | Header-/Web-Größe (256 px, transparent). Auch unter `marketing/site/assets/images/cue-logo.png`. |
+| `cue-logo.svg` | **AKTUELLES PRIMÄR-LOGO, skalierbar** (Platzhalter) — aus `cue-logo.png` per Farb-Layer-Trace (potrace) erzeugt: Rot + Dunkelrot-Shading + schwarzer Federkiel. Verdrahtet in Configurator (inline) + Marketing-Site + Favicons. |
+| `cue-logo.png` | Raster-Master des Logos (weißer Grund). Vom Nutzer beigesteuert. |
+| `cue-logo-transparent.png` | Raster mit transparentem Hintergrund (für dunkle Flächen). |
+| `cue-logo-256.png` | Raster-Header-/Web-Größe (256 px, transparent). Auch unter `marketing/site/assets/images/cue-logo.png` (Social-/Raster-Fallback). |
 | `spark-emblem.svg` / `.png` | **ANVIL-SPARK** Emblem-Entwurf (Hammer-Check + Krone + Feder), dunkler Grund |
 | `cue-mark.svg` / `.png` | Älterer Entwurf v0 „Forged Cue" (Symbol allein, transparent) |
 | `cue-lockup.svg` / `.png` | Wortmarke-Lockup v0 (Symbol + Text) |

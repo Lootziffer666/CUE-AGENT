@@ -18,7 +18,15 @@ function buildConsoleText(consoleLogs, lang) {
   return consoleLogs.map((l) => `[${l.type.toUpperCase()}] ${l.text}`).join("\n");
 }
 
-function buildMarkdown({ lang, url, screenshotName, consoleText, analysis, assessment, label, isoTime }) {
+function buildNetworkText(network, lang) {
+  if (!network || network.length === 0) {
+    return lang === "en" ? "No failed requests (HTTP < 400)." : "Keine fehlgeschlagenen Requests (HTTP < 400).";
+  }
+  return network.map((n) => `[${n.status}] ${n.url}`).join("\n");
+}
+
+function buildMarkdown({ lang, url, screenshotName, consoleText, networkText, analysis, assessment, label, isoTime }) {
+  const netHeading = lang === "en" ? "Network (HTTP >= 400)" : "Netzwerk (HTTP >= 400)";
   return `# ${t(lang, "reportHeading")}
 
 **Timestamp:** ${isoTime}
@@ -36,6 +44,14 @@ ${consoleText}
 
 ---
 
+## ${netHeading}
+
+\`\`\`
+${networkText}
+\`\`\`
+
+---
+
 ## ${t(lang, "analysisSection")} (${label})
 
 ${analysis}
@@ -49,25 +65,31 @@ ${analysis}
 /**
  * Schreibt Markdown + JSON und gibt die Pfade + das JSON-Objekt zurück.
  */
-function writeReports({ cfg, ts, url, screenshotName, consoleLogs, analysis, assessment }) {
+function writeReports({ cfg, ts, url, screenshotName, consoleLogs, network = [], metrics = {}, analysis, assessment, visionSkipped = false }) {
   const lang = cfg.lang;
   const isoTime = new Date().toISOString();
   const consoleText = buildConsoleText(consoleLogs, lang);
+  const networkText = buildNetworkText(network, lang);
 
   // Label/Modell provider-abhängig
   const provider = (cfg.llm && cfg.llm.provider) || "anthropic";
   const activeModel = provider === "anthropic"
     ? cfg.model
     : (cfg.llm.openai && cfg.llm.openai.model) || cfg.model;
-  const label = provider === "anthropic"
+  const baseLabel = provider === "anthropic"
     ? cfg.modelLabel
     : `${activeModel} (${provider})`;
+  // Bei übersprungener Vision-Analyse klar kennzeichnen (kein Key vorhanden).
+  const label = visionSkipped
+    ? (lang === "en" ? "vision skipped — no LLM key" : "Vision übersprungen — kein LLM-Key")
+    : baseLabel;
 
   const md = buildMarkdown({
     lang,
     url,
     screenshotName,
     consoleText,
+    networkText,
     analysis,
     assessment,
     label,
@@ -81,10 +103,13 @@ function writeReports({ cfg, ts, url, screenshotName, consoleLogs, analysis, ass
     url,
     lang,
     provider,
-    model: activeModel,
+    model: visionSkipped ? null : activeModel,
+    visionSkipped,
     screenshot: screenshotName,
     assessment,
     console: consoleLogs,
+    network,
+    metrics,
     analysis,
   };
 

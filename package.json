@@ -19,6 +19,7 @@
   },
   "scripts": {
     "start": "node qa-agent.js",
+    "test": "node --test",
     "cue": "node bin/cue.js",
     "qa": "node bin/cue.js qa",
     "doctor": "node bin/cue.js doctor",
