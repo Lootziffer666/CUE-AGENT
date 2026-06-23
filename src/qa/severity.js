@@ -19,24 +19,31 @@ function rank(level) {
  * @param {object} args
  * @param {Array<{type:string,text:string}>} args.consoleLogs
  * @param {boolean} args.navOk
- * @returns {{level:string, score:number, errors:number, warnings:number}}
+ * @param {Array<{url:string,status:number}>} [args.network] HTTP-Antworten mit Status >= 400
+ * @returns {{level:string, score:number, errors:number, warnings:number, serverErrors:number, clientErrors:number}}
  */
-function assess({ consoleLogs = [], navOk = true }) {
+function assess({ consoleLogs = [], navOk = true, network = [] }) {
   const errors = consoleLogs.filter((l) => l.type === "error").length;
   const warnings = consoleLogs.filter((l) => l.type === "warning").length;
+
+  // Netzwerk-Befunde: 5xx = Server-Fehler (schwer), 4xx = Client-Fehler (mittel).
+  const serverErrors = network.filter((n) => n.status >= 500).length;
+  const clientErrors = network.filter((n) => n.status >= 400 && n.status < 500).length;
 
   let score = 100;
   if (!navOk) score -= 25;
   score -= errors * 15;
   score -= warnings * 5;
+  score -= serverErrors * 15;
+  score -= clientErrors * 8;
   score = Math.max(0, Math.min(100, score));
 
   let level = "none";
-  if (!navOk || errors > 0) level = "high";
-  else if (warnings > 2) level = "medium";
+  if (!navOk || errors > 0 || serverErrors > 0) level = "high";
+  else if (warnings > 2 || clientErrors > 0) level = "medium";
   else if (warnings > 0) level = "low";
 
-  return { level, score, errors, warnings };
+  return { level, score, errors, warnings, serverErrors, clientErrors };
 }
 
 /**

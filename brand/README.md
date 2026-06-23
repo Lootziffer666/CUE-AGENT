@@ -7,9 +7,23 @@
 ## Dateien
 | Datei | Zweck |
 |---|---|
-| `spark-emblem.svg` / `.png` | **ANVIL-SPARK** Emblem (Hammer-Check + Krone + Feder), dunkler Grund |
+| `cue-logo.svg` | **AKTUELLES PRIMÄR-LOGO, skalierbar** (Platzhalter) — aus `cue-logo.png` per Farb-Layer-Trace (potrace) erzeugt: Rot + Dunkelrot-Shading + schwarzer Federkiel. Verdrahtet in Configurator (inline) + Marketing-Site + Favicons. |
+| `cue-logo.png` | Raster-Master des Logos (weißer Grund). Vom Nutzer beigesteuert. |
+| `cue-logo-transparent.png` | Raster mit transparentem Hintergrund (für dunkle Flächen). |
+| `cue-logo-256.png` | Raster-Header-/Web-Größe (256 px, transparent). Auch unter `marketing/site/assets/images/cue-logo.png` (Social-/Raster-Fallback). |
+| `spark-emblem.svg` / `.png` | **ANVIL-SPARK** Emblem-Entwurf (Hammer-Check + Krone + Feder), dunkler Grund |
 | `cue-mark.svg` / `.png` | Älterer Entwurf v0 „Forged Cue" (Symbol allein, transparent) |
 | `cue-lockup.svg` / `.png` | Wortmarke-Lockup v0 (Symbol + Text) |
+
+> **Visuelle Review (durch Claude, der das Logo tatsächlich sehen kann):**
+> `cue-logo.png` ist die sauberste Realisierung des ANVIL-SPARK-Konzepts: roter
+> Hammer-Check als eine Masse, rote Krone mit Kugel-Zacken, weiße Füllerfeder mit
+> sternförmigem Tintenloch — klar lesbar, gute Silhouette, funktioniert auf hellem
+> **und** dunklem Grund. Der ältere `spark-emblem.png` wirkt dagegen unfertig (die
+> Krone liest sich eher wie eine Kelle, die Feder zu klein). Daher ist `cue-logo.png`
+> jetzt das verdrahtete Logo in Configurator, Marketing-Site und Favicons.
+> Es bleibt ein **Platzhalter** und kann jederzeit ersetzt werden — alle Einbau-
+> stellen referenzieren denselben Dateinamen bzw. dieselbe Quelle.
 
 ## Name: ANVIL-SPARK
 Der **Funke**, der den Schmiede-Zyklus schließt — und ihn zugleich neu zündet:

@@ -1,17 +1,46 @@
 # CUE-AGENT
 
-QA-Bughunting **und** Videoersteller in einem Werkzeug. CUE-AGENT steuert einen Browser
-(Playwright), analysiert Seiten mit Anthropic Claude (Vision) und folgt einem klaren
-**QA-first-Workflow**: erst Qualität sichern (Bugs finden, UI verbessern), dann — und nur
-nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten App erstellen.
+**CUE-AGENT ist ein QA- und Verifikations-Agent für Web- und Android-UIs.** Er steuert
+einen echten Browser (Playwright), prüft eine App wie ein Mensch — mit Vision-Analyse,
+Konsolen-/Netzwerk-/Accessibility-Signalen, **pixelgenauen Design-Checks** und
+**Severity-Scoring** — und kann Bugs **autonom dokumentieren, beheben und erneut testen**,
+bis das Produkt veröffentlichungsreif ist. Video ist der **letzte** Schritt und nur erlaubt,
+wenn die QA besteht: Aus denselben geprüften Flows entsteht dann ein Promo-, Tutorial- oder
+Showcase-Video.
+
+> Kurz: **zuerst Qualität messbar machen** (prüfen, scoren, iterieren), **dann — und nur
+> dann — zeigen.** CUE-AGENT „macht" nicht primär Videos; das Video ist der Schlussbeweis.
+
+## Was CUE-AGENT kann
+
+| Fähigkeit | Was es tut | Command |
+|---|---|---|
+| **QA-Bughunting** | Echter Browser + Vision-Analyse + Konsolen-/Netzwerk-/a11y-Signale → **strukturierte Findings** (Severity, Kategorie, Ort, konkreter Fix), **Score 0–100**, CI-Exit-Code | `cue qa <url>` |
+| **Pixelgenaue Design-Verifikation** | Ist-UI **deterministisch** gegen eine Soll-Baseline (Position, Größe, Text, Farbe je Element, mit Toleranzen) — kein LLM nötig, harter reproduzierbarer Vertrag | `cue design-check` |
+| **Autonome Iteration** | **testen → fixen → rebuilden → erneut testen**, bis Ziel-Score/READY. Web: schlägt CSS-Overrides vor und misst Konvergenz; Repo: schlägt Datei-Patches vor, wendet sie an, baut neu | `cue design-iterate`, `cue qa-loop` |
+| **Release-Readiness-Scoring** | Urteil **READY / NOT READY** mit Checkliste (keine High/Critical, Score ≥ Schwelle, keine Konsolenfehler, keine 5xx) + Begründung → `RELEASE-READINESS.md` | `cue release-check <url>` |
+| **Flow-Verifikation** | Deklarative Flows (klicken/tippen/scrollen/warten) → CaptureBundle: Video + Screenshots + Logs + **Netzwerk + Metrics + a11y-Baum** | `cue capture --flow` |
+| **Android-QA** | Dieselbe Pipeline gegen eine App im Emulator (ADB + uiautomator-BBoxen + Vision) | `cue android-qa` |
+| **QA-Gate** | `promo`/`tutorial`/`showcase` werden **blockiert**, solange kein frischer QA-Report mit ausreichendem Score & ohne offene High-Bugs existiert | (automatisch) |
+| **Video (Belohnung)** | Erst nach bestandener QA: Promo/Tutorial/Showcase aus den geprüften Flows — HTML+GSAP-Render, szenen-synchrone Stimme, SFX, 6 Brand-Presets, Aspect-Ratios | `cue promo/tutorial/showcase` |
+
+**Scoring & Severity — das Herzstück.** Befunde werden in `none / low / medium / high /
+critical` eingestuft. Aus Konsolenfehlern, Netzwerk-4xx/5xx, Navigations-Status und den
+Vision-Findings entstehen ein **Score (0–100)** und ein **Severity-Level**, das per
+`--fail-on` ein CI-Gate bildet. Der Design-Comparator liefert zusätzlich einen
+deterministischen Score aus PASS/FAIL je Element. Diese Zahlen sind die Grundlage für das
+**Release-Gate** *und* den **autonomen Iterations-Loop** (er läuft, bis der Score das Ziel
+erreicht oder `--max` ausgeschöpft ist) — nicht für die Videos.
+
+## Selbst-Beweis (Dogfooding)
+
+🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein Promo, das CUE-AGENT
+**mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
+8 Szenen, lokale Kokoro-Stimme, SFX an den Übergängen, szenen-synchrones Voiceover. Reproduzierbar
+ohne jeden API-Key. Ein zweites Showcase mit KI-Bild-Szenen:
+[`docs/promo/cue-agent-ai-promo.mp4`](docs/promo/cue-agent-ai-promo.mp4).
 
 > Roadmap & Konzept: [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
-
-## Demo
-
-🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein 68-Sekunden-Promo, das CUE-AGENT
-**mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
-8 Szenen, lokale Kokoro-Stimme, Soundeffekte an den Übergängen, Linear-Brand. Reproduzierbar ohne jeden API-Key.
 
 ## Continuous QA (GitHub Actions)
 
@@ -188,10 +217,10 @@ Eigene Musik/SFX haben Vorrang vor Freesound/generiert. Im **Configurator-GUI** 
 CUE-AGENT wählt die TTS-Engine automatisch:
 
 - **`elevenlabs`** — höchste Qualität (braucht `ELEVENLABS_API_KEY`)
-- **`kokoro`** — **lokal, key-frei, Apache-2.0** ([Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)); lädt beim ersten Lauf ein ~300 MB-Modell, läuft dann offline auf der CPU
+- **`kokoro`** — **lokal, key-frei, Apache-2.0** ([Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)); lädt beim ersten Lauf ein ~300 MB-Modell, läuft dann offline auf der CPU. **Nur Englisch** (`--lang en`) — das Modell ist englisch-zentriert.
 - **`openai`** — OpenAI-kompatibler `/v1/audio/speech`-Endpoint (z. B. über deinen Proxy)
 
-**Auto-Verhalten**: ElevenLabs (falls Key & gültig) → sonst/​bei Fehler automatisch **Kokoro**. So bekommst du natürliche Stimmen ohne jeden Key. Erzwingen mit `--tts kokoro`.
+**Auto-Verhalten**: ElevenLabs (falls Key & gültig) → sonst/​bei Fehler automatisch **Kokoro** (nur für Englisch). So bekommst du natürliche englische Stimmen ohne jeden Key. Erzwingen mit `--tts kokoro`. Für **nicht-englische** Sprachen wird Kokoro übersprungen — dann einen Key (ElevenLabs/OpenAI) setzen, sonst bleibt das Video stumm (mit klarer Meldung).
 
 ```bash
 cue promo --script my-video.script.json --tts kokoro --voice daniel
@@ -199,18 +228,50 @@ cue promo --script my-video.script.json --tts kokoro --voice daniel
 
 > `kokoro-js` ist eine optionale Dependency. Falls nicht installiert: `npm install kokoro-js`.
 
+## AI-Funktionen ohne Key ausprobieren (Offline-Stub)
+
+Die LLM-/Bild-gestützten Funktionen (`cue qa`, `release-check`, `design-iterate`,
+Auto-Bildgenerierung) sprechen einen **OpenAI-kompatiblen** Endpunkt. Für Demos,
+CI und lokales Ausprobieren **ohne BYOK** liegt ein lokaler Stub bei:
+[`scripts/offline-ai-stub.js`](scripts/offline-ai-stub.js).
+
+```bash
+node scripts/offline-ai-stub.js          # lokaler Endpunkt auf :8771
+
+export CUE_LLM_PROVIDER=openai
+export CUE_LLM_BASE_URL=http://127.0.0.1:8771/v1
+export CUE_LLM_MODEL=cue-local
+export CUE_LLM_API_KEY=local
+export CUE_IMAGE_API_KEY=local
+
+cue design-iterate --url file://./page.html --baseline spec.json   # konvergiert
+cue qa http://localhost:8099/                                       # QA-Report
+cue promo --script my.script.json --images auto                     # mit Bildern
+```
+
+Der Stub ist **kein** echtes Modell: Der Design-Proposer berechnet aus der
+Ziel-Spec die exakten CSS-Overrides (deterministisch korrekt — `design-iterate`
+konvergiert wirklich), Bilder werden lokal per ffmpeg synthetisiert, QA liefert
+sinnvolle Defaults (eigene Befunde als `canned/qa-<slug>.json` hinterlegbar). Für
+echte Vision-Analyse weiterhin einen Provider via `ANTHROPIC_API_KEY` bzw.
+`CUE_LLM_*` setzen.
+
 ## CLI-Übersicht
 
 | Command | Zweck |
 |---|---|
-| `cue qa <url>` | QA-Analyse: Screenshot + Konsolen-Logs + Claude-Vision (MD + JSON, Severity, CI-Exit-Code) |
-| `cue release-check <url>` | Veröffentlichungsreife prüfen (Verdict + RELEASE-READINESS.md) |
-| `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen |
-| `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs) |
-| `cue promo <url>` | Promo-Video (Hook → Features → Screenshots → CTA) |
+| `cue qa <url>` | QA-Analyse: Screenshot + Konsolen-/Netzwerk-/a11y-Signale + Vision → Findings, Severity, **Score**, CI-Exit-Code |
+| `cue design-check` | **Pixelgenaue** Design-Verifikation: Ist-UI gegen Soll-Baseline (Position/Größe/Text/Farbe), deterministisch, kein LLM |
+| `cue design-iterate` | **Autonom** gegen Design-Baseline iterieren (Web/Android), bis Ziel-Score erreicht |
+| `cue release-check <url>` | Veröffentlichungsreife prüfen (**READY/NOT READY** Verdict + Score + RELEASE-READINESS.md) |
+| `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen, bis READY |
+| `cue android-qa [apk]` | Android-App-QA im Emulator (ADB + uiautomator-BBoxen + Vision) |
+| `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs + Netzwerk + Metrics + a11y) |
+| `cue promo <url>` | Promo-Video (nur nach bestandener QA) — Hook → Features → Screenshots → CTA |
 | `cue tutorial <url>` | Tutorial-Video (Cold-Open → Kapitel → Recap) |
 | `cue showcase <url>` | Showcase-Video (Intro → Walkthrough → Closer) |
 | `cue render <dir>` | Vorhandenes Projekt neu rendern (schnelle Iteration) |
+| `cue gif <mp4>` | Video → optimiertes GIF |
 | `cue configurator` | **Web-GUI** zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts, Im-/Export) |
 | `cue doctor` | Umgebungs-Check |
 

@@ -5,6 +5,12 @@ node_modules/
 qa-reports/*.png
 qa-reports/*.md
 qa-reports/*.json
+qa-reports/*.css
+qa-reports/*.webm
+qa-reports/screenshots/
+qa-reports/video-raw/
+qa-reports/release-*/
+qa-reports/proposed-fixes/
 !qa-reports/.gitkeep
 
 # Video-Projektordner (generierte Artefakte)
@@ -14,3 +20,6 @@ captures/
 
 # Eigener Medienordner (User-Assets)
 media/
+
+# Arbeitsordner des Offline-AI-Stubs (scripts/offline-ai-stub.js)
+.cue-ai-stub/

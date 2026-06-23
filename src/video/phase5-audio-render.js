@@ -13,8 +13,26 @@
 
 const fs = require("fs");
 const path = require("path");
-const { generateVoiceover, fetchMusic, mixAudio, muxVideoAudio } = require("../audio");
+const {
+  generateVoiceover,
+  generateTimedVoiceover,
+  fetchMusic,
+  mixAudio,
+  mixTimedAudio,
+  muxVideoAudio,
+} = require("../audio");
 const { ensureSfx, mixSfx } = require("../audio/sfx");
+
+/** Szenen-Übergänge (kumulierte Startzeiten) aus den Storyboard-Dauern. */
+function sceneOffsets(storyboard) {
+  const offsets = [];
+  let acc = 0;
+  for (const s of storyboard.scenes || []) {
+    acc += Number(s.duration || s.clipDuration || 3);
+    offsets.push(acc);
+  }
+  return offsets;
+}
 
 /**
  * @param {object} args
@@ -32,16 +50,12 @@ async function runAudioRender({ storyboard, cfg, projectDir, silentMp4Path, dura
 
   const audioCfg = cfg.audio || {};
 
-  // 1. Voiceover (nur wenn Toggle an)
-  let voiceoverPath = null, script = "", voiceoverSkipped = true;
-  if (audioCfg.voiceover === false) {
-    log.info("Sprachausgabe deaktiviert (Toggle aus).");
-  } else {
-    const vo = await generateVoiceover({ storyboard, cfg, outDir: projectDir, logger: log });
-    voiceoverPath = vo.voiceoverPath; script = vo.script; voiceoverSkipped = vo.skipped;
-  }
+  // SFX vorbereiten (synthetisierter Whoosh oder eigene Datei) + Übergänge.
+  let sfxPath = null;
+  const offsets = sceneOffsets(storyboard);
+  if (audioCfg.sfx) sfxPath = ensureSfx({ cfg, outDir: projectDir, logger: log });
 
-  // 2. Musik (Toggle/eigene Datei/Freesound — in fetchMusic gehandhabt)
+  // Musik (Toggle/eigene Datei/Freesound — in fetchMusic gehandhabt)
   const { musicPath, skipped: musicSkipped } = await fetchMusic({
     cfg,
     outDir: projectDir,
@@ -49,30 +63,39 @@ async function runAudioRender({ storyboard, cfg, projectDir, silentMp4Path, dura
     logger: log,
   });
 
-  // 3. Mix (Voiceover + Musik)
-  let { mixedPath, hasAudio } = mixAudio({
-    voiceoverPath,
-    musicPath,
-    durationSec,
-    outDir: projectDir,
-    logger: log,
-  });
+  let mixedPath = null, hasAudio = false, script = "", voiceoverSkipped = true, sfxUsed = false;
 
-  // 3b. Soundeffekte an Szenen-Übergängen (Toggle)
-  let sfxUsed = false;
-  if (audioCfg.sfx) {
-    const sfxPath = ensureSfx({ cfg, outDir: projectDir, logger: log });
-    if (sfxPath) {
-      // Übergangs-Zeitpunkte aus Storyboard-Dauern berechnen
-      const offsets = [];
-      let acc = 0;
-      for (const s of storyboard.scenes || []) {
-        acc += Number(s.duration || s.clipDuration || 3);
-        offsets.push(acc);
-      }
+  // 1. Bevorzugt: szenen-synchrones Voiceover (jeder Clip am Szenen-Start) +
+  //    Musik + SFX in EINEM robusten Mix-Pass (PCM, normalize=0, exakte Länge).
+  let timedClips = [];
+  if (audioCfg.voiceover === false) {
+    log.info("Sprachausgabe deaktiviert (Toggle aus).");
+  } else {
+    const tv = await generateTimedVoiceover({ storyboard, cfg, outDir: projectDir, logger: log });
+    if (!tv.skipped && tv.clips.length) {
+      timedClips = tv.clips; script = tv.script; voiceoverSkipped = false;
+    } else {
+      log.warn("Szenen-Voiceover nicht verfügbar — Fallback auf zusammenhängendes Voiceover.");
+    }
+  }
+
+  if (timedClips.length || (audioCfg.voiceover === false && (musicPath || sfxPath))) {
+    const timed = mixTimedAudio({
+      clips: timedClips, musicPath, sfxPath, sfxOffsets: offsets,
+      durationSec, outDir: projectDir, logger: log,
+    });
+    mixedPath = timed.mixedPath; hasAudio = timed.hasAudio;
+    sfxUsed = hasAudio && !!sfxPath;
+  } else if (audioCfg.voiceover !== false) {
+    // 2. Fallback: zusammenhängendes Voiceover (alter Pfad) + Musik + SFX.
+    const vo = await generateVoiceover({ storyboard, cfg, outDir: projectDir, logger: log });
+    voiceoverSkipped = vo.skipped; script = vo.script;
+    const m = mixAudio({ voiceoverPath: vo.voiceoverPath, musicPath, durationSec, outDir: projectDir, logger: log });
+    mixedPath = m.mixedPath; hasAudio = m.hasAudio;
+    if (audioCfg.sfx && sfxPath && hasAudio) {
       const sfxOut = path.join(projectDir, "audio", "with-sfx.mp3");
       const merged = mixSfx({ basePath: mixedPath, sfxPath, offsets, durationSec, outPath: sfxOut, logger: log });
-      if (merged) { mixedPath = merged; hasAudio = true; sfxUsed = true; }
+      if (merged) { mixedPath = merged; sfxUsed = true; }
     }
   }
 
