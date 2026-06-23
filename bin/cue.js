@@ -206,24 +206,76 @@ async function main() {
 
     case "design-iterate": {
       if (args.flags.help) {
-        console.log("cue design-iterate --url <url|file://> --baseline <spec.json> [--target 95] [--max 5] [--fail-on ...] [--json]");
+        console.log("cue design-iterate --url <url|file://> --baseline <spec.json> [--platform web|android] [--target 95] [--max 5] [--fail-on ...] [--json]");
+        console.log("  web (default): --url <url|file://>");
+        console.log("  android:       --serial <id> --repo <dir> --sources a.xml,b.xml --build \"cmd\" --install \"cmd\" --relaunch \"cmd\"");
         return 0;
       }
-      const url = args.flags.url;
+      const platform = (args.flags.platform || "web").toLowerCase();
       const baselineFile = args.flags.baseline;
-      if (!url || !baselineFile) {
-        log.error("--url <url|file://> und --baseline <spec.json> erforderlich.");
+      if (!baselineFile) {
+        log.error("--baseline <spec.json> erforderlich.");
         return 2;
       }
       const path = require("path");
       const { loadBaselineSpec } = require("../src/qa/design-baseline");
       const { iterateToBaseline } = require("../src/qa/design-iterate");
-      const { proposeEdits, isConfigured } = require("../src/qa/propose-edits");
-      const dom = require("../src/web/dom-adapter");
       const { writeJson, writeText, timestamp, ensureDir } = require("../src/util");
       const { failsGate } = require("../src/qa/severity");
-
       const spec = loadBaselineSpec(baselineFile);
+      const target = args.flags.target ? Number(args.flags.target) : 95;
+      const maxIterations = args.flags.max != null ? Number(args.flags.max) : 5;
+      const ts = timestamp();
+      ensureDir(cfg.absPaths.qaReports);
+
+      if (platform === "android") {
+        const fs = require("fs");
+        const adb = require("../src/android/adb");
+        const designAdapter = require("../src/android/design-adapter");
+        const { proposeAndroidEdits, isConfigured } = require("../src/qa/propose-edits");
+
+        if (!adb.isAdbAvailable()) { log.error("adb nicht verfügbar (platform-tools/ADB_PATH)."); return 2; }
+        const devices = adb.listDevices();
+        const serial = args.flags.serial || devices[0];
+        if (!serial) { log.error("Kein Gerät verbunden — --serial <id> angeben oder Emulator starten."); return 2; }
+        const repo = args.flags.repo || process.cwd();
+        const sourceFiles = typeof args.flags.sources === "string" ? args.flags.sources.split(",").map((s) => s.trim()).filter(Boolean) : [];
+        if (!isConfigured()) log.warn("CUE_LLM_* nicht gesetzt → es kann nur gemessen werden (kein Patch-Vorschlag).");
+        if (!args.flags.build) log.warn("Kein --build/--install/--relaunch → ohne Rebuild wirken Quelltext-Patches NICHT auf das laufende Gerät.");
+
+        const rerender = args.flags.build || args.flags.install || args.flags.relaunch
+          ? designAdapter.makeRerender({ buildCmd: args.flags.build || null, installCmd: args.flags.install || null, relaunchCmd: args.flags.relaunch || null, cwd: repo, logger: log })
+          : undefined;
+
+        designAdapter._resetStack();
+        const result = await iterateToBaseline({
+          spec,
+          captureActual: () => designAdapter.captureActual(serial, spec),
+          proposeEdits: async ({ deviations }) => {
+            const sources = sourceFiles.map((f) => ({ file: f, content: fs.existsSync(path.resolve(repo, f)) ? fs.readFileSync(path.resolve(repo, f), "utf-8") : "" }));
+            return proposeAndroidEdits({ spec, deviations, sources });
+          },
+          applyEdits: (edits) => designAdapter.applyEdits(edits.map((e) => ({ ...e, file: path.resolve(repo, e.file) }))),
+          rollback: () => designAdapter.rollback(),
+          rerender,
+          targetScore: target,
+          maxIterations,
+          logger: log,
+        });
+        const jsonPath = path.join(cfg.absPaths.qaReports, `design-iterate-android-${ts}.json`);
+        writeJson(jsonPath, { tool: "cue-agent", intent: "design-iterate", platform: "android", serial, baseline: baselineFile, ...result });
+        log.ok(`Iterations-Report: ${jsonPath}`);
+        log.ok(`Konvergiert: ${result.converged} | bester Score: ${result.bestScore} (Iteration ${result.bestIteration})`);
+        if (args.flags.json) process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+        const failOn = args.flags["fail-on"] || cfg.qa.failOn;
+        return failsGate(result.finalSeverity, failOn) ? 1 : 0;
+      }
+
+      // ── Web (default) ──────────────────────────────────────────────────────
+      const url = args.flags.url;
+      if (!url) { log.error("--url <url|file://> erforderlich (Web-Plattform)."); return 2; }
+      const { proposeEdits, isConfigured } = require("../src/qa/propose-edits");
+      const dom = require("../src/web/dom-adapter");
       if (!isConfigured()) {
         log.warn("CUE_LLM_BASE_URL/MODEL nicht gesetzt → es kann nur gemessen werden (kein Vorschlag).");
       }
@@ -240,15 +292,13 @@ async function main() {
           },
           applyEdits: (edits) => dom.applyEdits(page, edits, history),
           rollback: () => dom.rollback(page, history),
-          targetScore: args.flags.target ? Number(args.flags.target) : 95,
-          maxIterations: args.flags.max != null ? Number(args.flags.max) : 5,
+          targetScore: target,
+          maxIterations,
           logger: log,
         });
-        const ts = timestamp();
-        ensureDir(cfg.absPaths.qaReports);
         const jsonPath = path.join(cfg.absPaths.qaReports, `design-iterate-${ts}.json`);
         const cssPath = path.join(cfg.absPaths.qaReports, `design-iterate-${ts}.css`);
-        writeJson(jsonPath, { tool: "cue-agent", intent: "design-iterate", url, baseline: baselineFile, ...result });
+        writeJson(jsonPath, { tool: "cue-agent", intent: "design-iterate", platform: "web", url, baseline: baselineFile, ...result });
         writeText(cssPath, dom.buildCss(history));
         log.ok(`Iterations-Report: ${jsonPath}`);
         log.ok(`Finale CSS-Diff:   ${cssPath}`);

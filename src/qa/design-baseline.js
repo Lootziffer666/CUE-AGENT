@@ -40,8 +40,14 @@ const fs = require("fs");
 
 const DEFAULT_TOL = { pos: 8, size: 10, color: 24 };
 
-function loadBaselineSpec(file) {
-  const spec = JSON.parse(fs.readFileSync(file, "utf-8"));
+/**
+ * Normalisiert + validiert eine Baseline-Spec (egal ob aus Datei geladen oder
+ * inline im Flow-Schritt angegeben). Setzt Default-Toleranzen und Element-IDs.
+ * @param {object} spec
+ * @returns {object} dieselbe (mutierte) Spec
+ */
+function normalizeSpec(spec) {
+  if (!spec || typeof spec !== "object") throw new Error("Baseline-Spec: Objekt erforderlich.");
   if (!Array.isArray(spec.elements)) throw new Error("Baseline-Spec: 'elements' (Array) erforderlich.");
   spec.tolerance = Object.assign({}, DEFAULT_TOL, spec.tolerance || {});
   spec.elements.forEach((e, i) => {
@@ -49,6 +55,10 @@ function loadBaselineSpec(file) {
     if (!e.id) e.id = `el-${i + 1}`;
   });
   return spec;
+}
+
+function loadBaselineSpec(file) {
+  return normalizeSpec(JSON.parse(fs.readFileSync(file, "utf-8")));
 }
 
 function hexToRgb(hex) {
@@ -178,6 +188,7 @@ function compareToBaseline({ spec, actual }) {
 
 module.exports = {
   loadBaselineSpec,
+  normalizeSpec,
   compareToBaseline,
   // Helfer exportiert für Tests/Adapter:
   hexToRgb,

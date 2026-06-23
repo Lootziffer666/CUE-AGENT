@@ -114,4 +114,50 @@ function assertExpectation(expect, { activity, xml, prevActivity }) {
   return { pass: reasons.length === 0, reasons, landedNowhere };
 }
 
-module.exports = { loadAndroidFlow, resolveTarget, assertExpectation };
+// ── expect.baseline: Design-Messlatte je Screen ─────────────────────────────
+// Verbindet die Flow-Verifikation ("landet der Tap im richtigen Screen?") mit
+// der Design-Baseline ("sieht der Screen aus wie die Vorgabe?"). Ein Schritt
+// kann `expect.baseline` tragen — entweder ein Pfad zur Spec-Datei (relativ zur
+// Flow-Datei) oder eine Inline-Spec. Pass, wenn der Baseline-Score >= minScore
+// (Default 90; je Spec/Inline via `minScore` überschreibbar).
+const path = require("path");
+const { loadBaselineSpec, normalizeSpec, compareToBaseline } = require("../qa/design-baseline");
+const designAdapter = require("./design-adapter");
+
+function resolveBaselineSpec(baseline, baseDir) {
+  if (typeof baseline === "string") {
+    const file = path.isAbsolute(baseline) ? baseline : path.join(baseDir || process.cwd(), baseline);
+    return loadBaselineSpec(file);
+  }
+  if (baseline && typeof baseline === "object") {
+    // Inline-Spec defensiv kopieren (normalizeSpec mutiert) und normalisieren.
+    return normalizeSpec(JSON.parse(JSON.stringify(baseline)));
+  }
+  throw new Error("expect.baseline: String (Spec-Pfad) oder Inline-Spec-Objekt erforderlich.");
+}
+
+/**
+ * Prüft expect.baseline gegen den aktuellen uiautomator-Dump.
+ * @param {string|object} baseline  Pfad zur Spec-Datei ODER Inline-Spec
+ * @param {string} xml              uiautomator-XML des Ziel-Screens
+ * @param {string} [baseDir]        Basisverzeichnis für relative Pfade
+ * @returns {{pass:boolean,score:number,severity:string,minScore:number,reasons:string[],compare:object}}
+ */
+function assertBaselineFromXml(baseline, xml, baseDir) {
+  const spec = resolveBaselineSpec(baseline, baseDir);
+  const actual = designAdapter.captureActualFromXml(xml, spec);
+  const cmp = compareToBaseline({ spec, actual });
+  const minScore =
+    baseline && typeof baseline === "object" && Number.isFinite(baseline.minScore)
+      ? baseline.minScore
+      : Number.isFinite(spec.minScore)
+      ? spec.minScore
+      : 90;
+  const pass = cmp.score >= minScore;
+  const reasons = pass
+    ? []
+    : [`Design-Baseline "${spec.screen || "?"}": Score ${cmp.score}/100 < ${minScore} (${cmp.failed} Abweichung(en), ${cmp.missing} fehlend)`];
+  return { pass, score: cmp.score, severity: cmp.severity, minScore, reasons, compare: cmp };
+}
+
+module.exports = { loadAndroidFlow, resolveTarget, assertExpectation, assertBaselineFromXml };
