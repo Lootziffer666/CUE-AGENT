@@ -1,40 +1,57 @@
-# CUE-AGENT — Brand (Entwurf v0)
+# CUE-AGENT — Brand
 
-> Erster Vektor-Entwurf, bewusst **nicht** KI-generiert (Bildmodelle verhunzen
-> Logo-Geometrie). Reine SVG-Pfade. **Ich kann das Ergebnis selbst nicht sehen —
-> du bist die Augen.** Sag, was an Proportion/Winkel/Funken/Gewicht anders soll.
+> Reine SVG-Pfade, bewusst **nicht** KI-generiert (Bildmodelle verhunzen
+> Logo-Geometrie). **Ich kann das Ergebnis selbst nicht sehen — du bist die
+> Augen.** Sag, was an Proportion / Winkel / Kurven / Gewicht anders soll.
 
 ## Dateien
 | Datei | Zweck |
 |---|---|
-| `cue-mark.svg` / `.png` | Symbol allein (transparent, 1:1) |
-| `cue-lockup.svg` / `.png` | Symbol + Wortmarke (zweizeilig, wie das IIG-Logo) |
+| `spark-emblem.svg` / `.png` | **ANVIL-SPARK** Emblem (Hammer-Check + Krone + Feder), dunkler Grund |
+| `cue-mark.svg` / `.png` | Älterer Entwurf v0 „Forged Cue" (Symbol allein, transparent) |
+| `cue-lockup.svg` / `.png` | Wortmarke-Lockup v0 (Symbol + Text) |
 
-## Konzept: „Forged Cue"
-Ein **Check (✓)** — Verifikation/„bestanden" — dessen langer Aufstrich
-**diagonal links-unten → rechts-oben** (wie das Ink-&-Iron-Glow-Logo) in
-**Funken** ausläuft. Bedeutung: *geprüft → für gut geschmiedet → das Signal
-(Cue) zu handeln.* Der Funke ist das verbindende Familien-Motiv (Schmiede),
-der Check ist CUEs eigene Aussage (QA).
+## Name: ANVIL-SPARK
+Der **Funke**, der den Schmiede-Zyklus schließt — und ihn zugleich neu zündet:
+`BELLOWS (Blasebalg) → FORGE/ANVIL (Amboss) → KNIGHT (Schutz) → SPARK (Funke)`.
+Passt in deine Namens-Taxonomie: **Schmiede-Werkzeuge** *oder* **mittelalterliche
+Titel**. SPARK ist das Werkzeug-Ende; CUE bleibt der Funktions-Name (das Signal).
+
+## Emblem-Konzept (v1, `spark-emblem.svg`)
+Nach deiner redraw-Spezifikation umgesetzt:
+
+- **Roter Hammer-Check** als *eine* zusammenhängende Masse: der kurze
+  Checkmark-Arm unten links knickt in den langen, massiven Diagonalstiel
+  (−47°) nach oben rechts, der zum **keulenartigen Hammerkopf** wird.
+- **Rote Krone** diagonal über dem Hammerkopf, Zacken mit **Kugelspitzen**.
+- **Weiße Füllerfeder** (royaler Kiel) oben rechts in die Krone gesetzt:
+  schwarze Kontur, graue Schattenfläche, **sternförmiges Tintenloch**.
+- **Dunkle Schatten-Spalte** trennt Krone / Körper / Feder.
+
+**Bedeutung:** *build it (Hammer) · validate it (Check) · own it (Krone) ·
+sign it (Feder).* — Bauen, prüfen, besitzen, signieren.
+
+### Farben (aus deiner Spec)
+| Rolle | Hex |
+|---|---|
+| Grund (Anthrazit) | `#1F2326` |
+| Rot dunkel | `#640921` |
+| Rot mittel | `#83102A` |
+| Rot hell | `#A90E2D` |
+| Schatten-Schwarz | `#101315` / `#151719` |
+| Feder weiß | `#EDEDED` |
+| Feder grau | `#AEAEAD` |
 
 ## Familien-Einordnung
 - **Ink & Iron Glow** (Firma) — Feder + Schmiede, „Forged Ink".
 - **ANVIL** (Studio) — der Amboss.
-- **CUE-AGENT** (Modul) — der **Funke, der zum Häkchen wird**.
+- **CUE-AGENT / ANVIL-SPARK** (Modul) — der **Funke**, der Check + Hammer vereint.
 
-> Hinweis: ANVILs eigenes Regelwerk trennt **Anvil ≠ IIG-Branding im Code**.
-> Dies ist das *Tool-Logo* in Familien-Sprache, kein IIG-Branding in Produkt-UIs —
-> wie nah CUE an der Familie sitzt, entscheidest du.
-
-## Farbe & Stil
-- Tiefrot (Entwurf): `#8a1c1c` — anzupassen an dein exaktes Firmen-Rot.
-- Text: `#111111`. Flat, minimalistisch, Negativraum.
-- Wortmarke-Font im Entwurf: schmale, fette Sans (Arial Narrow/Helvetica) —
-  finale Schrift = die deines Firmenlogos.
-
-## Offen / zum Justieren
-- Stimmt das **Rot** (gib mir den genauen Hex aus dem Firmenlogo)?
-- **Funken**: mehr/weniger, anderer Streuwinkel?
-- Soll ein **Nib-/Feder-Detail** (Ink) rein, um näher an IIG zu sein — oder
-  bewusst nüchtern bleiben (CUE = der Prüfer)?
-- Wortmarke: `CUE` vs. `CUE-AGENT`, Tagline `QA · FORGED TRUE` ok?
+## Offen / brauche dein Auge
+- **Proportionen**: Krümmung der Kronen-Zacken, Form/Größe der Feder,
+  Dicke des Hammerstiels — passt das visuell oder zu plump/zu dünn?
+- **Rot**: stimmt der Hex aus deinem echten Logo, oder andere Werte?
+- **Hammerkopf**: aktuell als zweiter Querbalken angedeutet — soll er
+  deutlicher „keulenartig" / breiter werden?
+- **Name final?** ANVIL-SPARK als Tool-Name bestätigen → dann Wortmarke
+  im Lockup von `CUE` auf `SPARK` umstellen (Tagline z. B. `SPARK — FORGED TRUE`)?
