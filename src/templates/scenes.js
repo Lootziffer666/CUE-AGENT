@@ -111,19 +111,25 @@ function screenshotScene(brand, { heading, screenshotFile, caption, chapter, hig
   // Polish-Phase A: Studio-Frame (optional) + deterministischer Auto-Zoom (rein→halten→raus)
   const frameCss = frame ? templates_polish.framePresentationCss(brand, frame) : "";
   const zoomTween = highlight && highlight.zoom ? templates_polish.autoZoomTimeline(highlight, m) : "";
+  // Polish-Phase B: Cursor-Overlay (optional) — fährt zum Highlight + Klick-Puls
+  const useCursor = highlight && highlight.wPct && highlight.cursor;
+  const cursorCss = useCursor ? templates_polish.cursorOverlayCss(brand) : "";
+  const cursorHtml = useCursor ? templates_polish.cursorMarkup() : "";
+  const cursorTween = useCursor ? templates_polish.cursorTimeline(highlight, m) : "";
   return wrapScene(brand, {
     dims,
-    extraCss: hlCss + frameCss,
+    extraCss: hlCss + frameCss + cursorCss,
     body: `
   ${chapter ? `<div class="chapter-badge">${escapeHtml(chapter)}</div>` : ""}
   ${heading ? `<h2 class="heading" style="font-size:2.5rem">${escapeHtml(heading)}</h2>` : ""}
-  <div class="screenshot-wrap"><img src="${screenshotFile}" alt="">${hl}</div>
+  <div class="screenshot-wrap"><img src="${screenshotFile}" alt="">${hl}${cursorHtml}</div>
   ${caption ? `<div class="caption-bar">${escapeHtml(caption)}</div>` : ""}`,
     gsapTimeline: `
 ${chapter ? `tl.fromTo(".chapter-badge", {opacity:0, x:-20}, {opacity:1, x:0, duration:${m.durationFast}, ease:"${m.easeOut}"}, 0.1);` : ""}
 ${heading ? `tl.fromTo(".heading", {opacity:0, y:20}, {opacity:1, y:0, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 0.2);` : ""}
 tl.fromTo(".screenshot-wrap", {opacity:0, y:30}, {opacity:1, y:0, duration:${m.durationSlow}, ease:"${m.easeOut}"}, 0.4);
 ${hl ? `tl.fromTo(".hl-spot", {opacity:0}, {opacity:1, duration:${m.durationMedium}, ease:"${m.easeOut}"}, 1.0);` : ""}
+${cursorTween}
 ${zoomTween}
 ${caption ? `tl.fromTo(".caption-bar", {opacity:0}, {opacity:1, duration:${m.durationFast}}, 1.2);` : ""}`,
     duration: duration || 4,

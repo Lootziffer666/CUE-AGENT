@@ -72,7 +72,8 @@ Commands:
   showcase <url>    Showcase-Video (Intro -> Walkthrough -> Highlights -> Closer)
   configurator      Web-GUI zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts)
   doctor            Umgebung pruefen (Node, ffmpeg, Playwright, API-Keys)
-  render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html)
+  render <dir>      Vorhandenes Video-Projekt neu rendern (scenes/*.html); [--gif] exportiert zusätzlich ein GIF
+  gif <mp4>         Video in ein optimiertes GIF umwandeln (--fps --width --start --duration --loop)
 
 Globale Optionen:
   --lang de|en      Sprache der Ausgaben (Default: de bzw. CUE_LANG)
@@ -443,9 +444,48 @@ async function main() {
         return 1;
       }
       const result = await runRender({ projectDir: dir, cfg, force: Boolean(args.flags.force), logger: log });
+      // Polish-B: optionaler GIF-Export des fertigen Videos (--gif).
+      if (args.flags.gif && result && result.mp4Path) {
+        const { exportGif } = require("../src/render/gif");
+        const num = (v) => (v == null ? undefined : Number(v));
+        const gifOut = typeof args.flags.gif === "string" ? args.flags.gif : result.mp4Path.replace(/\.[^.]+$/, "") + ".gif";
+        const g = exportGif(result.mp4Path, gifOut, { fps: num(args.flags["gif-fps"]), width: num(args.flags["gif-width"]) });
+        log.ok(`GIF: ${g.out} (${(g.bytes / 1024 / 1024).toFixed(2)} MB)`);
+        result.gifPath = g.out;
+      }
       if (args.flags.json) {
         process.stdout.write(JSON.stringify(result, null, 2) + "\n");
       }
+      return 0;
+    }
+
+    case "gif": {
+      if (args.flags.help) {
+        console.log("cue gif <input.mp4> [--out x.gif] [--fps 15] [--width 720] [--start s] [--duration s] [--loop 0]");
+        return 0;
+      }
+      const input = args._[1];
+      if (!input) {
+        log.error("cue gif benötigt eine Eingabedatei (z. B. final.mp4).");
+        return 1;
+      }
+      const fs = require("fs");
+      if (!fs.existsSync(input)) {
+        log.error(`Eingabedatei nicht gefunden: ${input}`);
+        return 1;
+      }
+      const { exportGif } = require("../src/render/gif");
+      const num = (v) => (v == null ? undefined : Number(v));
+      const out = args.flags.out || input.replace(/\.[^.]+$/, "") + ".gif";
+      const r = exportGif(input, out, {
+        fps: num(args.flags.fps),
+        width: num(args.flags.width),
+        start: num(args.flags.start),
+        duration: num(args.flags.duration),
+        loop: num(args.flags.loop),
+      });
+      log.ok(`GIF: ${r.out} (${(r.bytes / 1024 / 1024).toFixed(2)} MB, ${r.fps}fps, ${r.width}px breit)`);
+      if (args.flags.json) process.stdout.write(JSON.stringify(r, null, 2) + "\n");
       return 0;
     }
 

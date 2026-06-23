@@ -31,6 +31,7 @@ const { pathToFileURL } = require("url");
 const { execFileSync } = require("child_process");
 const { chromium } = require("playwright");
 const { ensureDir } = require("../util");
+const { buildSpeedStage } = require("./speed");
 
 function runFfmpeg(args, label) {
   try {
@@ -59,6 +60,9 @@ function sceneHash({ htmlPath, clip, fps, viewport }) {
   } catch (_) {}
   if (clip) {
     h.update("clip:" + clip.kind + ":" + clip.start + ":" + clip.duration + ":" + (clip.source || ""));
+    // Polish-B: Speed-Ramping beeinflusst das Segment → in den Hash aufnehmen.
+    if (clip.speed != null) h.update("speed:" + clip.speed);
+    if (clip.speedRegions) h.update("speedRegions:" + JSON.stringify(clip.speedRegions));
     try {
       if (clip.source && fs.existsSync(clip.source)) {
         h.update("mtime:" + fs.statSync(clip.source).mtimeMs);
@@ -129,7 +133,10 @@ async function renderAnimatedSegment({ context, scenePath, segPath, framesDir, f
  */
 async function renderClipSegment({ context, scenePath, clip, segPath, fps, viewport, log, index }) {
   const { width, height } = viewport;
-  const dur = clip.duration;
+  // Polish-B: optionales Speed-Ramping (nur Video). Ändert die effektive Dauer.
+  const speed = buildSpeedStage(clip);
+  const dur = speed ? speed.duration : clip.duration;
+  if (speed) log.info(`    Speed-Ramping aktiv → effektive Clip-Dauer ${dur}s`);
 
   // 1) Transparentes Overlay-PNG rendern (einmal) — PNG wegen Transparenz!
   const overlayPng = path.join(path.dirname(segPath), `overlay-${index}.png`);
@@ -155,18 +162,26 @@ async function renderClipSegment({ context, scenePath, clip, segPath, fps, viewp
   if (clip.kind === "image") {
     args.push("-loop", "1", "-t", String(dur), "-i", clip.source);
   } else {
-    args.push("-ss", String(clip.start), "-t", String(dur), "-i", clip.source);
+    // Quelle auf das Original-Zeitfenster trimmen (Speed wirkt danach via setpts).
+    args.push("-ss", String(clip.start), "-t", String(clip.duration), "-i", clip.source);
   }
 
+  // Filtergraph: [speed?] -> scale/fps -> [overlay] -> fade -> [v]
+  const srcLabel = speed ? "[spd]" : "[0:v]";
+  const speedChain = speed ? speed.chain + ";" : "";
   if (hasOverlay) {
     args.push("-i", overlayPng);
     args.push(
       "-filter_complex",
-      `[0:v]${scalePad},fps=${fps}[bg];[bg][1:v]overlay=0:0,${fade}[v]`,
+      `${speedChain}${srcLabel}${scalePad},fps=${fps}[bg];[bg][1:v]overlay=0:0,${fade}[v]`,
       "-map", "[v]"
     );
   } else {
-    args.push("-vf", `${scalePad},fps=${fps},${fade}`);
+    args.push(
+      "-filter_complex",
+      `${speedChain}${srcLabel}${scalePad},fps=${fps},${fade}[v]`,
+      "-map", "[v]"
+    );
   }
 
   args.push(
