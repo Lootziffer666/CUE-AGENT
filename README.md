@@ -199,6 +199,34 @@ cue promo --script my-video.script.json --tts kokoro --voice daniel
 
 > `kokoro-js` ist eine optionale Dependency. Falls nicht installiert: `npm install kokoro-js`.
 
+## AI-Funktionen ohne Key ausprobieren (Offline-Stub)
+
+Die LLM-/Bild-gestützten Funktionen (`cue qa`, `release-check`, `design-iterate`,
+Auto-Bildgenerierung) sprechen einen **OpenAI-kompatiblen** Endpunkt. Für Demos,
+CI und lokales Ausprobieren **ohne BYOK** liegt ein lokaler Stub bei:
+[`scripts/offline-ai-stub.js`](scripts/offline-ai-stub.js).
+
+```bash
+node scripts/offline-ai-stub.js          # lokaler Endpunkt auf :8771
+
+export CUE_LLM_PROVIDER=openai
+export CUE_LLM_BASE_URL=http://127.0.0.1:8771/v1
+export CUE_LLM_MODEL=cue-local
+export CUE_LLM_API_KEY=local
+export CUE_IMAGE_API_KEY=local
+
+cue design-iterate --url file://./page.html --baseline spec.json   # konvergiert
+cue qa http://localhost:8099/                                       # QA-Report
+cue promo --script my.script.json --images auto                     # mit Bildern
+```
+
+Der Stub ist **kein** echtes Modell: Der Design-Proposer berechnet aus der
+Ziel-Spec die exakten CSS-Overrides (deterministisch korrekt — `design-iterate`
+konvergiert wirklich), Bilder werden lokal per ffmpeg synthetisiert, QA liefert
+sinnvolle Defaults (eigene Befunde als `canned/qa-<slug>.json` hinterlegbar). Für
+echte Vision-Analyse weiterhin einen Provider via `ANTHROPIC_API_KEY` bzw.
+`CUE_LLM_*` setzen.
+
 ## CLI-Übersicht
 
 | Command | Zweck |

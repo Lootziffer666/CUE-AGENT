@@ -67,6 +67,32 @@ bleibt als Fallback. Smoke-Test `test/audio-mix.test.js` schützt die Verteilung
 Das committete `demo/cue-agent-promo.mp4` wurde mit der korrigierten, synchronen
 Tonspur neu erzeugt.
 
+## Verifizierungs-Sweep (Runde 3): die KI-Funktionen ausführen — ohne echten Key
+
+Damit auch die LLM-/Bild-gestützten Funktionen tatsächlich liefen (statt nur
+sauber ohne Key abzubrechen), wurde ein lokaler, OpenAI-kompatibler **Offline-AI-
+Stub** gebaut ([`scripts/offline-ai-stub.js`](scripts/offline-ai-stub.js)) und per
+`CUE_LLM_*`-Env eingehängt. Damit end-to-end ausgeführt und visuell geprüft:
+
+- **`cue qa` mit Vision-Analyse** — die Analyse stammt aus echtem Hinsehen (über
+  eine Canned-Antwort eingespeist). Sie fand einen **echten Bug** der Marketing-
+  Site: Inhalt hinter scroll-getriggerten `.reveal`-Animationen ist ohne
+  Scrollen/JS bzw. bei `prefers-reduced-motion` unsichtbar (leere Flächen).
+- **`cue release-check`** — produziert `RELEASE-READINESS.md` mit Verdikt
+  „NICHT BEREIT (Score 74)", Checkliste, Blockern und Befund-Tabelle.
+- **`cue design-iterate`** — der KI-Proposer berechnet aus der Ziel-Spec die
+  korrekten CSS-Overrides; Loop **konvergiert** (Start-Score 0 → Iteration 1:
+  100), nachweisbar als Vorher/Nachher.
+- **Auto-Bildgenerierung** (`--images auto`) — image-Szenen rendern mit lokal
+  per ffmpeg synthetisierten Marken-Bildern; daraus ein neues Showcase-Promo
+  ([`docs/promo/cue-agent-ai-promo.mp4`](docs/promo/cue-agent-ai-promo.mp4),
+  englische Kokoro-Stimme, [`examples/cue-agent-promo-ai.script.json`](examples/cue-agent-promo-ai.script.json)).
+
+**Bug-Fix (von der QA gefunden, behoben & verifiziert):** Die Marketing-Site
+versteckt `.reveal`-Inhalt jetzt nur noch, wenn JavaScript aktiv ist
+(`html.js .reveal`), per Inline-`js`-Klassen-Flag im `<head>`. Ohne JS bleibt
+aller Inhalt sichtbar — mit deaktiviertem JS verifiziert (keine leeren Flächen).
+
 ## Der kritische Fix: GSAP wurde vom CDN geladen
 
 **Symptom:** Beim ersten Render warnte der Renderer für *jede* Szene
