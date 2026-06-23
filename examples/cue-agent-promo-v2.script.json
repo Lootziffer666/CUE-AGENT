@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "title": "CUE-AGENT",
+    "mode": "promo",
+    "lang": "de",
+    "voice": "daniel",
+    "brand": "linear",
+    "aspect": "16:9",
+    "tone": "selbstbewusstes Dev-Tool-Promo mit trockenem Humor"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "id": "hook",
+      "title": "Dein Code ist fertig.",
+      "subtitle": "Aber ist er wirklich bereit?",
+      "narration": "Dein Code ist fertig. Der Build ist grün. Und trotzdem dieses Gefühl: Ist das wirklich schon bereit für echte Menschen?",
+      "duration": 6.5
+    },
+    {
+      "type": "features",
+      "id": "qa",
+      "heading": "QA, das hinschaut",
+      "features": [
+        "Echter Browser, echte Screenshots",
+        "Konsolen- und Netzwerk-Fehler",
+        "Vision-Analyse statt Bauchgefühl",
+        "Severity, Score, klarer Report"
+      ],
+      "narration": "CUE-AGENT steuert einen echten Browser, sieht deine App wie ein Nutzer und analysiert sie mit einem Vision-Modell. Keine Vermutungen, sondern strukturierte Befunde mit Schweregrad und Score.",
+      "duration": 9
+    },
+    {
+      "type": "features",
+      "id": "loop",
+      "heading": "Der autonome QA-Loop",
+      "features": [
+        "Bugs finden und dokumentieren",
+        "Fixes vorschlagen und anwenden",
+        "Neu bauen, erneut testen",
+        "Wiederholen, bis es sitzt"
+      ],
+      "narration": "Und dann wird es spannend. Der autonome Loop findet Bugs, schlägt Fixes vor, wendet sie an, baut neu und testet wieder. So lange, bis die Qualität stimmt.",
+      "duration": 9
+    },
+    {
+      "type": "features",
+      "id": "baseline",
+      "heading": "Pixelgenau gegen dein Mockup",
+      "features": [
+        "Mockup als Messlatte hochladen",
+        "Position, Größe, Text, Farbe geprüft",
+        "Score statt Bauchgefühl",
+        "Iteriert automatisch zum Ziel"
+      ],
+      "narration": "Neu: die Design-Baseline. Lade dein Mockup als Messlatte hoch. CUE-AGENT vergleicht Position, Größe, Text und Farbe pixelgenau und iteriert selbstständig, bis das Design sitzt.",
+      "duration": 9
+    },
+    {
+      "type": "screenshot",
+      "id": "gui",
+      "heading": "Dein Mini-Studio",
+      "screenshotFile": "gui-main.png",
+      "caption": "Alles per GUI oder CLI",
+      "highlight": { "xPct": 8, "yPct": 30, "wPct": 38, "hPct": 30, "cursor": true, "zoom": true },
+      "narration": "Steuere alles im Configurator: Marke, Stimme, Seitenverhältnis. Oder bleib auf der Kommandozeile. Du hast die Wahl.",
+      "duration": 8
+    },
+    {
+      "type": "clip",
+      "id": "studio-clip",
+      "heading": "Bewegung, die führt",
+      "caption": "Mit Slow-Motion auf den wichtigen Moment",
+      "clipStart": 0,
+      "clipDuration": 5,
+      "speedRegions": [{ "start": 2.2, "end": 3.2, "speed": 0.4 }],
+      "narration": "Echte Bildschirm-Clips, kein Standbild-Brei. Und dort, wo es darauf ankommt, schaltet CUE-AGENT automatisch in Zeitlupe.",
+      "duration": 6.8
+    },
+    {
+      "type": "features",
+      "id": "polish",
+      "heading": "Politur wie im Studio",
+      "features": [
+        "Geführter Cursor mit Klick-Puls",
+        "Speed-Ramping und Zeitlupe",
+        "Auto-Zoom auf das Wichtige",
+        "GIF-Export für README und Social"
+      ],
+      "narration": "Ein geführter Cursor, der genau dorthin fährt, wo es zählt. Auto-Zoom, Zeitlupe und am Ende ein GIF-Export, direkt fürs README oder Social.",
+      "duration": 9
+    },
+    {
+      "type": "features",
+      "id": "android",
+      "heading": "Auch auf Android",
+      "features": [
+        "Echte Geräte und Emulatoren",
+        "Autonome Exploration",
+        "Crash- und ANR-Erkennung",
+        "Soll-Ist-Flow: landet der Tap richtig?"
+      ],
+      "narration": "Nicht nur im Web. CUE-AGENT testet auch Android-Apps auf echten Geräten und Emulatoren, erkennt Abstürze und prüft, ob jeder Tap im richtigen Screen landet.",
+      "duration": 9
+    },
+    {
+      "type": "title",
+      "id": "gate",
+      "title": "Erst QA. Dann Promo.",
+      "subtitle": "Es wird nie eine kaputte App beworben.",
+      "narration": "Das Beste: Es gibt ein Gate. Erst wenn die QA bestanden ist, entsteht ein Video. Du bewirbst also niemals eine kaputte App. Versprochen.",
+      "duration": 8
+    },
+    {
+      "type": "features",
+      "id": "studio2",
+      "heading": "Ton aus eigener Werkstatt",
+      "features": [
+        "Stimme lokal und ganz ohne Key",
+        "Eigene Musik und Soundeffekte",
+        "AI-Bilder oder eigene Medien",
+        "Sechs Marken-Looks, jedes Format"
+      ],
+      "narration": "Sprache läuft lokal, ganz ohne Schlüssel. Dazu eigene Musik, Soundeffekte, KI-Bilder, sechs Marken-Looks und jedes Seitenverhältnis.",
+      "duration": 9
+    },
+    {
+      "type": "title",
+      "id": "payoff",
+      "title": "Ein Werkzeug.",
+      "subtitle": "Vom Bug bis zum fertigen Video.",
+      "narration": "Ein Werkzeug für den ganzen Weg. Vom ersten Bug bis zum fertigen Marketing-Video.",
+      "duration": 6
+    },
+    {
+      "type": "cta",
+      "id": "cta",
+      "heading": "CUE-AGENT",
+      "url": "npx github:Lootziffer666/CUE-AGENT",
+      "narration": "CUE-AGENT. Teste härter. Zeig es schöner.",
+      "duration": 5
+    }
+  ]
+}

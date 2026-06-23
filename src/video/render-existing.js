@@ -62,7 +62,15 @@ async function runRender({ projectDir, cfg, force = false, logger }) {
         (s) => s.type === "clip" && base.includes(`-${s.id}.overlay`)
       );
       if (sb) {
-        return { clip: { source: videoSource, start: sb.clipStart || 0, duration: sb.clipDuration || 4 } };
+        return {
+          clip: {
+            source: videoSource,
+            start: sb.clipStart || 0,
+            duration: sb.clipDuration || 4,
+            ...(sb.speed != null ? { speed: sb.speed } : {}),
+            ...(sb.speedRegions ? { speedRegions: sb.speedRegions } : {}),
+          },
+        };
       }
     }
     return { clip: null };
