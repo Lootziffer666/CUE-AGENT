@@ -1,17 +1,46 @@
 # CUE-AGENT
 
-QA-Bughunting **und** Videoersteller in einem Werkzeug. CUE-AGENT steuert einen Browser
-(Playwright), analysiert Seiten mit Anthropic Claude (Vision) und folgt einem klaren
-**QA-first-Workflow**: erst Qualität sichern (Bugs finden, UI verbessern), dann — und nur
-nach bestandener QA — Promo-, Showcase- oder Tutorial-Videos der verbesserten App erstellen.
+**CUE-AGENT ist ein QA- und Verifikations-Agent für Web- und Android-UIs.** Er steuert
+einen echten Browser (Playwright), prüft eine App wie ein Mensch — mit Vision-Analyse,
+Konsolen-/Netzwerk-/Accessibility-Signalen, **pixelgenauen Design-Checks** und
+**Severity-Scoring** — und kann Bugs **autonom dokumentieren, beheben und erneut testen**,
+bis das Produkt veröffentlichungsreif ist. Video ist der **letzte** Schritt und nur erlaubt,
+wenn die QA besteht: Aus denselben geprüften Flows entsteht dann ein Promo-, Tutorial- oder
+Showcase-Video.
+
+> Kurz: **zuerst Qualität messbar machen** (prüfen, scoren, iterieren), **dann — und nur
+> dann — zeigen.** CUE-AGENT „macht" nicht primär Videos; das Video ist der Schlussbeweis.
+
+## Was CUE-AGENT kann
+
+| Fähigkeit | Was es tut | Command |
+|---|---|---|
+| **QA-Bughunting** | Echter Browser + Vision-Analyse + Konsolen-/Netzwerk-/a11y-Signale → **strukturierte Findings** (Severity, Kategorie, Ort, konkreter Fix), **Score 0–100**, CI-Exit-Code | `cue qa <url>` |
+| **Pixelgenaue Design-Verifikation** | Ist-UI **deterministisch** gegen eine Soll-Baseline (Position, Größe, Text, Farbe je Element, mit Toleranzen) — kein LLM nötig, harter reproduzierbarer Vertrag | `cue design-check` |
+| **Autonome Iteration** | **testen → fixen → rebuilden → erneut testen**, bis Ziel-Score/READY. Web: schlägt CSS-Overrides vor und misst Konvergenz; Repo: schlägt Datei-Patches vor, wendet sie an, baut neu | `cue design-iterate`, `cue qa-loop` |
+| **Release-Readiness-Scoring** | Urteil **READY / NOT READY** mit Checkliste (keine High/Critical, Score ≥ Schwelle, keine Konsolenfehler, keine 5xx) + Begründung → `RELEASE-READINESS.md` | `cue release-check <url>` |
+| **Flow-Verifikation** | Deklarative Flows (klicken/tippen/scrollen/warten) → CaptureBundle: Video + Screenshots + Logs + **Netzwerk + Metrics + a11y-Baum** | `cue capture --flow` |
+| **Android-QA** | Dieselbe Pipeline gegen eine App im Emulator (ADB + uiautomator-BBoxen + Vision) | `cue android-qa` |
+| **QA-Gate** | `promo`/`tutorial`/`showcase` werden **blockiert**, solange kein frischer QA-Report mit ausreichendem Score & ohne offene High-Bugs existiert | (automatisch) |
+| **Video (Belohnung)** | Erst nach bestandener QA: Promo/Tutorial/Showcase aus den geprüften Flows — HTML+GSAP-Render, szenen-synchrone Stimme, SFX, 6 Brand-Presets, Aspect-Ratios | `cue promo/tutorial/showcase` |
+
+**Scoring & Severity — das Herzstück.** Befunde werden in `none / low / medium / high /
+critical` eingestuft. Aus Konsolenfehlern, Netzwerk-4xx/5xx, Navigations-Status und den
+Vision-Findings entstehen ein **Score (0–100)** und ein **Severity-Level**, das per
+`--fail-on` ein CI-Gate bildet. Der Design-Comparator liefert zusätzlich einen
+deterministischen Score aus PASS/FAIL je Element. Diese Zahlen sind die Grundlage für das
+**Release-Gate** *und* den **autonomen Iterations-Loop** (er läuft, bis der Score das Ziel
+erreicht oder `--max` ausgeschöpft ist) — nicht für die Videos.
+
+## Selbst-Beweis (Dogfooding)
+
+🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein Promo, das CUE-AGENT
+**mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
+8 Szenen, lokale Kokoro-Stimme, SFX an den Übergängen, szenen-synchrones Voiceover. Reproduzierbar
+ohne jeden API-Key. Ein zweites Showcase mit KI-Bild-Szenen:
+[`docs/promo/cue-agent-ai-promo.mp4`](docs/promo/cue-agent-ai-promo.mp4).
 
 > Roadmap & Konzept: [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
-
-## Demo
-
-🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein 68-Sekunden-Promo, das CUE-AGENT
-**mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
-8 Szenen, lokale Kokoro-Stimme, Soundeffekte an den Übergängen, Linear-Brand. Reproduzierbar ohne jeden API-Key.
 
 ## Continuous QA (GitHub Actions)
 
@@ -231,14 +260,18 @@ echte Vision-Analyse weiterhin einen Provider via `ANTHROPIC_API_KEY` bzw.
 
 | Command | Zweck |
 |---|---|
-| `cue qa <url>` | QA-Analyse: Screenshot + Konsolen-Logs + Claude-Vision (MD + JSON, Severity, CI-Exit-Code) |
-| `cue release-check <url>` | Veröffentlichungsreife prüfen (Verdict + RELEASE-READINESS.md) |
-| `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen |
-| `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs) |
-| `cue promo <url>` | Promo-Video (Hook → Features → Screenshots → CTA) |
+| `cue qa <url>` | QA-Analyse: Screenshot + Konsolen-/Netzwerk-/a11y-Signale + Vision → Findings, Severity, **Score**, CI-Exit-Code |
+| `cue design-check` | **Pixelgenaue** Design-Verifikation: Ist-UI gegen Soll-Baseline (Position/Größe/Text/Farbe), deterministisch, kein LLM |
+| `cue design-iterate` | **Autonom** gegen Design-Baseline iterieren (Web/Android), bis Ziel-Score erreicht |
+| `cue release-check <url>` | Veröffentlichungsreife prüfen (**READY/NOT READY** Verdict + Score + RELEASE-READINESS.md) |
+| `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen, bis READY |
+| `cue android-qa [apk]` | Android-App-QA im Emulator (ADB + uiautomator-BBoxen + Vision) |
+| `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs + Netzwerk + Metrics + a11y) |
+| `cue promo <url>` | Promo-Video (nur nach bestandener QA) — Hook → Features → Screenshots → CTA |
 | `cue tutorial <url>` | Tutorial-Video (Cold-Open → Kapitel → Recap) |
 | `cue showcase <url>` | Showcase-Video (Intro → Walkthrough → Closer) |
 | `cue render <dir>` | Vorhandenes Projekt neu rendern (schnelle Iteration) |
+| `cue gif <mp4>` | Video → optimiertes GIF |
 | `cue configurator` | **Web-GUI** zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts, Im-/Export) |
 | `cue doctor` | Umgebungs-Check |
 

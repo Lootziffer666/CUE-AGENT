@@ -1,7 +1,7 @@
 {
   "name": "cue-agent",
   "version": "1.3.0",
-  "description": "CUE-AGENT - QA-Bughunting & ultimativer Videoersteller (Playwright + Anthropic Claude Vision). QA-first Workflow, danach Promo-/Showcase-/Tutorial-Videos.",
+  "description": "CUE-AGENT - QA- & Verifikations-Agent für Web-/Android-UIs (Playwright + Vision): Bughunting, pixelgenaue Design-Checks, Severity-Scoring, autonome Test→Fix→Retest-Iteration und Release-Readiness. Promo-/Tutorial-/Showcase-Videos erst nach bestandener QA.",
   "main": "bin/cue.js",
   "bin": {
     "cue": "bin/cue.js"
@@ -30,6 +30,13 @@
     "qa",
     "testing",
     "bughunting",
+    "design-qa",
+    "visual-regression",
+    "design-baseline",
+    "release-readiness",
+    "severity-scoring",
+    "autonomous-agent",
+    "accessibility",
     "playwright",
     "anthropic",
     "claude",
