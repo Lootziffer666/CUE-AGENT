@@ -50,4 +50,28 @@ function makeLogger(prefix = "CUE") {
   };
 }
 
-module.exports = { timestamp, ensureDir, slugify, writeJson, writeText, makeLogger };
+/**
+ * Chromium-Executable robust auflösen: Playwrights eigener Pfad, sonst
+ * CUE_CHROMIUM/CHROMIUM-Env, sonst gängige System-Symlinks (z. B.
+ * /opt/pw-browsers/chromium in vorinstallierten CI-/Sandbox-Umgebungen).
+ * Gibt `undefined` zurück, wenn Playwrights Default gültig ist (kein Override).
+ */
+function resolveChromiumExecutable(chromium) {
+  try {
+    const p = chromium.executablePath();
+    if (p && fs.existsSync(p)) return undefined; // Default funktioniert
+  } catch {
+    // weiter mit Fallbacks
+  }
+  const candidates = [
+    process.env.CUE_CHROMIUM,
+    process.env.CHROMIUM,
+    "/opt/pw-browsers/chromium",
+  ].filter(Boolean);
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return undefined;
+}
+
+module.exports = { timestamp, ensureDir, slugify, writeJson, writeText, makeLogger, resolveChromiumExecutable };

@@ -17,7 +17,7 @@
 
 const path = require("path");
 const { chromium } = require("playwright");
-const { ensureDir, timestamp } = require("../util");
+const { ensureDir, timestamp, resolveChromiumExecutable } = require("../util");
 
 /**
  * Führt einen einzelnen Flow-Schritt aus.
@@ -166,7 +166,7 @@ async function capture({
     };
   }
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: resolveChromiumExecutable(chromium) });
   const consoleLogs = [];
   const networkErrors = [];
   const flowResults = [];

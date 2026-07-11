@@ -31,12 +31,15 @@ function ffmpegAvailable() {
 }
 
 function chromiumAvailable() {
+  const { chromium } = require("playwright");
+  const { resolveChromiumExecutable } = require("../src/util");
   try {
-    const p = require("playwright").chromium.executablePath();
-    return !!p && fs.existsSync(p);
+    const p = chromium.executablePath();
+    if (p && fs.existsSync(p)) return true;
   } catch {
-    return false;
+    // Fallback prüfen
   }
+  return Boolean(resolveChromiumExecutable(chromium));
 }
 
 test(

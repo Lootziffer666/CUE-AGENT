@@ -15,6 +15,7 @@
  */
 
 const { chromium } = require("playwright");
+const { resolveChromiumExecutable } = require("../util");
 
 /** "rgb(37, 99, 235)" | "rgba(..)" | "#2563eb" → [r,g,b] | null */
 function parseColor(s) {
@@ -28,7 +29,7 @@ function parseColor(s) {
 }
 
 async function launch() {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: resolveChromiumExecutable(chromium) });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   return { browser, page };
 }
