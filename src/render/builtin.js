@@ -30,7 +30,7 @@ const crypto = require("crypto");
 const { pathToFileURL } = require("url");
 const { execFileSync } = require("child_process");
 const { chromium } = require("playwright");
-const { ensureDir } = require("../util");
+const { ensureDir, resolveChromiumExecutable } = require("../util");
 const { buildSpeedStage } = require("./speed");
 
 function runFfmpeg(args, label) {
@@ -222,7 +222,7 @@ async function renderBuiltin({ scenePaths, scenes, cfg, outDir, force = false, l
   const clipCount = descriptors.filter((d) => d.clip).length;
   log.info(`Renderer: ${descriptors.length} Szenen (${clipCount} Clips) @ ${fps} fps, ${viewport.width}x${viewport.height}`);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: resolveChromiumExecutable(chromium) });
   const segPaths = [];
   let totalFrames = 0;
   let totalDuration = 0;

@@ -1,0 +1,219 @@
+"use strict";
+
+/**
+ * `cue temporal-check <url>` — zeitliche Konsistenz-Prüfung (assetpilot.md).
+ *
+ * Fährt eine Sequenz aus Idle-, Übergangs- und Zustands-Phasen durch und
+ * bewertet die Frames mit den reinen Metriken aus frame-metrics.js:
+ *  - Idle darf nicht statisch wirken (SHADED-Szenen „leben") bzw. nicht flackern
+ *  - Übergänge (Regen-/Licht-Rampen) dürfen keine Sprünge enthalten
+ *  - Zustandswechsel (Tag→Nacht) müssen sichtbar wirken
+ *
+ * Erkennt SHADEDs API-Vertrag (window.SHADED: isReady/setParams/applyAct) und
+ * steuert dann die Weltparameter direkt — komplett key-frei/deterministisch.
+ * Ohne SHADED läuft ein generischer Modus (Idle-Sampling: Stabilität/Flackern).
+ */
+
+const path = require("path");
+const fs = require("fs");
+const { chromium } = require("playwright");
+const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolveChromiumExecutable } = require("../util");
+const { analyzeSequence } = require("./frame-metrics");
+
+const SAMPLE_W = 128;
+const SAMPLE_H = 72;
+
+/** Screenshot-PNG-Puffer im Browser dekodieren und auf Analysegröße verkleinern. */
+async function decodeFrames(probePage, buffers) {
+  const b64 = buffers.map((b) => b.toString("base64"));
+  return probePage.evaluate(
+    async ({ shots, w, h }) => {
+      const out = [];
+      for (const s of shots) {
+        const img = new Image();
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = () => rej(new Error("PNG-Dekodierung fehlgeschlagen"));
+          img.src = "data:image/png;base64," + s;
+        });
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const x = c.getContext("2d");
+        x.drawImage(img, 0, 0, w, h);
+        out.push(Array.from(x.getImageData(0, 0, w, h).data));
+      }
+      return out;
+    },
+    { shots: b64, w: SAMPLE_W, h: SAMPLE_H }
+  );
+}
+
+async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
+  const log = logger || makeLogger("TEMPORAL");
+  if (!url) throw new Error("temporal-check braucht eine URL (Argument oder cue.config.json targetUrl)");
+
+  const dir = ensureDir(outDir || path.join(process.cwd(), "temporal-reports", `${slugify(url)}-${timestamp()}`));
+  const shotsDir = ensureDir(path.join(dir, "frames"));
+
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: resolveChromiumExecutable(chromium),
+    args: ["--use-gl=angle", "--enable-webgl", "--ignore-gpu-blocklist"],
+  });
+  const viewport = (cfg && cfg.viewport) || { width: 1280, height: 720 };
+  const page = await browser.newPage({ viewport });
+  const probe = await browser.newPage({ viewport: { width: 200, height: 200 } });
+  const consoleErrors = [];
+  page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
+  page.on("pageerror", (e) => consoleErrors.push("PAGEERROR: " + e.message));
+
+  const captured = []; // { phase, kind, buffer, saveAs? }
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const grab = async (phase, kind, saveAs) => {
+    const buffer = await page.screenshot({ type: "png" });
+    captured.push({ phase, kind, buffer, saveAs });
+  };
+
+  let mode = "generic";
+  try {
+    log.info(`Lade ${url} …`);
+    await page.goto(url, { waitUntil: "load", timeout: 45000 });
+    await wait(800);
+
+    const hasShaded = await page.evaluate(
+      () => Boolean(window.SHADED && typeof window.SHADED.isReady === "function" && typeof window.SHADED.setParams === "function")
+    );
+    let shadedReady = false;
+    if (hasShaded) {
+      shadedReady = await page
+        .waitForFunction(() => window.SHADED.isReady(), null, { timeout: 10000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!shadedReady) log.warn("window.SHADED gefunden, aber keine Szene bereit (isReady()=false) — generischer Modus.");
+    }
+
+    if (hasShaded && shadedReady) {
+      mode = "shaded";
+      log.info("SHADED-API erkannt — fahre Weltparameter-Sequenz (Idle → Regen-Rampe → Nacht).");
+
+      // Deterministischer Ausgangszustand
+      await page.evaluate(() => {
+        window.SHADED.setParams({ ...window.SHADED.getParams(), dayNight: 0, rain: 0, storm: 0, fog: 0.15, wet: 0, puddle: 0 });
+      });
+      await wait(900);
+
+      // Phase 1: Idle — die Szene muss von sich aus leben
+      for (let i = 0; i < 8; i++) {
+        await grab("idle_tag", "idle", i === 0 ? "phase1-idle-start.png" : null);
+        await wait(320);
+      }
+
+      // Phase 2: gradueller Wetter-Übergang (Regen-Rampe) — keine Sprünge
+      for (let step = 0; step <= 10; step++) {
+        const v = step / 10;
+        await page.evaluate((val) => {
+          window.SHADED.setParams({ ...window.SHADED.getParams(), rain: val, wet: val * 0.8, puddle: val * 0.6 });
+        }, v);
+        await wait(260);
+        await grab("ramp_regen", "transition", step === 10 ? "phase2-regen-voll.png" : null);
+      }
+
+      // Phase 3: Zustandswechsel Tag → Nacht — muss sichtbar wirken
+      await page.evaluate(() => {
+        window.SHADED.setParams({ ...window.SHADED.getParams(), dayNight: 1 });
+      });
+      await wait(900);
+      for (let i = 0; i < 3; i++) {
+        await grab("nacht", "state", i === 0 ? "phase3-nacht.png" : null);
+        await wait(320);
+      }
+    } else {
+      log.info("Kein SHADED-Vertrag — generischer Modus (Idle-Stabilität/Flackern).");
+      for (let i = 0; i < 12; i++) {
+        await grab("idle", "idle", i === 0 ? "phase1-idle-start.png" : i === 11 ? "phase1-idle-ende.png" : null);
+        await wait(400);
+      }
+    }
+
+    // Beweis-Frames sichern
+    for (const c of captured) {
+      if (c.saveAs) fs.writeFileSync(path.join(shotsDir, c.saveAs), c.buffer);
+    }
+
+    log.info(`Dekodiere ${captured.length} Frames (${SAMPLE_W}×${SAMPLE_H}) …`);
+    const decoded = await decodeFrames(probe, captured.map((c) => c.buffer));
+    const frames = captured.map((c, i) => ({ phase: c.phase, kind: c.kind, data: decoded[i] }));
+
+    const analysis = analyzeSequence(frames, {
+      thresholds,
+      expectAlive: mode === "shaded", // nur lebendige SHADED-Szenen MÜSSEN sich bewegen
+    });
+
+    if (consoleErrors.length) {
+      analysis.findings.push({
+        severity: "medium",
+        category: "console",
+        phase: "-",
+        message: `${consoleErrors.length} Konsolen-/Seitenfehler während der Sequenz (erster: ${consoleErrors[0].slice(0, 160)})`,
+      });
+    }
+
+    const json = {
+      url,
+      mode,
+      sampledAt: new Date().toISOString(),
+      frameCount: captured.length,
+      phases: analysis.phases,
+      findings: analysis.findings,
+      score: analysis.score,
+      verdict: analysis.verdict,
+      consoleErrors: consoleErrors.length,
+      reportDir: dir,
+    };
+    writeJson(path.join(dir, "temporal-report.json"), json);
+    writeText(path.join(dir, "TEMPORAL-CONSISTENCY.md"), renderReport(json));
+    log.ok(`Report: ${path.join(dir, "TEMPORAL-CONSISTENCY.md")}`);
+    log[json.verdict === "KONSISTENT" ? "ok" : "warn"](`Verdict: ${json.verdict} (Score ${json.score})`);
+
+    return { json, exitCode: json.verdict === "KONSISTENT" ? 0 : 1 };
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
+function renderReport(json) {
+  const lines = [];
+  lines.push("# Zeitliche Konsistenz — Prüfbericht");
+  lines.push("");
+  lines.push(`- **URL:** ${json.url}`);
+  lines.push(`- **Modus:** ${json.mode === "shaded" ? "SHADED-Weltparameter-Sequenz" : "generisches Idle-Sampling"}`);
+  lines.push(`- **Frames:** ${json.frameCount} · **Zeitpunkt:** ${json.sampledAt}`);
+  lines.push(`- **Verdict:** **${json.verdict}** · **Score:** ${json.score}/100`);
+  lines.push("");
+  lines.push("## Phasen");
+  lines.push("");
+  lines.push("| Phase | Art | Frames | Ø Differenz | max. Differenz | statisch | Zustands-Differenz |");
+  lines.push("|---|---|---|---|---|---|---|");
+  for (const p of json.phases) {
+    lines.push(
+      `| ${p.phase} | ${p.kind} | ${p.frameCount} | ${p.meanDiff} | ${p.maxDiff} | ${Math.round(p.staticRatio * 100)} % | ${p.responseDiff != null ? p.responseDiff : "–"} |`
+    );
+  }
+  lines.push("");
+  lines.push("## Befunde");
+  lines.push("");
+  if (!json.findings.length) {
+    lines.push("Keine. Idle lebt, Übergänge sind kontinuierlich, Zustandswechsel wirken sichtbar.");
+  } else {
+    for (const f of json.findings) {
+      lines.push(`- **[${f.severity}] ${f.category}** (${f.phase}): ${f.message}`);
+    }
+  }
+  lines.push("");
+  lines.push("Beweis-Frames: `frames/*.png` neben diesem Report.");
+  lines.push("");
+  return lines.join("\n");
+}
+
+module.exports = { runTemporalCheck };

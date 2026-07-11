@@ -27,6 +27,8 @@ const { runRender } = require("../src/video/render-existing");
 const { startConfigurator } = require("../src/configurator/server");
 const { runReleaseCheck } = require("../src/qa/release-check");
 const { runQaLoop } = require("../src/qa/loop");
+const { runPlayableCheck } = require("../src/qa/playable");
+const { runTemporalCheck } = require("../src/qa/temporal");
 
 function parseArgs(argv) {
   const args = { _: [], flags: {} };
@@ -65,6 +67,8 @@ Commands:
   design-check      Ist-UI gegen Design-Baseline (Mockup) prüfen
   design-iterate    Autonom gegen Design-Baseline iterieren (Web/Playwright)
   release-check <url>  Pruefen, ob das Produkt veroeffentlichungsreif ist
+  playable-check <url>  Qualitäts-Türsteher: belegbar spielbar? (deterministisch, key-frei; Screenshot-Beweise + Verdict)
+  temporal-check <url>  Zeitliche Konsistenz: Idle/Übergänge/Zustandswechsel (erkennt SHADEDs window.SHADED-Vertrag)
   qa-loop <url>     AI-QA-Loop: testen -> fixen -> rebuilden -> erneut testen
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
   promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
@@ -407,6 +411,32 @@ async function main() {
       const url = args._[1] || cfg.targetUrl;
       const result = await runReleaseCheck({
         url, cfg, flowFile: args.flags.flow || null, outDir: args.flags.out || null, logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
+    }
+
+    case "playable-check": {
+      if (args.flags.help) {
+        console.log("cue playable-check <url> [--flow flow.json] [--out dir] [--json]");
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runPlayableCheck({
+        url, cfg, flowFile: args.flags.flow || null, outDir: args.flags.out || null, logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
+    }
+
+    case "temporal-check": {
+      if (args.flags.help) {
+        console.log("cue temporal-check <url> [--out dir] [--json]");
+        return 0;
+      }
+      const url = args._[1] || cfg.targetUrl;
+      const result = await runTemporalCheck({
+        url, cfg, outDir: args.flags.out || null, logger: log,
       });
       if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       return result.exitCode;

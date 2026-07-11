@@ -19,6 +19,8 @@ Showcase-Video.
 | **Pixelgenaue Design-Verifikation** | Ist-UI **deterministisch** gegen eine Soll-Baseline (Position, Größe, Text, Farbe je Element, mit Toleranzen) — kein LLM nötig, harter reproduzierbarer Vertrag | `cue design-check` |
 | **Autonome Iteration** | **testen → fixen → rebuilden → erneut testen**, bis Ziel-Score/READY. Web: schlägt CSS-Overrides vor und misst Konvergenz; Repo: schlägt Datei-Patches vor, wendet sie an, baut neu | `cue design-iterate`, `cue qa-loop` |
 | **Release-Readiness-Scoring** | Urteil **READY / NOT READY** mit Checkliste (keine High/Critical, Score ≥ Schwelle, keine Konsolenfehler, keine 5xx) + Begründung → `RELEASE-READINESS.md` | `cue release-check <url>` |
+| **Playability-Gate (Qualitäts-Türsteher)** | Deterministisch & key-frei: Startet es? Bedienbar? Reagiert es sichtbar? Fehlerfrei? → Verdict **BELEGBAR SPIELBAR / NICHT BELEGT** mit Screenshot-Beweisen → `PLAYABLE-PROOF.md` | `cue playable-check <url>` |
+| **Zeitliche Konsistenz** | Idle-/Übergangs-/Zustandsphasen durchfahren, Frame-Differenzen messen: Szene lebt, Übergänge ohne Sprünge, Zustandswechsel sichtbar; erkennt SHADEDs `window.SHADED`-Vertrag und steuert Weltparameter direkt → `TEMPORAL-CONSISTENCY.md` | `cue temporal-check <url>` |
 | **Flow-Verifikation** | Deklarative Flows (klicken/tippen/scrollen/warten) → CaptureBundle: Video + Screenshots + Logs + **Netzwerk + Metrics + a11y-Baum** | `cue capture --flow` |
 | **Android-QA** | Dieselbe Pipeline gegen eine App im Emulator (ADB + uiautomator-BBoxen + Vision) | `cue android-qa` |
 | **QA-Gate** | `promo`/`tutorial`/`showcase` werden **blockiert**, solange kein frischer QA-Report mit ausreichendem Score & ohne offene High-Bugs existiert | (automatisch) |
@@ -160,6 +162,30 @@ Das exportierte Script ist identisch zum `--script`-Format — du kannst es also
 cue promo --script my-video.script.json
 ```
 
+## Qualitäts-Türsteher & zeitliche Konsistenz (assetpilot.md)
+
+Im agentischen Spielestudio ([`assetpilot.md`](assetpilot.md): mini-me = Bedeutung,
+3D-RE-GEN = Raum, Asset Pilot/WIZARD = Produktion, SHADED = Kohärenz, ANVIL =
+Orchestrierung) ist **CUE-AGENT = Beweis**. Zwei Commands setzen das um — beide
+**deterministisch und ohne API-Key**, damit sie in jeder CI laufen:
+
+```bash
+# Nach jedem Build: Startet es? Bedienbar? Reagiert es? Fehlerfrei? Beweise?
+cue playable-check http://localhost:8000/           # → PLAYABLE-PROOF.md + proof/*.png
+cue playable-check <url> --flow game-flow.json      # echter Spiel-Flow statt generischem Klick
+
+# Sequenzen statt Einzelbilder: Wetter-/Licht-/Shader-Übergänge müssen konsistent sein
+cue temporal-check http://localhost:8000/           # → TEMPORAL-CONSISTENCY.md + frames/*.png
+```
+
+`temporal-check` erkennt SHADEDs API-Vertrag (`window.SHADED.isReady/setParams`)
+und fährt dann eine Weltparameter-Sequenz: **Idle** (die Szene muss von sich aus
+leben), **Regen-Rampe** (gradueller Übergang ohne Sprünge), **Tag→Nacht**
+(Zustandswechsel muss sichtbar wirken). Ohne SHADED läuft ein generischer Modus
+(Stabilität/Flackern im Idle). Das Urteil ist bewusst kein „das ist gut", sondern
+**„das ist belegbar spielbar"** bzw. **KONSISTENT** — jedes Kriterium ist ein
+messbares Signal mit Screenshot-/Frame-Beweis, Exit-Code fürs CI-Gate inklusive.
+
 ## Autonomer QA-Zyklus & Release-Readiness
 
 Über die reine Analyse hinaus kann CUE-AGENT Bugs **dokumentieren, beheben und erneut testen** — bis das Produkt veröffentlichungsreif ist.
@@ -264,6 +290,8 @@ echte Vision-Analyse weiterhin einen Provider via `ANTHROPIC_API_KEY` bzw.
 | `cue design-check` | **Pixelgenaue** Design-Verifikation: Ist-UI gegen Soll-Baseline (Position/Größe/Text/Farbe), deterministisch, kein LLM |
 | `cue design-iterate` | **Autonom** gegen Design-Baseline iterieren (Web/Android), bis Ziel-Score erreicht |
 | `cue release-check <url>` | Veröffentlichungsreife prüfen (**READY/NOT READY** Verdict + Score + RELEASE-READINESS.md) |
+| `cue playable-check <url>` | Qualitäts-Türsteher (assetpilot.md): **BELEGBAR SPIELBAR / NICHT BELEGT**, key-frei, mit Screenshot-Beweisen; `--flow` prüft echte Spiel-Flows |
+| `cue temporal-check <url>` | Zeitliche Konsistenz (assetpilot.md): Idle lebt / Übergänge ohne Sprünge / Zustandswechsel sichtbar; SHADED-Modus via `window.SHADED` |
 | `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen, bis READY |
 | `cue android-qa [apk]` | Android-App-QA im Emulator (ADB + uiautomator-BBoxen + Vision) |
 | `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs + Netzwerk + Metrics + a11y) |
