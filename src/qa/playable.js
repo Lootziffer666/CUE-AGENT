@@ -23,6 +23,7 @@ const fs = require("fs");
 const { chromium } = require("playwright");
 const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolveChromiumExecutable } = require("../util");
 const { evaluatePlayability, meanAbsDiff, pixelStdDev } = require("./frame-metrics");
+const { writeVerdict } = require("./report");
 const { loadFlow } = require("../core/flow");
 
 const SAMPLE_W = 128;
@@ -91,6 +92,7 @@ async function runPlayableCheck({ url, cfg, outDir, flowFile, logger }) {
   page.on("pageerror", (e) => pageErrors.push(e.message));
   page.on("response", (r) => { if (r.status() >= 500) serverErrors.push(`${r.status()} ${r.url()}`); });
 
+  const startedAt = new Date().toISOString();
   const proofs = [];
   const saveProof = async (name) => {
     const file = path.join(proofDir, name);
@@ -195,10 +197,26 @@ async function runPlayableCheck({ url, cfg, outDir, flowFile, logger }) {
     };
     writeJson(path.join(dir, "playable-report.json"), json);
     writeText(path.join(dir, "PLAYABLE-PROOF.md"), renderReport(json));
+    const exitCode = json.verdict === "BELEGBAR SPIELBAR" ? 0 : 1;
+    writeVerdict(dir, {
+      command: "playable-check",
+      target: { kind: "url", value: url, platform: "web" },
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      verdict: json.verdict,
+      score: Math.round((json.checks.filter((c) => c.ok).length / json.checks.length) * 100),
+      severity: json.verdict === "BELEGBAR SPIELBAR" ? "none" : "high",
+      checks: json.checks.map((c) => ({ ...c, evidence: json.proofs, signals })),
+      findings: json.failed.map((id) => ({ severity: "high", category: "playable-check", message: `Check fehlgeschlagen: ${id}`, evidence: json.proofs })),
+      signals,
+      evidence: json.proofs.map((proof) => ({ path: proof, kind: "screenshot", label: proof })),
+      environment: { driver: "web" },
+      exitCode,
+    });
     log.ok(`Report: ${path.join(dir, "PLAYABLE-PROOF.md")}`);
     log[json.verdict === "BELEGBAR SPIELBAR" ? "ok" : "warn"](`Verdict: ${json.verdict}`);
 
-    return { json, exitCode: json.verdict === "BELEGBAR SPIELBAR" ? 0 : 1 };
+    return { json, exitCode };
   } finally {
     await browser.close().catch(() => {});
   }

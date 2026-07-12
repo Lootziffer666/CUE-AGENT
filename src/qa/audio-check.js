@@ -44,6 +44,7 @@ const fs = require("fs");
 const { chromium } = require("playwright");
 const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolveChromiumExecutable } = require("../util");
 const { validateStep } = require("../core/flow");
+const { writeVerdict } = require("./report");
 
 const DEFAULT_PROBE_NAME = "anvil_audio_check_probe";
 const DEFAULT_PROBE_VALUE = 1;
@@ -102,6 +103,7 @@ async function runAudioCheck({ url, cfg, outDir, scenarioFile, logger }) {
   const probeValue = scenario.probeState?.value ?? DEFAULT_PROBE_VALUE;
 
   const dir = ensureDir(outDir || path.join(process.cwd(), "audio-reports", `${slugify(url)}-${timestamp()}`));
+  const startedAt = new Date().toISOString();
 
   const browser = await chromium.launch({
     headless: true,
@@ -149,6 +151,21 @@ async function runAudioCheck({ url, cfg, outDir, scenarioFile, logger }) {
       };
       writeJson(path.join(dir, "audio-report.json"), json);
       writeText(path.join(dir, "AUDIO-PROOF.md"), renderReport(json));
+      writeVerdict(dir, {
+        command: "audio-check",
+        target: { kind: "url", value: url, platform: "web" },
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        verdict: json.verdict,
+        score: 0,
+        severity: "high",
+        checks: [{ id: "audio-hook", label: "window.ANVIL_AUDIO Vertrag vorhanden", ok: false, evidence: [], signals: json.signals }],
+        findings: [{ severity: "high", category: "audio-contract", message: json.note, evidence: [] }],
+        signals: json.signals,
+        evidence: [],
+        environment: { driver: "web" },
+        exitCode: 1,
+      });
       log.warn(`Verdict: ${json.verdict}`);
       return { json, exitCode: 1 };
     }
@@ -215,9 +232,25 @@ async function runAudioCheck({ url, cfg, outDir, scenarioFile, logger }) {
     };
     writeJson(path.join(dir, "audio-report.json"), json);
     writeText(path.join(dir, "AUDIO-PROOF.md"), renderReport(json));
+    const exitCode = failed.length === 0 ? 0 : 1;
+    writeVerdict(dir, {
+      command: "audio-check",
+      target: { kind: "url", value: url, platform: "web" },
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      verdict: json.verdict,
+      score: Math.round((checks.filter((c) => c.required && c.ok === true).length / checks.filter((c) => c.required).length) * 100),
+      severity: failed.length === 0 ? "none" : "high",
+      checks: checks.map((check) => ({ ...check, ok: check.ok === true, evidence: [], signals: json.signals })),
+      findings: failed.map((id) => ({ severity: "high", category: "audio-check", message: `Audio-Check fehlgeschlagen: ${id}`, evidence: [] })),
+      signals: json.signals,
+      evidence: [],
+      environment: { driver: "web" },
+      exitCode,
+    });
     log[failed.length === 0 ? "ok" : "warn"](`Verdict: ${json.verdict}`);
 
-    return { json, exitCode: failed.length === 0 ? 0 : 1 };
+    return { json, exitCode };
   } finally {
     await browser.close().catch(() => {});
   }

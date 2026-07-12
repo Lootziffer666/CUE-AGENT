@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cue.verdict/1",
+  "title": "CUE Verdict Report v1",
+  "type": "object",
+  "required": ["schema", "tool", "version", "command", "target", "startedAt", "finishedAt", "verdict", "score", "severity", "checks", "findings", "signals", "evidence", "environment", "exitCode"],
+  "properties": {
+    "schema": { "const": "cue.verdict/1" },
+    "tool": { "const": "cue-agent" },
+    "version": { "type": "string" },
+    "command": { "type": "string" },
+    "target": {
+      "type": "object",
+      "required": ["kind", "value", "platform"],
+      "properties": {
+        "kind": { "type": "string" },
+        "value": { "type": "string" },
+        "platform": { "type": "string" }
+      }
+    },
+    "startedAt": { "type": "string" },
+    "finishedAt": { "type": "string" },
+    "verdict": { "type": "string" },
+    "score": { "type": "number", "minimum": 0, "maximum": 100 },
+    "severity": { "enum": ["none", "low", "medium", "high"] },
+    "checks": { "type": "array" },
+    "findings": { "type": "array" },
+    "signals": { "type": "object" },
+    "evidence": { "type": "array" },
+    "environment": { "type": "object" },
+    "exitCode": { "type": "integer" }
+  }
+}
