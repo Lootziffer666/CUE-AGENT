@@ -75,9 +75,21 @@ function packageFromApk(apkPath) {
   return null;
 }
 
+function resolveLauncherActivity(pkg, serial) {
+  const r = run(withSerial(serial, ["shell", "cmd", "package", "resolve-activity", "--brief", "-c", "android.intent.category.LAUNCHER", pkg]));
+  const lines = String(r.stdout || "").trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const component = lines.find((l) => l.includes("/"));
+  return component || null;
+}
+
 function launchPackage(pkg, serial) {
   // Monkey mit LAUNCHER-Kategorie startet die Default-Activity zuverlässig.
   run(withSerial(serial, ["shell", "monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1"]));
+}
+
+function amStartW(component, serial) {
+  const r = run(withSerial(serial, ["shell", "am", "start", "-W", "-n", component]), { timeout: 60_000 });
+  return String(r.stdout || "") + String(r.stderr || "");
 }
 
 function stopPackage(pkg, serial) {
@@ -139,6 +151,8 @@ function parseAllNodes(xml) {
       text: (tag.match(/text="([^"]*)"/) || [, ""])[1],
       cls: (tag.match(/class="([^"]*)"/) || [, ""])[1],
       bbox: [x1, y1, x2 - x1, y2 - y1],
+      scrollable: /scrollable="true"/.test(tag),
+      clickable: /clickable="true"/.test(tag),
     });
   }
   return nodes;
@@ -182,6 +196,16 @@ function logcatDump(serial) {
   return String(r.stdout || "");
 }
 
+function gfxinfo(pkg, serial) {
+  const r = run(withSerial(serial, ["shell", "dumpsys", "gfxinfo", pkg, "framestats"]), { timeout: 30_000 });
+  return String(r.stdout || "");
+}
+
+function meminfo(pkg, serial) {
+  const r = run(withSerial(serial, ["shell", "dumpsys", "meminfo", pkg]), { timeout: 30_000 });
+  return String(r.stdout || "");
+}
+
 /**
  * Erkennt Abstürze/ANRs im Logcat.
  * @returns {{crashed:boolean, anr:boolean, lines:string[]}}
@@ -220,7 +244,9 @@ module.exports = {
   listDevices,
   installApk,
   packageFromApk,
+  resolveLauncherActivity,
   launchPackage,
+  amStartW,
   stopPackage,
   screencapPng,
   uiDumpXml,
@@ -234,6 +260,8 @@ module.exports = {
   currentActivity,
   clearLogcat,
   logcatDump,
+  gfxinfo,
+  meminfo,
   detectCrashes,
   logcatToConsole,
 };

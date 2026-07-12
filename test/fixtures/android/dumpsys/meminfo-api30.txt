@@ -1,0 +1,10 @@
+Applications Memory Usage (in Kilobytes):
+Uptime: 123 Realtime: 456
+** MEMINFO in pid 1234 [com.example] **
+                   Pss  Private  Private  SwapPss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------
+  Native Heap:    45678    45000        0        0    65536    40000    25536
+  Java Heap:      12345    12000        0        0    32768    16000    16768
+     Graphics:    98765    98000        0        0
+        TOTAL    180000   155000        0        0

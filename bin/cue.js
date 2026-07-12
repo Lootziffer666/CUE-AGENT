@@ -420,12 +420,16 @@ async function main() {
 
     case "playable-check": {
       if (args.flags.help) {
-        console.log("cue playable-check <url> [--flow flow.json] [--out dir] [--json]");
+        console.log("cue playable-check <url> [--platform web|android] [--package id] [--apk app.apk] [--flow flow.json] [--out dir] [--json]");
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
+      const platform = args.flags.platform || "web";
+      const target = platform === "android"
+        ? { pkg: args.flags.package || args.flags.pkg || null, apk: args.flags.apk || null, serial: args.flags.serial || null }
+        : null;
       const result = await runPlayableCheck({
-        url, cfg, flowFile: args.flags.flow || null, outDir: args.flags.out || null, logger: log,
+        url, cfg, flowFile: args.flags.flow || null, outDir: args.flags.out || null, logger: log, platform, target,
       });
       if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       return result.exitCode;
@@ -433,12 +437,16 @@ async function main() {
 
     case "temporal-check": {
       if (args.flags.help) {
-        console.log("cue temporal-check <url> [--out dir] [--json]");
+        console.log("cue temporal-check <url> [--platform web|android] [--package id] [--apk app.apk] [--out dir] [--json]");
         return 0;
       }
       const url = args._[1] || cfg.targetUrl;
+      const platform = args.flags.platform || "web";
+      const target = platform === "android"
+        ? { pkg: args.flags.package || args.flags.pkg || null, apk: args.flags.apk || null, serial: args.flags.serial || null }
+        : null;
       const result = await runTemporalCheck({
-        url, cfg, outDir: args.flags.out || null, logger: log,
+        url, cfg, outDir: args.flags.out || null, logger: log, platform, target,
       });
       if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       return result.exitCode;
