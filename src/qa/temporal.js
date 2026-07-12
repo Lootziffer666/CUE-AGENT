@@ -19,6 +19,7 @@ const fs = require("fs");
 const { chromium } = require("playwright");
 const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolveChromiumExecutable } = require("../util");
 const { analyzeSequence } = require("./frame-metrics");
+const { writeVerdict } = require("./report");
 
 const SAMPLE_W = 128;
 const SAMPLE_H = 72;
@@ -68,6 +69,7 @@ async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
   page.on("pageerror", (e) => consoleErrors.push("PAGEERROR: " + e.message));
 
+  const startedAt = new Date().toISOString();
   const captured = []; // { phase, kind, buffer, saveAs? }
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const grab = async (phase, kind, saveAs) => {
@@ -173,10 +175,34 @@ async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
     };
     writeJson(path.join(dir, "temporal-report.json"), json);
     writeText(path.join(dir, "TEMPORAL-CONSISTENCY.md"), renderReport(json));
+    const evidence = captured.filter((c) => c.saveAs).map((c) => ({ path: path.join("frames", c.saveAs), kind: "frame", label: c.phase }));
+    const evidencePaths = evidence.map((item) => item.path);
+    const exitCode = json.verdict === "KONSISTENT" ? 0 : 1;
+    writeVerdict(dir, {
+      command: "temporal-check",
+      target: { kind: "url", value: url, platform: "web" },
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      verdict: json.verdict,
+      score: json.score,
+      severity: json.verdict === "KONSISTENT" ? "none" : "high",
+      checks: json.phases.map((phase) => ({
+        id: `phase-${phase.phase}`,
+        label: `Phase ${phase.phase} (${phase.kind})`,
+        ok: !json.findings.some((finding) => finding.phase === phase.phase),
+        signals: phase,
+        evidence: evidencePaths,
+      })),
+      findings: json.findings.map((finding) => ({ ...finding, evidence: evidencePaths })),
+      signals: { frameCount: json.frameCount, consoleErrors: json.consoleErrors, mode: json.mode },
+      evidence,
+      environment: { driver: "web" },
+      exitCode,
+    });
     log.ok(`Report: ${path.join(dir, "TEMPORAL-CONSISTENCY.md")}`);
     log[json.verdict === "KONSISTENT" ? "ok" : "warn"](`Verdict: ${json.verdict} (Score ${json.score})`);
 
-    return { json, exitCode: json.verdict === "KONSISTENT" ? 0 : 1 };
+    return { json, exitCode };
   } finally {
     await browser.close().catch(() => {});
   }
