@@ -1,57 +1,372 @@
-# AI QA Agent
+# CUE-AGENT
 
-Automated QA pipeline that uses Playwright to capture full-page screenshots and browser console logs, then leverages Anthropic Claude 3.5 Sonnet (vision) to analyze the page for UI/UX bugs, visual issues, and technical errors. Results are saved as structured Markdown reports.
+**CUE-AGENT ist ein QA- und Verifikations-Agent für Web- und Android-UIs.** Er steuert
+einen echten Browser (Playwright), prüft eine App wie ein Mensch — mit Vision-Analyse,
+Konsolen-/Netzwerk-/Accessibility-Signalen, **pixelgenauen Design-Checks** und
+**Severity-Scoring** — und kann Bugs **autonom dokumentieren, beheben und erneut testen**,
+bis das Produkt veröffentlichungsreif ist. Video ist der **letzte** Schritt und nur erlaubt,
+wenn die QA besteht: Aus denselben geprüften Flows entsteht dann ein Promo-, Tutorial- oder
+Showcase-Video.
 
-## Prerequisites
+> Kurz: **zuerst Qualität messbar machen** (prüfen, scoren, iterieren), **dann — und nur
+> dann — zeigen.** CUE-AGENT „macht" nicht primär Videos; das Video ist der Schlussbeweis.
 
-- Node.js 18+ (included in the devcontainer)
-- Anthropic API Key ([get one here](https://console.anthropic.com/))
+## Was CUE-AGENT kann
 
-## Setup
+| Fähigkeit | Was es tut | Command |
+|---|---|---|
+| **QA-Bughunting** | Echter Browser + Vision-Analyse + Konsolen-/Netzwerk-/a11y-Signale → **strukturierte Findings** (Severity, Kategorie, Ort, konkreter Fix), **Score 0–100**, CI-Exit-Code | `cue qa <url>` |
+| **Pixelgenaue Design-Verifikation** | Ist-UI **deterministisch** gegen eine Soll-Baseline (Position, Größe, Text, Farbe je Element, mit Toleranzen) — kein LLM nötig, harter reproduzierbarer Vertrag | `cue design-check` |
+| **Autonome Iteration** | **testen → fixen → rebuilden → erneut testen**, bis Ziel-Score/READY. Web: schlägt CSS-Overrides vor und misst Konvergenz; Repo: schlägt Datei-Patches vor, wendet sie an, baut neu | `cue design-iterate`, `cue qa-loop` |
+| **Release-Readiness-Scoring** | Urteil **READY / NOT READY** mit Checkliste (keine High/Critical, Score ≥ Schwelle, keine Konsolenfehler, keine 5xx) + Begründung → `RELEASE-READINESS.md` | `cue release-check <url>` |
+| **Playability-Gate (Qualitäts-Türsteher)** | Deterministisch & key-frei: Startet es? Bedienbar? Reagiert es sichtbar? Fehlerfrei? → Verdict **BELEGBAR SPIELBAR / NICHT BELEGT** mit Screenshot-Beweisen → `PLAYABLE-PROOF.md` | `cue playable-check <url>` |
+| **Zeitliche Konsistenz** | Idle-/Übergangs-/Zustandsphasen durchfahren, Frame-Differenzen messen: Szene lebt, Übergänge ohne Sprünge, Zustandswechsel sichtbar; erkennt SHADEDs `window.SHADED`-Vertrag und steuert Weltparameter direkt → `TEMPORAL-CONSISTENCY.md` | `cue temporal-check <url>` |
+| **Flow-Verifikation** | Deklarative Flows (klicken/tippen/scrollen/warten) → CaptureBundle: Video + Screenshots + Logs + **Netzwerk + Metrics + a11y-Baum** | `cue capture --flow` |
+| **Android-QA** | Dieselbe Pipeline gegen eine App im Emulator (ADB + uiautomator-BBoxen + Vision) | `cue android-qa` |
+| **QA-Gate** | `promo`/`tutorial`/`showcase` werden **blockiert**, solange kein frischer QA-Report mit ausreichendem Score & ohne offene High-Bugs existiert | (automatisch) |
+| **Video (Belohnung)** | Erst nach bestandener QA: Promo/Tutorial/Showcase aus den geprüften Flows — HTML+GSAP-Render, szenen-synchrone Stimme, SFX, 6 Brand-Presets, Aspect-Ratios | `cue promo/tutorial/showcase` |
 
-### Option A: GitHub Codespace (recommended)
+**Scoring & Severity — das Herzstück.** Befunde werden in `none / low / medium / high /
+critical` eingestuft. Aus Konsolenfehlern, Netzwerk-4xx/5xx, Navigations-Status und den
+Vision-Findings entstehen ein **Score (0–100)** und ein **Severity-Level**, das per
+`--fail-on` ein CI-Gate bildet. Der Design-Comparator liefert zusätzlich einen
+deterministischen Score aus PASS/FAIL je Element. Diese Zahlen sind die Grundlage für das
+**Release-Gate** *und* den **autonomen Iterations-Loop** (er läuft, bis der Score das Ziel
+erreicht oder `--max` ausgeschöpft ist) — nicht für die Videos.
 
-1. Open this repo in a GitHub Codespace - everything installs automatically via the devcontainer.
-2. Copy `.env.example` to `.env` and add your Anthropic API key.
+## Selbst-Beweis (Dogfooding)
 
-### Option B: Local Setup
+🎬 **[`demo/cue-agent-promo.mp4`](demo/cue-agent-promo.mp4)** — ein Promo, das CUE-AGENT
+**mit sich selbst** erzeugt hat (`cue promo --script examples/cue-agent-promo.script.json --tts kokoro --sfx`):
+8 Szenen, lokale Kokoro-Stimme, SFX an den Übergängen, szenen-synchrones Voiceover. Reproduzierbar
+ohne jeden API-Key. Ein zweites Showcase mit KI-Bild-Szenen:
+[`docs/promo/cue-agent-ai-promo.mp4`](docs/promo/cue-agent-ai-promo.mp4).
+
+> Roadmap & Konzept: [`docs/ULTIMATE_VIDEO_CREATOR_PLAN.md`](docs/ULTIMATE_VIDEO_CREATOR_PLAN.md).
+
+## Continuous QA (GitHub Actions)
+
+Der Workflow [`.github/workflows/qa-and-commit.yml`](.github/workflows/qa-and-commit.yml) richtet eine
+frische Umgebung ein (Node + Playwright + ffmpeg, wie der Devcontainer/Codespace), lässt QA gegen eine
+URL laufen und **committet die dokumentierten Befunde** nach `qa-history/` zurück ins Repo. Ohne URL
+startet er den Configurator lokal und prüft dessen GUI. Per `workflow_dispatch` oder wöchentlich.
+> Status: M0–M5 + Politur umgesetzt (QA, Capture-Engine, Video-Pipeline, Audio, Aspect-Ratios,
+> 6 Brand-Presets, Script-Support, Re-Render, QA-Gate, **echte Video-Clips** & **Tutorial-Highlights**).
+
+## Echte Video-Clips statt Standbilder
+
+Tutorial- und Showcase-Videos verwenden die **echte Bildschirmaufnahme** (Playwright
+`recordVideo`): pro Flow-Schritt wird der passende Ausschnitt aus dem aufgenommenen Video
+geschnitten, auf die Canvas skaliert, mit einem Brand-Overlay (Kapitel-Badge + Caption)
+versehen und sanft ein-/ausgeblendet. Der Renderer arbeitet **segment-basiert** (jede Szene
+→ eigenes MP4 → Concat), wodurch animierte Szenen und echte Clips nahtlos kombiniert werden.
+Fehlt eine Aufnahme, wird automatisch auf einen Screenshot zurückgefallen.
+
+## QA-Gate: erst QA, dann Promo
+
+CUE-AGENT bewirbt nie eine ungeprüfte App. Bevor `cue promo|tutorial|showcase` für eine
+**URL** ein Video erzeugt, prüft das Gate den jüngsten QA-Report zu dieser URL:
+
+- existiert ein Report? (sonst: erst `cue qa <url>`)
+- ist er frisch genug? (`maxAgeHours`, Default 24h)
+- Score ≥ Minimum? (`minScore`, Default 70)
+- keine offenen High-Severity-Bugs? (`failOnSeverity`, Default `high`)
+
+Besteht das Gate nicht, wird die Video-Erzeugung **blockiert** (Exit-Code 1) mit klarer
+Begründung. Bewusst überspringen: `--skip-qa-gate` (mit Warnung). Der Gate-Beleg landet in
+`project-plan.json` und im `*-bundle.json` (`qaGate`).
+
+```bash
+cue qa https://deine-app.tld          # 1) Qualität prüfen
+# ... Bugs fixen ...
+cue promo https://deine-app.tld       # 2) Promo — nur wenn QA bestanden
+```
+
+Konfigurierbar in `cue.config.json` unter `qa.gate`. Für Script-Videos ohne URL greift das
+Gate nicht (es wird keine laufende App beworben).
+
+## In jedes Repo installieren (mit deinen eigenen Keys)
+
+CUE-AGENT lässt sich direkt aus GitHub in jedes Projekt einbinden. **Du nutzt immer deine
+eigenen API-Keys** — CUE-AGENT speichert oder überträgt sie nicht; sie werden nur aus deiner
+Umgebung / `.env` gelesen.
+
+```bash
+# Variante A: global installieren
+npm install -g github:Lootziffer666/CUE-AGENT
+cue install-browsers      # Playwright Chromium
+
+# Variante B: ohne Installation direkt ausführen
+npx github:Lootziffer666/CUE-AGENT doctor
+
+# Variante C: als Dev-Dependency in deinem Repo
+npm install --save-dev github:Lootziffer666/CUE-AGENT
+npx cue doctor
+```
+
+Dann deine Keys setzen (`.env` im Projekt **oder** als Umgebungsvariablen):
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...     # erforderlich für QA-Analyse
+ELEVENLABS_API_KEY=...           # optional: Voiceover
+FREESOUND_API_KEY=...            # optional: Hintergrundmusik
+CUE_LANG=de                      # optional: de | en
+```
+
+Loslegen:
+
+```bash
+cue doctor                                   # prüft Node, ffmpeg, Browser, Keys
+cue qa https://deine-app.tld                 # QA-Analyse
+cue promo https://deine-app.tld --aspect 16:9
+```
+
+### In CI (GitHub Actions)
+
+Kopiere [`.github/workflows/cue-qa.example.yml`](.github/workflows/cue-qa.example.yml) in dein
+Repo (nach `.github/workflows/cue-qa.yml`) und hinterlege deine Keys unter
+*Settings → Secrets and variables → Actions*. Der Workflow installiert CUE-AGENT, prüft eine
+URL und lädt die QA-Reports als Artefakt hoch.
+
+## Lokales Setup (Entwicklung an CUE-AGENT selbst)
 
 ```bash
 npm install
-npx playwright install --with-deps chromium
-cp .env.example .env
-# Edit .env and set your ANTHROPIC_API_KEY
+npm run install-browsers
+cp .env.example .env   # und Keys eintragen
 ```
 
-## Usage
+## Configurator (Web-GUI)
+
+Für komfortables Einstellen ohne JSON von Hand:
 
 ```bash
-# Analyze a specific URL
-node qa-agent.js https://example.com
-
-# Use the TARGET_URL from .env
-node qa-agent.js
-
-# Show help
-node qa-agent.js --help
+cue configurator           # startet lokalen Server, z. B. http://localhost:4477
+cue configurator --port 8080
 ```
 
-## Output
+Im Browser öffnen. Das GUI bietet:
 
-Reports are saved to `qa-reports/` and include:
+- **Projekt-Settings**: Modus, Brand-Preset (mit Farb-Vorschau), Seitenverhältnis, Sprache, Stimme, optionale Ziel-URL
+- **Zeitsegmente / Szenen**: Szenen hinzufügen (Title, Features, Screenshot, Kapitel, Clip, CTA), Dauer setzen, per Drag-frei umsortieren (↑/↓), löschen
+- **Live-Timeline**: proportionale, farbcodierte Segmente + Gesamtdauer
+- **Voice-over pro Szene**: Narrationstext direkt eingeben
+- **Import/Export**: Script als `*.script.json` und Settings als `cue.config.json` herunterladen/laden
+- **CLI-Befehl** zum Kopieren **und** „Video jetzt erzeugen" (rendert direkt über den lokalen Server, mit deinen eigenen Keys)
+- **Timeline-Player**: greifbare Szenen-Blöcke mit Resize-Griff (Dauer ziehen), Klick-Auswahl, **Scrub-Vorschau** (nutzt die echte GSAP-Timeline der Szene — kein Render nötig) und **@N-Referenzen** zum Einfügen in Prompts/Narration
+- **Sprach-Engine + Stimmwahl** (Auto/Kokoro/ElevenLabs/OpenAI · Matilda/Rachel/Daniel/Josh)
+- **Verschlüsselte API-Keys**: im GUI eintragbar, AES-256-GCM-verschlüsselt in `~/.cue/keys.enc` (nie im Repo, nie im Klartext); optional via `CUE_KEYS_PASSPHRASE` passphrase-geschützt
 
-- Full-page screenshot (PNG)
-- Browser console errors/warnings
-- LLM analysis with identified issues and recommendations
+Das exportierte Script ist identisch zum `--script`-Format — du kannst es also auch per CLI nutzen:
+```bash
+cue promo --script my-video.script.json
+```
 
-## Integrating Into Other Repos
+## Qualitäts-Türsteher & zeitliche Konsistenz (assetpilot.md)
 
-You can add this agent to any of your repositories:
+Im agentischen Spielestudio ([`assetpilot.md`](assetpilot.md): mini-me = Bedeutung,
+3D-RE-GEN = Raum, Asset Pilot/WIZARD = Produktion, SHADED = Kohärenz, ANVIL =
+Orchestrierung) ist **CUE-AGENT = Beweis**. Zwei Commands setzen das um — beide
+**deterministisch und ohne API-Key**, damit sie in jeder CI laufen:
 
-1. Copy the relevant files (`qa-agent.js`, `package.json`, `.env.example`, `.devcontainer/`) into your repo or keep it as a standalone tool.
-2. Point it at your deployed app or local dev server URL.
-3. Run it as part of your CI pipeline or manually during development.
+```bash
+# Nach jedem Build: Startet es? Bedienbar? Reagiert es? Fehlerfrei? Beweise?
+cue playable-check http://localhost:8000/           # → PLAYABLE-PROOF.md + proof/*.png
+cue playable-check <url> --flow game-flow.json      # echter Spiel-Flow statt generischem Klick
 
-## License
+# Sequenzen statt Einzelbilder: Wetter-/Licht-/Shader-Übergänge müssen konsistent sein
+cue temporal-check http://localhost:8000/           # → TEMPORAL-CONSISTENCY.md + frames/*.png
+```
+
+`temporal-check` erkennt SHADEDs API-Vertrag (`window.SHADED.isReady/setParams`)
+und fährt dann eine Weltparameter-Sequenz: **Idle** (die Szene muss von sich aus
+leben), **Regen-Rampe** (gradueller Übergang ohne Sprünge), **Tag→Nacht**
+(Zustandswechsel muss sichtbar wirken). Ohne SHADED läuft ein generischer Modus
+(Stabilität/Flackern im Idle). Das Urteil ist bewusst kein „das ist gut", sondern
+**„das ist belegbar spielbar"** bzw. **KONSISTENT** — jedes Kriterium ist ein
+messbares Signal mit Screenshot-/Frame-Beweis, Exit-Code fürs CI-Gate inklusive.
+
+## Autonomer QA-Zyklus & Release-Readiness
+
+Über die reine Analyse hinaus kann CUE-AGENT Bugs **dokumentieren, beheben und erneut testen** — bis das Produkt veröffentlichungsreif ist.
+
+```bash
+# Veröffentlichungsreife prüfen (schreibt RELEASE-READINESS.md, Exit 1 wenn nicht bereit)
+cue release-check https://deine-app.tld
+
+# Reiner Test-/Monitoring-Lauf (keine Code-Änderung)
+cue qa-loop https://deine-app.tld
+
+# Fix-Vorschläge (Dry-Run) für ein lokales Repo
+cue qa-loop https://deine-app.tld --repo ./mein-repo
+
+# Voller autonomer Zyklus: testen → fixen → rebuilden → erneut testen
+cue qa-loop https://deine-app.tld --repo ./mein-repo --apply --rebuild "npm run build" --max 3
+```
+
+**Wie es funktioniert:**
+1. **Strukturierte Befunde** — das LLM liefert maschinenlesbare Findings (Severity, Kategorie, Ort, konkreter Fix-Vorschlag).
+2. **Release-Readiness** — klares Urteil READY/NOT READY mit Checkliste (keine High/Critical-Befunde, Score ≥ Schwelle, keine Konsolen-Fehler, keine 5xx). Konfigurierbar unter `qa.release`.
+3. **AI-Loop** — bei `--repo` schlägt das LLM gezielte Datei-Änderungen vor; mit `--apply` werden sie geschrieben, mit `--rebuild` neu gebaut, dann erneut getestet. Schleife bis READY oder `--max` erreicht.
+4. **Schriftliche Doku** — `RELEASE-READINESS.md` und `QA-LOOP.md` (alle Iterationen, Befunde, vorgeschlagene/angewendete Fixes, Rebuild-Status).
+
+**Sicherheit:** Ohne `--repo` keine Code-Änderung. Ohne `--apply` nur Vorschläge (Dry-Run, gespeichert unter `proposed-fixes/`). Es werden nur existierende Dateien **innerhalb** des Repos geschrieben.
+
+## Bilder, eigene Medien & Audio-Toggles
+
+**AI-Bildgenerierung** (BYOK, OpenAI-kompatibel `/v1/images/generations` — auch über deinen Proxy):
+```bash
+# Bilder automatisch aus einem Thema generieren (für image-Szenen ohne Asset)
+cue promo --script my.script.json --images auto --theme "futuristisches dunkles Dashboard"
+```
+
+**Eigene Medien** (Referenzbilder, Musik, Soundeffekte) — leg sie in `media/` (oder `--media <dir>`):
+```bash
+cue promo --script my.script.json --media ./media \
+  --music-file mymusic.mp3 --sfx --sfx-file myclick.wav
+```
+Eine `image`-Szene kann ein lokales Asset nutzen (`"mediaFile": "ref.png"`) **oder** per `prompt` automatisch generieren.
+
+**Audio-Toggles:**
+```bash
+--no-voice          # Sprachausgabe aus
+--no-music          # Musik aus
+--sfx               # Soundeffekte an (Transition-Whoosh; eigene via --sfx-file)
+--music-file <f>    # eigene Musik (Vorrang vor Freesound)
+--sfx-file <f>      # eigener Soundeffekt
+```
+
+Eigene Musik/SFX haben Vorrang vor Freesound/generiert. Im **Configurator-GUI** lassen sich Toggles setzen, Medien hochladen und Bild-Szenen anlegen.
+
+## Sprachausgabe (TTS) — auch ganz ohne Key
+
+CUE-AGENT wählt die TTS-Engine automatisch:
+
+- **`elevenlabs`** — höchste Qualität (braucht `ELEVENLABS_API_KEY`)
+- **`kokoro`** — **lokal, key-frei, Apache-2.0** ([Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M)); lädt beim ersten Lauf ein ~300 MB-Modell, läuft dann offline auf der CPU. **Nur Englisch** (`--lang en`) — das Modell ist englisch-zentriert.
+- **`openai`** — OpenAI-kompatibler `/v1/audio/speech`-Endpoint (z. B. über deinen Proxy)
+
+**Auto-Verhalten**: ElevenLabs (falls Key & gültig) → sonst/​bei Fehler automatisch **Kokoro** (nur für Englisch). So bekommst du natürliche englische Stimmen ohne jeden Key. Erzwingen mit `--tts kokoro`. Für **nicht-englische** Sprachen wird Kokoro übersprungen — dann einen Key (ElevenLabs/OpenAI) setzen, sonst bleibt das Video stumm (mit klarer Meldung).
+
+```bash
+cue promo --script my-video.script.json --tts kokoro --voice daniel
+```
+
+> `kokoro-js` ist eine optionale Dependency. Falls nicht installiert: `npm install kokoro-js`.
+
+## AI-Funktionen ohne Key ausprobieren (Offline-Stub)
+
+Die LLM-/Bild-gestützten Funktionen (`cue qa`, `release-check`, `design-iterate`,
+Auto-Bildgenerierung) sprechen einen **OpenAI-kompatiblen** Endpunkt. Für Demos,
+CI und lokales Ausprobieren **ohne BYOK** liegt ein lokaler Stub bei:
+[`scripts/offline-ai-stub.js`](scripts/offline-ai-stub.js).
+
+```bash
+node scripts/offline-ai-stub.js          # lokaler Endpunkt auf :8771
+
+export CUE_LLM_PROVIDER=openai
+export CUE_LLM_BASE_URL=http://127.0.0.1:8771/v1
+export CUE_LLM_MODEL=cue-local
+export CUE_LLM_API_KEY=local
+export CUE_IMAGE_API_KEY=local
+
+cue design-iterate --url file://./page.html --baseline spec.json   # konvergiert
+cue qa http://localhost:8099/                                       # QA-Report
+cue promo --script my.script.json --images auto                     # mit Bildern
+```
+
+Der Stub ist **kein** echtes Modell: Der Design-Proposer berechnet aus der
+Ziel-Spec die exakten CSS-Overrides (deterministisch korrekt — `design-iterate`
+konvergiert wirklich), Bilder werden lokal per ffmpeg synthetisiert, QA liefert
+sinnvolle Defaults (eigene Befunde als `canned/qa-<slug>.json` hinterlegbar). Für
+echte Vision-Analyse weiterhin einen Provider via `ANTHROPIC_API_KEY` bzw.
+`CUE_LLM_*` setzen.
+
+## CLI-Übersicht
+
+| Command | Zweck |
+|---|---|
+| `cue qa <url>` | QA-Analyse: Screenshot + Konsolen-/Netzwerk-/a11y-Signale + Vision → Findings, Severity, **Score**, CI-Exit-Code |
+| `cue design-check` | **Pixelgenaue** Design-Verifikation: Ist-UI gegen Soll-Baseline (Position/Größe/Text/Farbe), deterministisch, kein LLM |
+| `cue design-iterate` | **Autonom** gegen Design-Baseline iterieren (Web/Android), bis Ziel-Score erreicht |
+| `cue release-check <url>` | Veröffentlichungsreife prüfen (**READY/NOT READY** Verdict + Score + RELEASE-READINESS.md) |
+| `cue playable-check <url>` | Qualitäts-Türsteher (assetpilot.md): **BELEGBAR SPIELBAR / NICHT BELEGT**, key-frei, mit Screenshot-Beweisen; `--flow` prüft echte Spiel-Flows |
+| `cue temporal-check <url>` | Zeitliche Konsistenz (assetpilot.md): Idle lebt / Übergänge ohne Sprünge / Zustandswechsel sichtbar; SHADED-Modus via `window.SHADED` |
+| `cue qa-loop <url>` | Autonomer Zyklus: testen → fixen → rebuilden → erneut testen, bis READY |
+| `cue android-qa [apk]` | Android-App-QA im Emulator (ADB + uiautomator-BBoxen + Vision) |
+| `cue capture <url>` | Capture-Engine → CaptureBundle (Video + Screenshots + Logs + Netzwerk + Metrics + a11y) |
+| `cue promo <url>` | Promo-Video (nur nach bestandener QA) — Hook → Features → Screenshots → CTA |
+| `cue tutorial <url>` | Tutorial-Video (Cold-Open → Kapitel → Recap) |
+| `cue showcase <url>` | Showcase-Video (Intro → Walkthrough → Closer) |
+| `cue render <dir>` | Vorhandenes Projekt neu rendern (schnelle Iteration) |
+| `cue gif <mp4>` | Video → optimiertes GIF |
+| `cue configurator` | **Web-GUI** zum komfortablen Einstellen (Presets, Zeitsegmente, Scripts, Im-/Export) |
+| `cue doctor` | Umgebungs-Check |
+
+### Wichtige Optionen
+
+```bash
+--lang de|en                     # Sprache der Ausgaben
+--aspect 16:9|9:16|1:1|4:5       # Seitenverhältnis (Web / Reels / IG / Portrait)
+--brand vercel|horror|linear|stripe|apple|notion   # Design-Preset
+--tts auto|elevenlabs|kokoro|openai   # TTS-Engine (auto: ElevenLabs→Kokoro)
+--voice matilda|rachel|daniel|josh    # Stimme
+--script datei.script.json       # eigenes Voiceover-/Storyboard-Script
+--flow datei.json                # deklarativer Flow (klicken/tippen/scrollen)
+--fail-on none|low|medium|high   # CI-Gate für QA
+--skip-qa-gate                   # Video OHNE bestandene QA erzwingen (Warnung)
+--no-video                       # Capture ohne Video-Aufnahme
+--json                           # maschinenlesbares Ergebnis
+```
+
+## Eigene Scripts (volle Kontrolle über Erzählung)
+
+Ein Script gibt dir exakte Kontrolle über Szenen, Timing und Voiceover-Text. Beispiel:
+[`examples/horrorgeticon-ops.script.json`](examples/horrorgeticon-ops.script.json)
+(Volltext: [`scripts/horrorgeticon-ops.md`](scripts/horrorgeticon-ops.md)).
+
+```bash
+cue promo --script examples/horrorgeticon-ops.script.json
+# → 73s-Promo, horror-Brand, 8 Szenen, Voiceover-Text exakt aus dem Script
+```
+
+Script-Format (Auszug):
+```jsonc
+{
+  "meta": { "title": "...", "mode": "promo", "lang": "de", "voice": "daniel", "brand": "horror", "aspect": "16:9" },
+  "scenes": [
+    { "type": "title", "id": "hook", "title": "...", "subtitle": "...", "narration": "...", "duration": 6 },
+    { "type": "features", "id": "intro", "heading": "...", "features": ["...", "..."], "narration": "...", "duration": 9 }
+  ]
+}
+```
+
+## Ausgabe
+
+- **QA:** `qa-reports/` — Screenshot, Konsolen-Logs, LLM-Analyse, Markdown **+ JSON** mit Severity/Score
+- **Video:** `video-projects/<slug>/` — `context.json`, `storyboard.json`, `DESIGN.md`,
+  `scenes/*.html`, `out/final.mp4` (H.264; mit Voiceover + Musik, wenn Keys gesetzt)
+
+Alle Ausgaben landen im **aktuellen Arbeitsverzeichnis** — so funktioniert das Tool sauber
+in jedem fremden Repo.
+
+## Projektstruktur
+
+```
+bin/cue.js            CLI-Einstieg
+src/config/           Config-/Env-Loader (Aspect→Viewport, Secrets aus Env)
+src/core/             Capture-Engine, Flow-Runner, CaptureBundle
+src/qa/               QA-Pipeline (capture, analyze, severity, report)
+src/video/            Video-Pipeline (Phasen 0–5, Script, Re-Render)
+src/render/           Eingebauter Renderer (HTML+GSAP → Frames → ffmpeg)
+src/audio/            TTS (ElevenLabs), Musik (Freesound), Mix (ffmpeg)
+src/design-systems/   Brand-Presets (vercel, horror, linear)
+src/templates/        Szenen-Templates (HTML+GSAP)
+src/doctor/           Umgebungs-Check
+docs/                 Roadmap / Masterplan
+examples/, scripts/   Beispiel-Flows und -Scripts
+```
+
+## Lizenz
 
 MIT

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CUE-AGENT Configurator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjU0LjAwMDAwMCAxMjU0LjAwMDAwMCIgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iQ1VFLUFHRU5UIj4KPHRpdGxlPkNVRS1BR0VOVDwvdGl0bGU+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAuMDAwMDAwLDEyNTQuMDAwMDAwKSBzY2FsZSgwLjEwMDAwMCwtMC4xMDAwMDApIiBmaWxsPSIjQzIwMDIxIiBzdHJva2U9Im5vbmUiPgo8cGF0aCBkPSJNNzc3MyAxMTUyMCBjLTI2MCAtNTUgLTM0OCAtMzgyIC0xNTIgLTU2OSBsNTIgLTQ5IC02MSAtMTQ5IGMtMjM5Ci01ODMgLTU2MiAtMTM0NCAtNjI3IC0xNDc2IC0xNSAtMzEgLTE4IC0yOSAxMjAgLTgxIDI2NCAtMTAxIDU4OSAtMzI0IDExMTAKLTc2MSA2NiAtNTYgMjE1IC0xNzcgMzMwIC0yNzAgNDQ3IC0zNjAgNTQyIC00NTYgODAwIC04MDQgNzAgLTk0IDEzMCAtMTcxCjEzMyAtMTcxIDE1IDAgMzk0IDMyNiA3OTcgNjg1IDEwMSA5MCA0NjcgNDEzIDUzNyA0NzQgMzggMzMgMzggMzMgOTUgNCA4MgotNDAgMjExIC00MSAyOTUgLTEgNjYgMzEgMTI3IDkwIDE1OSAxNTYgMzcgNzMgMzUgMjI2IC00IDMwMCAtMzggNzIgLTg2IDEyMwotMTQ5IDE1OCAtNzQgNDEgLTIyNCA0MyAtMzAzIDQgLTExMiAtNTUgLTE3NyAtMTU1IC0xODMgLTI4MyAtNCAtNjkgLTYgLTc4Ci0yNiAtODIgLTM1IC03IC05NTIgLTE4MiAtMTA3OSAtMjA2IC0xMTMgLTIxIC0xMjAgLTIxIC0xNjIgLTQgLTI1IDkgLTUzIDI3Ci02NCA0MSAtNjUgODMgLTM5IDM2MSA2MCA2MjUgMjMgNjEgMzggMTE0IDMzIDExOCAtNSA0IC0xMjQgOTUgLTI2NCAyMDEgLTE0MAoxMDcgLTI5NyAyMjcgLTM0OCAyNjcgbC05MyA3NCAtNzcgLTY2IGMtMjA3IC0xNzkgLTQ0NyAtMjcwIC01NzYgLTIyMSAtNzkgMzAKLTk5IDY5IC0xMTEgMjIxIC0zIDQ0IC0xNyAxODYgLTMxIDMxNSAtMTMgMTI5IC0zOCAzNjYgLTU0IDUyNSAtMTYgMTYwIC0zMQozMDYgLTM0IDMyNyAtNCAzNSAtMiAzNiAzMiA0MyA5NiAxOCAxOTYgOTkgMjQwIDE5MyAzMiA3MCAyOSAyMDIgLTYgMjczIC03MQoxNDYgLTIzMCAyMjMgLTM4OSAxODl6Ii8+CjxwYXRoIGQ9Ik02MDM1IDk2NzUgYy01IC0yIC0zNSAtMTEgLTY2IC0xOSAtMTI5IC0zNiAtMTkwIC05NyAtNTEwIC01MTEgLTQwNAotNTIyIC00NTQgLTU5NyAtNDg0IC03MjYgLTU3IC0yNTIgNTQgLTQ3MyAyOTggLTU5NCA5MyAtNDcgMTAwIC00OCAyMTQgLTU1CjEzNCAtOCAyMDcgLTMwIDI5MCAtODUgMTcxIC0xMTQgMjYwIC0yNjUgMjcyIC00NjQgNiAtMTAzIDYgLTEwMyAxMDUgLTE3NSA1NQotMzkgOTkgLTc1IDk3IC04MSAtNyAtMjggLTM4NyAtNTI2IC05MTYgLTEyMDEgLTMxMiAtMzk4IC0zNDcgLTQ0MyAtNDY0IC01OTQKLTU3IC03NCAtMjIwIC0yODEgLTM2MSAtNDYwIC0xNDEgLTE3OSAtMzMwIC00MTkgLTQyMCAtNTM1IC01NjggLTcyNiAtMTAzMwotMTMyMSAtMTA0OSAtMTM0MyAtMTcgLTIzIC0yMSAtMjUgLTM2IC0xMiAtMTAgOCAtMTU3IDE3OSAtMzI4IDM4MCAtNzAzIDgyNQotODAwIDkzOCAtODYwIDEwMDEgLTI5MCAzMDUgLTgxNCAyNzAgLTExMDUgLTc0IC02MiAtNzMgLTE0OCAtMjM3IC0xODggLTM1NwotMzkgLTEyMCAtNDIgLTMxOCAtNSAtNDI1IDU0IC0xNTggOTkgLTIyOCAyNzEgLTQyMCAxMTIgLTEyNiA0NTMgLTUxOCA5MzkKLTEwNzkgMzMxIC0zODMgODE3IC05NjQgOTU4IC0xMTQ3IDc5IC0xMDEgMTU4IC0xOTQgMTc3IC0yMDcgMTM4IC05NCAzMjAgLTc5CjQyNyAzNSA0NiA0OCA4NzMgMTA5MCAxOTY0IDI0NzMgODczIDExMDYgMTMyNyAxNjg4IDE5MjIgMjQ2MyAyNzYgMzU5IDMzNwo0MzYgMzQ3IDQzNiA1IDEgNDggLTIzIDk1IC01MiA3MiAtNDQgOTEgLTUyIDExNiAtNDYgNTUgMTIgMTk5IDkgMjU1IC02IDIxNQotNTcgMzc2IC0yMzEgNDI1IC00NjAgMjAgLTkzIDQ1IC0xMzQgMTI5IC0yMTMgMTkzIC0xODAgNDg4IC0yMDAgNjkzIC00NSA1MwozOSAyMDUgMjEzIDQwMyA0NTkgMTAxIDEyNiAyMjIgMjc0IDI2OCAzMjkgOTcgMTE2IDEyNyAxNjMgMTU5IDI1MiA2NyAxODQgMjUKMzcxIC0xMTIgNTA4IC0xMTQgMTE0IC0yMzEgMTY1IC0zNjAgMTU4IC0xMDYgLTcgLTE3OSA5IC0yODQgNjMgLTExMCA1NiAtMTgxCjExOSAtMjQyIDIxMiAtNjQgOTggLTg3IDE2NCAtMTAwIDI4NSAtNiA1NiAtMTcgMTE4IC0yNiAxMzcgLTExIDI2IC05NyAxMDMKLTMzNSAzMDAgLTM4MCAzMTUgLTQ0MSAzNjUgLTQ5MyA0MDYgLTUzIDQxIC03MTEgNTMzIC03NTEgNTYyIC0zMCAyMCAtMzQgMjEKLTk1IDggLTMzNCAtNzAgLTY2OSAyMDUgLTY2OSA1NDYgMCA4OSAtMjIgMTMzIC0xMDkgMjE4IC0xMDkgMTA3IC0yMzUgMTYxCi0zNzYgMTU5IC0zOCAwIC03NCAtMiAtODAgLTR6Ii8+CjwvZz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC4wMDAwMDAsMTI1NC4wMDAwMDApIHNjYWxlKDAuMTAwMDAwLC0wLjEwMDAwMCkiIGZpbGw9IiM4QTAwMTkiIHN0cm9rZT0ibm9uZSI+CjxwYXRoIGQ9Ik04ODMwIDk2NzUgYzAgLTUgMTMxIC0xMTEgMjAzIC0xNjQgMTA0IC03NiA1OSAtMzUgLTczIDY4IC03MSA1NQotMTMwIDk5IC0xMzAgOTZ6Ii8+CjxwYXRoIGQ9Ik05MTA3IDk0NjEgYzggLTEwIDIgLTI1IC0yOSAtNjUgLTEwMSAtMTMxIC0xODAgLTIzNSAtNDE2IC01NTEgLTE0MAotMTg3IC0yNzggLTM3MSAtMzA2IC00MDggLTI4IC0zOCAtNDkgLTcxIC00NyAtNzUgMiAtNCA1NCAtNDcgMTE2IC05NyA1NDAKLTQzNCA2NzYgLTU2OCA5MzggLTkyNSA0MiAtNTggODYgLTExNiA5NiAtMTI5IDE5IC0yNSAxOSAtMjUgMTAyIDQ1IDgwIDY3CjUwNiA0MzggODE3IDcxMyA4NCA3MyAxNDkgMTM4IDE0NSAxNDQgLTMgNSAtMSA3IDQgNCA2IC00IDc5IDU0IDE2MyAxMjggODMKNzQgMTU1IDEzNSAxNjAgMTM1IDQgMCAzNCAtMTIgNjYgLTI3IDg0IC00MCAyMDMgLTM5IDI4NiAwIDIwOCAxMDEgMjUxIDM3OAo4NSA1NDkgLTExNiAxMTkgLTMzOSAxMjcgLTQ1NCAxNiAtMTkgLTE4IC0yOSAtMzcgLTI2IC00NyA0IC0xMyAzIC0xMyAtNSAtMgotMjMgMzIgLTgyIC0xMTAgLTgyIC0xOTggMCAtNDggLTMgLTYxIC0xNyAtNjUgLTE5IC02IC00ODggLTk3IC05MTIgLTE3NgotMTQ2IC0yOCAtMjc5IC01MCAtMjk2IC01MCAtNDMgMCAtOTYgMzcgLTExOSA4MyAtNTEgMTA2IC0xNiAzNzYgODAgNjE3IDIwCjUxIDMzIDk1IDI4IDk5IC0yNiAyMyAtMzg3IDI5MiAtMzc3IDI4MnoiLz4KPHBhdGggZD0iTTgwODggODA3OSBjLTI5IC0zOCAtNzggLTEwMyAtMTA4IC0xNDMgLTY5IC05MiAtMzcxIC00OTAgLTQ2OCAtNjE2Ci00MCAtNTIgLTE0NCAtMTg5IC0yMzIgLTMwNSAtODggLTExNSAtMjA5IC0yNzUgLTI3MCAtMzU1IC0xNDAgLTE4NCAtODY1Ci0xMTUwIC0xMDcwIC0xNDI2IC0xNjAgLTIxNiAtMzgwIC01MDQgLTY5OSAtOTE5IC00NyAtNjAgLTEyMSAtMTU3IC0xNjUgLTIxNQotNDUgLTU4IC0xMDAgLTEzMCAtMTIzIC0xNjAgLTEwNyAtMTM5IC0yNDcgLTMyMCAtMzQ4IC00NTEgLTYwIC03OSAtMTU5IC0yMDgKLTIyMCAtMjg2IC02MCAtNzggLTE0NCAtMTg2IC0xODYgLTI0MCAtNDIgLTU0IC0xNTQgLTE5OSAtMjUwIC0zMjMgLTk2IC0xMjQKLTIxMiAtMjc0IC0yNTcgLTMzMyAtMjAzIC0yNjUgLTk4MSAtMTI2MiAtMTA2OCAtMTM2OSBsLTYzIC03NyAxMzEgLTE2OCBjNzgKLTEwMCAxNDkgLTE4MSAxNzYgLTIwMSAxMTUgLTgyIDI3NyAtODEgMzg1IDEgMTggMTMgMTQwIDE2MCAyNzIgMzI2IDEzMiAxNjYKMzM0IDQyMCA0NDkgNTY0IDExNSAxNDQgMjQ2IDMwOCAyOTAgMzY1IDQ1IDU3IDkyIDExOCAxMDYgMTM1IDE0IDE4IDExMSAxNDAKMjE2IDI3MiAxMDQgMTMyIDI0OCAzMTQgMzE5IDQwNSA3MSA5MSAxODEgMjMwIDI0NCAzMTAgNjQgNzkgMTI1IDE1NiAxMzYgMTcxCjExIDE1IDY3IDg3IDEyNSAxNjAgMzEzIDM5NiA0ODcgNjE3IDU5MCA3NDkgNjMgODEgMTY5IDIxNiAyMzUgMzAxIDY2IDg0IDEzOAoxNzYgMTYwIDIwNSAyMiAyOCAyMDAgMjU4IDM5NSA1MTAgMTk2IDI1MyA0MDEgNTE3IDQ1NSA1ODggMjUwIDMyNCAyNjggMzQ2CjI4MCAzNDYgNSAwIDQ3IC0yMyA5MiAtNTEgODMgLTUwIDgzIC01MCAxNzMgLTQwIDE0MyAxOCAzMTQgLTMyIDQxNCAtMTIwIDM1Ci0zMSA1MiAtMzcgNDAgLTE2IC01IDkgLTQgOSA2IDAgOCAtNyAxNSAtMTkgMTYgLTI2IDEgLTggMjIgLTQxIDQ3IC03MyA1MQotNjUgODggLTE1NSAxMDcgLTI1NCAyMiAtMTEyIDEyNyAtMjI2IDI3MiAtMjk1IDcwIC0zMyA4NiAtMzcgMTkwIC00MiAyMTMKLTEwIDMxNSAzNyA0ODEgMjI1IDEwMSAxMTQgMTI5IDE0NyAyODUgMzQyIDQyIDUyIDEzOSAxNzEgMjE2IDI2NCAxNTkgMTk0CjIwOCAyODMgMjI2IDQwNyAzMSAyMTMgLTg3IDQxNiAtMjk3IDUxNyAtNzUgMzYgLTgyIDM3IC0yMDEgNDAgLTEwMSAyIC0xMzUgNgotMTk0IDI3IC0yNTQgODkgLTQxMyAyOTEgLTQzMyA1NTAgLTQgNTAgLTEzIDEwNCAtMjAgMTIxIC0xMSAyNyAtMjc2IDI1NQotNjIwIDUzNCAtNDQgMzYgLTEwMCA4MiAtMTI0IDEwMiAtMjQgMjEgLTQ3IDM4IC01MiAzOCAtNCAwIC0zMSAtMzIgLTYxIC03MXoiLz4KPC9nPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAwMDAwMCwxMjU0LjAwMDAwMCkgc2NhbGUoMC4xMDAwMDAsLTAuMTAwMDAwKSIgZmlsbD0iIzE1MTYxQSIgc3Ryb2tlPSJub25lIj4KPHBhdGggZD0iTTEwNzk5IDExNzA3IGMtNDQ3IC01OTEgLTY5OSAtOTA3IC03MjMgLTkwNyAtMiAwIC0xMSA0OCAtMjEgMTA4Ci0yNiAxNTcgLTI4IDE1OCAtNTUgMzIgLTE0IC02MSAtMjggLTExNyAtMzIgLTEyMyAtNiAtOCAtMzggMTkgLTEwMCA4MSAtNTAKNTIgLTg4IDg4IC04NSA4MCAzIC03IDI0IC01NyA0NyAtMTExIDIzIC01NCA0MCAtMTAyIDM4IC0xMDcgLTIgLTQgLTQxIDcgLTg4CjI3IC0xMjkgNTIgLTEzNiA1NSAtMTI1IDQ1IDk5IC04NyAxNzIgLTE2NCAxNjEgLTE2OCAtNyAtMyAtNTkgLTEzIC0xMTUgLTIyCmwtMTAyIC0xOCAxMDMgLTIzIGM1NyAtMTMgMTA5IC0yNyAxMTYgLTMwIDkgLTUgLTE3IC0zMCAtNzcgLTc2IC01MCAtMzggLTg5Ci03MCAtODggLTcxIDEgLTIgNDkgMTEgMTA2IDI3IDU4IDE2IDEwOCAyOSAxMTMgMjkgNCAwIC0yMiAtNTcgLTU5IC0xMjcgbC02NwotMTI4IDEwNyA5NCBjNTkgNTIgMTA5IDkyIDExMSA5MCAyIC0yIDE2IC01NyAzMSAtMTIxIDE1IC02NSAyOCAtMTE4IDMwIC0xMTgKMSAwIDEzIDU2IDI1IDEyNSAxMyA2OSAyNiAxMjQgMjkgMTI0IDMgLTEgNDQgLTQzIDkxIC05NCA0NyAtNTEgODggLTkzIDkxCi05NCA0IDAgLTEyIDQzIC0zNiA5NyAtNjggMTUzIC02OCAxNDYgNyAxMTggMzUgLTEzIDg2IC0zNCAxMTMgLTQ1IDUwIC0yMSA1MAotMjEgLTM4IDYzIGwtODkgODMgNjQgMTYgYzM0IDggODMgMTggMTA4IDIyIDc5IDEzIDcyIDIwIC00MCA0NCAtNjEgMTMgLTExMwoyNyAtMTE1IDMxIC0yIDQgMzkgNDQgOTEgODggNTMgNDUgOTQgODIgOTEgODIgLTMgMCAtNTYgLTIwIC0xMTcgLTQ1IC02MiAtMjUKLTExNSAtNDQgLTExNyAtNDIgLTIgMyA0NyA2OSAxMDkgMTQ4IDExNSAxNDggNTk4IDc4OSA2NTUgODcxIDMzIDQ2IDMzIDQ2IDAKNzEgLTMzIDI1IC0zMyAyNSAtMTQ4IC0xMjZ6Ii8+CjxwYXRoIGQ9Ik05MDI1IDk5NzQgYy0yNSAtMjcgLTQ1IC01MSAtNDUgLTU1IDAgLTYgODQgLTczIDM0MCAtMjc1IDI2MCAtMjA1CjI5MCAtMjI2IDMwNCAtMjIxIDEyIDUgNjYgOTEgNjYgMTA2IDAgMyAtMjYgMjYgLTU3IDUxIC00MyAzMyAtNDQwIDM0NSAtNTUwCjQzMyAtMTAgNyAtMjUgLTQgLTU4IC0zOXoiLz4KPC9nPgo8L3N2Zz4=">
+<style>
+  :root {
+    --bg: #0b0d10; --surface: #14181d; --surface2: #1b2127; --border: #2a323b;
+    --text: #e8edf2; --muted: #8b97a4; --accent: #0070f3; --accent2: #7928ca;
+    --ok: #28c76f; --warn: #f0a020; --danger: #e0455e; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(11,13,16,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  header .badge { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+  header .spacer { flex: 1; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 18px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 14px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 11px; font: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 64px; }
+  .field { margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 120px; }
+  button { cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 8px; padding: 9px 14px; font: inherit; font-weight: 600; transition: .15s; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: #0060d6; }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--danger); }
+  button.sm { padding: 5px 9px; font-size: 12px; }
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(255,255,255,0.2); }
+  /* Timeline */
+  .timeline { display: flex; height: 46px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .seg { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; overflow: hidden; white-space: nowrap; border-right: 1px solid rgba(0,0,0,0.3); cursor: pointer; opacity: .9; }
+  .seg:hover { opacity: 1; }
+  .timeline-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  /* Scene cards */
+  .scene { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .scene-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .scene-head .idx { font-size: 12px; color: var(--muted); width: 22px; }
+  .scene-head .type-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .scene-head .ctrls { margin-left: auto; display: flex; gap: 6px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .cmd { background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: ui-monospace, monospace; font-size: 13px; color: var(--ok); white-space: pre-wrap; word-break: break-all; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 18px; opacity: 0; transition: .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .typebar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom: 10px; }
+  .feat-row { display:flex; gap:8px; margin-bottom:6px; }
+  .feat-row input { flex:1; }
+  #log { background:#000; border:1px solid var(--border); border-radius:8px; padding:12px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); max-height:240px; overflow:auto; white-space:pre-wrap; display:none; }
+  /* Interaktive Timeline + Player */
+  .track { position:relative; display:flex; height:66px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--surface2); user-select:none; }
+  .block { position:relative; display:flex; flex-direction:column; justify-content:center; padding:6px 10px; color:#fff; overflow:hidden; white-space:nowrap; border-right:1px solid rgba(0,0,0,0.35); cursor:pointer; min-width:40px; }
+  .block.sel { box-shadow: inset 0 0 0 2px #fff; }
+  .block .ref { font-weight:800; font-size:12px; }
+  .block .blabel { font-size:11px; opacity:.9; text-overflow:ellipsis; overflow:hidden; }
+  .block .bdur { font-size:10px; opacity:.8; }
+  .block .grip { position:absolute; top:0; right:0; width:12px; height:100%; cursor:ew-resize; background:linear-gradient(to right, transparent, rgba(255,255,255,.4)); }
+  .player { margin-top:14px; }
+  .preview-wrap { width:100%; max-width:640px; margin:0 auto; background:#000; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .preview-wrap iframe { display:block; width:100%; height:100%; border:0; background:#000; }
+  .transport { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .transport input[type=range] { flex:1; }
+  .refchip { cursor:pointer; border:1px solid rgba(255,255,255,.35); border-radius:999px; padding:0 6px; font-size:10px; margin-left:6px; }
+</style>
+</head>
+<body>
+<header>
+  <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254.000000 1254.000000" width="28" height="28" style="display:block" role="img" aria-label="CUE-AGENT">
+<title>CUE-AGENT</title>
+<g transform="translate(0.000000,1254.000000) scale(0.100000,-0.100000)" fill="#C20021" stroke="none">
+<path d="M7773 11520 c-260 -55 -348 -382 -152 -569 l52 -49 -61 -149 c-239
+-583 -562 -1344 -627 -1476 -15 -31 -18 -29 120 -81 264 -101 589 -324 1110
+-761 66 -56 215 -177 330 -270 447 -360 542 -456 800 -804 70 -94 130 -171
+133 -171 15 0 394 326 797 685 101 90 467 413 537 474 38 33 38 33 95 4 82
+-40 211 -41 295 -1 66 31 127 90 159 156 37 73 35 226 -4 300 -38 72 -86 123
+-149 158 -74 41 -224 43 -303 4 -112 -55 -177 -155 -183 -283 -4 -69 -6 -78
+-26 -82 -35 -7 -952 -182 -1079 -206 -113 -21 -120 -21 -162 -4 -25 9 -53 27
+-64 41 -65 83 -39 361 60 625 23 61 38 114 33 118 -5 4 -124 95 -264 201 -140
+107 -297 227 -348 267 l-93 74 -77 -66 c-207 -179 -447 -270 -576 -221 -79 30
+-99 69 -111 221 -3 44 -17 186 -31 315 -13 129 -38 366 -54 525 -16 160 -31
+306 -34 327 -4 35 -2 36 32 43 96 18 196 99 240 193 32 70 29 202 -6 273 -71
+146 -230 223 -389 189z"/>
+<path d="M6035 9675 c-5 -2 -35 -11 -66 -19 -129 -36 -190 -97 -510 -511 -404
+-522 -454 -597 -484 -726 -57 -252 54 -473 298 -594 93 -47 100 -48 214 -55
+134 -8 207 -30 290 -85 171 -114 260 -265 272 -464 6 -103 6 -103 105 -175 55
+-39 99 -75 97 -81 -7 -28 -387 -526 -916 -1201 -312 -398 -347 -443 -464 -594
+-57 -74 -220 -281 -361 -460 -141 -179 -330 -419 -420 -535 -568 -726 -1033
+-1321 -1049 -1343 -17 -23 -21 -25 -36 -12 -10 8 -157 179 -328 380 -703 825
+-800 938 -860 1001 -290 305 -814 270 -1105 -74 -62 -73 -148 -237 -188 -357
+-39 -120 -42 -318 -5 -425 54 -158 99 -228 271 -420 112 -126 453 -518 939
+-1079 331 -383 817 -964 958 -1147 79 -101 158 -194 177 -207 138 -94 320 -79
+427 35 46 48 873 1090 1964 2473 873 1106 1327 1688 1922 2463 276 359 337
+436 347 436 5 1 48 -23 95 -52 72 -44 91 -52 116 -46 55 12 199 9 255 -6 215
+-57 376 -231 425 -460 20 -93 45 -134 129 -213 193 -180 488 -200 693 -45 53
+39 205 213 403 459 101 126 222 274 268 329 97 116 127 163 159 252 67 184 25
+371 -112 508 -114 114 -231 165 -360 158 -106 -7 -179 9 -284 63 -110 56 -181
+119 -242 212 -64 98 -87 164 -100 285 -6 56 -17 118 -26 137 -11 26 -97 103
+-335 300 -380 315 -441 365 -493 406 -53 41 -711 533 -751 562 -30 20 -34 21
+-95 8 -334 -70 -669 205 -669 546 0 89 -22 133 -109 218 -109 107 -235 161
+-376 159 -38 0 -74 -2 -80 -4z"/>
+</g>
+<g transform="translate(0.000000,1254.000000) scale(0.100000,-0.100000)" fill="#8A0019" stroke="none">
+<path d="M8830 9675 c0 -5 131 -111 203 -164 104 -76 59 -35 -73 68 -71 55
+-130 99 -130 96z"/>
+<path d="M9107 9461 c8 -10 2 -25 -29 -65 -101 -131 -180 -235 -416 -551 -140
+-187 -278 -371 -306 -408 -28 -38 -49 -71 -47 -75 2 -4 54 -47 116 -97 540
+-434 676 -568 938 -925 42 -58 86 -116 96 -129 19 -25 19 -25 102 45 80 67
+506 438 817 713 84 73 149 138 145 144 -3 5 -1 7 4 4 6 -4 79 54 163 128 83
+74 155 135 160 135 4 0 34 -12 66 -27 84 -40 203 -39 286 0 208 101 251 378
+85 549 -116 119 -339 127 -454 16 -19 -18 -29 -37 -26 -47 4 -13 3 -13 -5 -2
+-23 32 -82 -110 -82 -198 0 -48 -3 -61 -17 -65 -19 -6 -488 -97 -912 -176
+-146 -28 -279 -50 -296 -50 -43 0 -96 37 -119 83 -51 106 -16 376 80 617 20
+51 33 95 28 99 -26 23 -387 292 -377 282z"/>
+<path d="M8088 8079 c-29 -38 -78 -103 -108 -143 -69 -92 -371 -490 -468 -616
+-40 -52 -144 -189 -232 -305 -88 -115 -209 -275 -270 -355 -140 -184 -865
+-1150 -1070 -1426 -160 -216 -380 -504 -699 -919 -47 -60 -121 -157 -165 -215
+-45 -58 -100 -130 -123 -160 -107 -139 -247 -320 -348 -451 -60 -79 -159 -208
+-220 -286 -60 -78 -144 -186 -186 -240 -42 -54 -154 -199 -250 -323 -96 -124
+-212 -274 -257 -333 -203 -265 -981 -1262 -1068 -1369 l-63 -77 131 -168 c78
+-100 149 -181 176 -201 115 -82 277 -81 385 1 18 13 140 160 272 326 132 166
+334 420 449 564 115 144 246 308 290 365 45 57 92 118 106 135 14 18 111 140
+216 272 104 132 248 314 319 405 71 91 181 230 244 310 64 79 125 156 136 171
+11 15 67 87 125 160 313 396 487 617 590 749 63 81 169 216 235 301 66 84 138
+176 160 205 22 28 200 258 395 510 196 253 401 517 455 588 250 324 268 346
+280 346 5 0 47 -23 92 -51 83 -50 83 -50 173 -40 143 18 314 -32 414 -120 35
+-31 52 -37 40 -16 -5 9 -4 9 6 0 8 -7 15 -19 16 -26 1 -8 22 -41 47 -73 51
+-65 88 -155 107 -254 22 -112 127 -226 272 -295 70 -33 86 -37 190 -42 213
+-10 315 37 481 225 101 114 129 147 285 342 42 52 139 171 216 264 159 194
+208 283 226 407 31 213 -87 416 -297 517 -75 36 -82 37 -201 40 -101 2 -135 6
+-194 27 -254 89 -413 291 -433 550 -4 50 -13 104 -20 121 -11 27 -276 255
+-620 534 -44 36 -100 82 -124 102 -24 21 -47 38 -52 38 -4 0 -31 -32 -61 -71z"/>
+</g>
+<g transform="translate(0.000000,1254.000000) scale(0.100000,-0.100000)" fill="#15161A" stroke="none">
+<path d="M10799 11707 c-447 -591 -699 -907 -723 -907 -2 0 -11 48 -21 108
+-26 157 -28 158 -55 32 -14 -61 -28 -117 -32 -123 -6 -8 -38 19 -100 81 -50
+52 -88 88 -85 80 3 -7 24 -57 47 -111 23 -54 40 -102 38 -107 -2 -4 -41 7 -88
+27 -129 52 -136 55 -125 45 99 -87 172 -164 161 -168 -7 -3 -59 -13 -115 -22
+l-102 -18 103 -23 c57 -13 109 -27 116 -30 9 -5 -17 -30 -77 -76 -50 -38 -89
+-70 -88 -71 1 -2 49 11 106 27 58 16 108 29 113 29 4 0 -22 -57 -59 -127 l-67
+-128 107 94 c59 52 109 92 111 90 2 -2 16 -57 31 -121 15 -65 28 -118 30 -118
+1 0 13 56 25 125 13 69 26 124 29 124 3 -1 44 -43 91 -94 47 -51 88 -93 91
+-94 4 0 -12 43 -36 97 -68 153 -68 146 7 118 35 -13 86 -34 113 -45 50 -21 50
+-21 -38 63 l-89 83 64 16 c34 8 83 18 108 22 79 13 72 20 -40 44 -61 13 -113
+27 -115 31 -2 4 39 44 91 88 53 45 94 82 91 82 -3 0 -56 -20 -117 -45 -62 -25
+-115 -44 -117 -42 -2 3 47 69 109 148 115 148 598 789 655 871 33 46 33 46 0
+71 -33 25 -33 25 -148 -126z"/>
+<path d="M9025 9974 c-25 -27 -45 -51 -45 -55 0 -6 84 -73 340 -275 260 -205
+290 -226 304 -221 12 5 66 91 66 106 0 3 -26 26 -57 51 -43 33 -440 345 -550
+433 -10 7 -25 -4 -58 -39z"/>
+</g>
+</svg>
+  <h1>CUE-AGENT</h1>
+  <span class="badge">Configurator</span>
+  <div class="spacer"></div>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+  <button class="ghost" onclick="document.getElementById('importFile').click()">Import</button>
+  <button class="ghost" id="exportSettings">Settings export</button>
+  <button class="primary" id="exportScript">Script export</button>
+</header>
+
+<div class="wrap">
+  <!-- Projekt-Einstellungen -->
+  <div class="card">
+    <h2>Projekt</h2>
+    <div class="field">
+      <label>Titel</label>
+      <input id="m_title" placeholder="z. B. HORRORGETICON OPS">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Modus</label>
+        <select id="m_mode">
+          <option value="promo">Promo</option>
+          <option value="tutorial">Tutorial</option>
+          <option value="showcase">Showcase</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Brand-Preset</label>
+        <select id="m_brand"></select>
+      </div>
+      <div class="field">
+        <label>Seitenverhältnis</label>
+        <select id="m_aspect">
+          <option value="16:9">16:9 — Web</option>
+          <option value="9:16">9:16 — Reels/TikTok</option>
+          <option value="1:1">1:1 — Feed</option>
+          <option value="4:5">4:5 — Portrait</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Sprache</label>
+        <select id="m_lang"><option value="de">Deutsch</option><option value="en">English</option></select>
+      </div>
+      <div class="field">
+        <label>Ziel-URL (optional)</label>
+        <input id="m_url" placeholder="https://deine-app.tld">
+      </div>
+    </div>
+    <div class="hint">Ziel-URL nur nötig, wenn Screenshots/Clips der App ins Video sollen. Reine Script-Videos brauchen keine URL.</div>
+  </div>
+
+  <!-- Audio & Effekte -->
+  <div class="card">
+    <h2>Audio &amp; Effekte</h2>
+    <div class="row">
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_voice" checked style="width:auto"> Sprache (Voiceover)</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_music" checked style="width:auto"> Musik</label>
+      <label style="display:flex;align-items:center;gap:8px;color:var(--text)"><input type="checkbox" id="a_sfx" style="width:auto"> Soundeffekte</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Sprach-Engine (TTS)</label>
+        <select id="a_engine">
+          <option value="auto">Auto (ElevenLabs → Kokoro)</option>
+          <option value="kokoro">Kokoro (lokal, key-frei)</option>
+          <option value="elevenlabs">ElevenLabs (Key)</option>
+          <option value="openai">OpenAI-kompatibel (Proxy)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Stimme</label>
+        <select id="a_voicepick">
+          <option value="matilda">Matilda (w, warm)</option>
+          <option value="rachel">Rachel (w, klar)</option>
+          <option value="daniel">Daniel (m, autoritativ)</option>
+          <option value="josh">Josh (m, locker)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Eigene Musik (Medien-Datei)</label>
+        <select id="a_musicfile"><option value="">— Freesound/Auto —</option></select>
+      </div>
+      <div class="field">
+        <label>Eigener Soundeffekt (Medien-Datei)</label>
+        <select id="a_sfxfile"><option value="">— generiert —</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bilder & Medien -->
+  <div class="card">
+    <h2>Bilder &amp; Medien</h2>
+    <div class="row">
+      <div class="field">
+        <label>AI-Bildgenerierung</label>
+        <select id="i_mode"><option value="off">Aus (nur eigene Assets)</option><option value="auto">Auto (aus Thema generieren)</option></select>
+      </div>
+      <div class="field" style="flex:2">
+        <label>Thema (für Auto-Generierung)</label>
+        <input id="i_theme" placeholder="z. B. futuristisches dunkles Dashboard">
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Medienordner — Referenzen / Assets hochladen (Bilder, Musik, SFX)</label>
+      <input type="file" id="mediaUpload" multiple>
+    </div>
+    <div id="mediaList" class="hint"></div>
+  </div>
+
+  <!-- API-Keys (verschlüsselt gespeichert) -->
+  <div class="card">
+    <h2>API-Keys &nbsp;<span id="keyEnc" class="badge" style="text-transform:none"></span></h2>
+    <div class="hint" style="margin-top:0;margin-bottom:12px">Wird verschlüsselt (AES-256-GCM) in <code>~/.cue/keys.enc</code> gespeichert — nie im Repo, nie im Klartext zurückgegeben. Für höchste Sicherheit <code>CUE_KEYS_PASSPHRASE</code> setzen.</div>
+    <div class="row">
+      <div class="field"><label>Anthropic API Key <span id="st_anthropic"></span></label><input type="password" id="k_anthropic" placeholder="sk-ant-..." autocomplete="off"></div>
+      <div class="field"><label>ElevenLabs API Key <span id="st_elevenlabs"></span></label><input type="password" id="k_elevenlabs" placeholder="..." autocomplete="off"></div>
+      <div class="field"><label>Freesound API Key <span id="st_freesound"></span></label><input type="password" id="k_freesound" placeholder="..." autocomplete="off"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Bild-API Key <span id="st_imageApiKey"></span></label><input type="password" id="k_imageApiKey" placeholder="optional" autocomplete="off"></div>
+      <div class="field"><label>LLM-Proxy Key (BYOK) <span id="st_llmApiKey"></span></label><input type="password" id="k_llmApiKey" placeholder="z. B. sk-anvil-safe-key" autocomplete="off"></div>
+      <div class="field"><label>LLM-Provider</label><select id="k_llmProvider"><option value="">—</option><option value="anthropic">anthropic</option><option value="openai">openai</option></select></div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:2"><label>LLM Base-URL (Proxy)</label><input id="k_llmBaseUrl" placeholder="http://localhost:4000"></div>
+      <div class="field"><label>LLM Modell</label><input id="k_llmModel" placeholder="gpt-4o"></div>
+    </div>
+    <div class="row">
+      <button class="primary" id="saveKeys">Keys verschlüsselt speichern</button>
+    </div>
+  </div>
+
+  <!-- Timeline & Player -->
+  <div class="card">
+    <h2>Timeline &amp; Player</h2>
+    <div class="track" id="track"></div>
+    <div class="timeline-meta">
+      <span id="tl_count">0 Szenen</span>
+      <span id="tl_total">0.0 s gesamt</span>
+    </div>
+    <div class="player">
+      <div class="preview-wrap" id="previewWrap">
+        <iframe id="preview" title="Szenen-Vorschau"></iframe>
+      </div>
+      <div class="transport">
+        <button class="sm" id="playBtn" title="Abspielen/Pause">►</button>
+        <input type="range" id="scrub" min="0" max="1000" value="0">
+        <span id="ptime" class="hint" style="margin:0;min-width:92px;text-align:right">0.0 / 0.0 s</span>
+      </div>
+      <div class="hint">Block anklicken = auswählen &amp; Vorschau. Griff am rechten Rand ziehen = Dauer ändern. Der <b>@N</b>-Chip fügt eine Szenen-Referenz ins zuletzt fokussierte Text-/Prompt-Feld ein.</div>
+    </div>
+  </div>
+
+  <!-- Szenen / Zeitsegmente -->
+  <div class="card">
+    <h2>Szenen &amp; Zeitsegmente</h2>
+    <div class="typebar">
+      <button class="sm" data-add="title">+ Title</button>
+      <button class="sm" data-add="features">+ Features</button>
+      <button class="sm" data-add="screenshot">+ Screenshot</button>
+      <button class="sm" data-add="image">+ Bild</button>
+      <button class="sm" data-add="chapter">+ Kapitel</button>
+      <button class="sm" data-add="clip">+ Clip</button>
+      <button class="sm" data-add="cta">+ CTA</button>
+    </div>
+    <div id="scenes"></div>
+  </div>
+
+  <!-- Befehl + Erzeugen -->
+  <div class="card">
+    <h2>Verwenden</h2>
+    <div class="field">
+      <label>CLI-Befehl (kopieren &amp; ausführen)</label>
+      <div class="cmd" id="cmd"></div>
+    </div>
+    <div class="row">
+      <button id="copyCmd">Befehl kopieren</button>
+      <button class="primary" id="generate">Video jetzt erzeugen</button>
+    </div>
+    <div class="hint">„Video jetzt erzeugen" funktioniert nur, wenn der Configurator über <code>cue configurator</code> läuft (lokaler Server). Es nutzt deine eigenen Keys aus der Umgebung.</div>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- Fallback-Brand-Paletten (falls /api/presets nicht erreichbar, z. B. file://) ----
+let PRESETS = {
+  vercel: { label: "Vercel", bg: "#000000", accent: "#0070F3" },
+  horror: { label: "Horror Ops", bg: "#0A0A0B", accent: "#C1121F" },
+  linear: { label: "Linear", bg: "#08090A", accent: "#5E6AD2" },
+  stripe: { label: "Stripe", bg: "#0A2540", accent: "#635BFF" },
+  apple:  { label: "Apple", bg: "#000000", accent: "#2997FF" },
+  notion: { label: "Notion", bg: "#FFFFFF", accent: "#2383E2" },
+};
+const TYPE_COLORS = { title:"#0070f3", features:"#7928ca", screenshot:"#28c76f", chapter:"#f0a020", clip:"#e0455e", cta:"#19b5c9", image:"#16a34a" };
+
+let scenes = [];
+let mediaFiles = [];
+let selectedScene = 0;
+let lastField = null;          // zuletzt fokussiertes Text-/Prompt-Feld (für @N)
+let previewDuration = 0;
+let playing = false;
+let playRAF = null;
+
+// ---- Defaults ----
+function defaultScene(type) {
+  const base = { type, id: type + "-" + Math.random().toString(36).slice(2,6), duration: type==="chapter"?2.5:(type==="cta"?3:4) };
+  if (type==="title") return {...base, title:"Überschrift", subtitle:"Untertitel", narration:""};
+  if (type==="features") return {...base, heading:"Features", features:["Punkt 1","Punkt 2","Punkt 3"], narration:"", duration:8};
+  if (type==="screenshot") return {...base, heading:"Ansicht", caption:"", narration:""};
+  if (type==="chapter") return {...base, number:1, goal:"Was wird getan?", narration:""};
+  if (type==="clip") return {...base, heading:"Clip", caption:"", clipStart:0, clipDuration:4, narration:""};
+  if (type==="cta") return {...base, heading:"Jetzt starten", url:"", narration:""};
+  if (type==="image") return {...base, heading:"Bild", caption:"", mediaFile:"", prompt:"", narration:"", duration:4};
+  return base;
+}
+
+// ---- Brand-Dropdown füllen ----
+function fillBrands() {
+  const sel = document.getElementById("m_brand");
+  sel.innerHTML = "";
+  Object.keys(PRESETS).forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = PRESETS[k].label || k;
+    sel.appendChild(o);
+  });
+}
+
+// ---- Interaktive Track-Timeline (Blöcke, Resize-Griff, Auswahl, @N) ----
+function renderTimeline() {
+  const track = document.getElementById("track");
+  track.innerHTML = "";
+  const total = scenes.reduce((s,x)=>s+(+x.duration||0),0) || 1;
+  const trackW = track.clientWidth || 800;
+  scenes.forEach((s,i) => {
+    const b = document.createElement("div");
+    b.className = "block" + (i===selectedScene ? " sel" : "");
+    b.style.width = ((+s.duration||0)/total*100) + "%";
+    b.style.background = TYPE_COLORS[s.type] || "#444";
+    const label = s.title || s.heading || s.goal || s.id || s.type;
+    b.innerHTML = '<span class="ref">@'+(i+1)+' <span class="refchip" title="Referenz einfügen">+@</span></span>' +
+                  '<span class="blabel">'+escapeText(String(label))+'</span>' +
+                  '<span class="bdur">'+(+s.duration||0).toFixed(1)+'s · '+s.type+'</span>';
+    // Auswahl / Vorschau
+    b.addEventListener("click", (e) => {
+      if (e.target.classList.contains("refchip")) { insertRef(i+1); e.stopPropagation(); return; }
+      if (e.target.classList.contains("grip")) return;
+      selectScene(i);
+    });
+    // Resize-Griff (Dauer ziehen)
+    const grip = document.createElement("div"); grip.className = "grip";
+    grip.addEventListener("mousedown", (e) => startResize(e, i, total, trackW));
+    b.appendChild(grip);
+    track.appendChild(b);
+  });
+  document.getElementById("tl_count").textContent = scenes.length + " Szenen";
+  document.getElementById("tl_total").textContent = total.toFixed(1) + " s gesamt";
+}
+
+function escapeText(str){ const d=document.createElement("div"); d.textContent=str; return d.innerHTML; }
+
+function startResize(e, i, totalAtStart, trackW) {
+  e.preventDefault(); e.stopPropagation();
+  const pxPerSec = trackW / totalAtStart;
+  const startX = e.clientX;
+  const startDur = +scenes[i].duration || 0;
+  function move(ev) {
+    let d = startDur + (ev.clientX - startX) / pxPerSec;
+    d = Math.max(1, Math.round(d * 2) / 2); // auf 0.5s runden, min 1s
+    scenes[i].duration = d;
+    if (scenes[i].type === "clip") scenes[i].clipDuration = d;
+    renderTimeline();
+    document.getElementById("tl_total").textContent =
+      scenes.reduce((a,x)=>a+(+x.duration||0),0).toFixed(1) + " s gesamt";
+  }
+  function up() {
+    document.removeEventListener("mousemove", move);
+    document.removeEventListener("mouseup", up);
+    renderScenes(); // Dauer-Eingabefelder synchronisieren
+  }
+  document.addEventListener("mousemove", move);
+  document.addEventListener("mouseup", up);
+}
+
+function insertRef(n) {
+  const ref = "@" + n;
+  const el = lastField;
+  if (el && typeof el.selectionStart === "number") {
+    const a = el.value.slice(0, el.selectionStart);
+    const b = el.value.slice(el.selectionEnd);
+    el.value = a + ref + b;
+    el.dispatchEvent(new Event("input"));
+    el.focus();
+    toast("Referenz " + ref + " eingefügt");
+  } else {
+    toast("Erst ein Text-/Prompt-Feld anklicken, dann @N");
+  }
+}
+
+// ---- Scrub-Player (nutzt die GSAP-Timeline der Szene) ----
+function selectScene(i) {
+  selectedScene = i;
+  renderTimeline();
+  const card = document.getElementById("scene-"+i);
+  if (card) card.scrollIntoView({behavior:"smooth", block:"center"});
+  loadPreview(i);
+}
+
+async function loadPreview(i) {
+  stopPlay();
+  const s = scenes[i]; if (!s) return;
+  const meta = buildScript().meta;
+  // Seitenverhältnis der Vorschau anpassen
+  const ar = { "16:9":"16/9", "9:16":"9/16", "1:1":"1/1", "4:5":"4/5" }[meta.aspect] || "16/9";
+  const wrap = document.getElementById("previewWrap"); wrap.style.aspectRatio = ar;
+  try {
+    const res = await fetch("/api/scene-html", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ scene: s, meta, scenes }) });
+    const data = await res.json();
+    if (!data.ok) { toast("Vorschau: " + (data.error||"Fehler")); return; }
+    const iframe = document.getElementById("preview");
+    iframe.onload = () => {
+      try {
+        const win = iframe.contentWindow;
+        previewDuration = (win && win.__duration) || (+s.duration||3);
+        document.getElementById("scrub").value = 0;
+        seekPreview(0);
+      } catch(_) { previewDuration = +s.duration||3; }
+    };
+    iframe.srcdoc = data.html;
+  } catch (err) {
+    toast("Vorschau nur via `cue configurator` (Server) verfügbar.");
+  }
+}
+
+function seekPreview(tSec) {
+  const iframe = document.getElementById("preview");
+  try {
+    const win = iframe.contentWindow;
+    if (win && win.__timeline) win.__timeline.seek(tSec);
+  } catch(_) {}
+  document.getElementById("ptime").textContent = tSec.toFixed(1) + " / " + previewDuration.toFixed(1) + " s";
+}
+
+function stopPlay() {
+  playing = false;
+  if (playRAF) cancelAnimationFrame(playRAF);
+  const btn = document.getElementById("playBtn"); if (btn) btn.textContent = "►";
+}
+
+function togglePlay() {
+  if (playing) { stopPlay(); return; }
+  if (!previewDuration) return;
+  playing = true;
+  document.getElementById("playBtn").textContent = "❚❚";
+  const startWall = performance.now();
+  const startT = (document.getElementById("scrub").value/1000) * previewDuration;
+  function step(now) {
+    if (!playing) return;
+    let t = startT + (now - startWall)/1000;
+    if (t >= previewDuration) { t = previewDuration; seekPreview(t); document.getElementById("scrub").value = 1000; stopPlay(); return; }
+    seekPreview(t);
+    document.getElementById("scrub").value = Math.round((t/previewDuration)*1000);
+    playRAF = requestAnimationFrame(step);
+  }
+  playRAF = requestAnimationFrame(step);
+}
+
+// ---- Szenen rendern ----
+function field(label, value, oninput, type) {
+  const id = "f" + Math.random().toString(36).slice(2,8);
+  const wrap = document.createElement("div"); wrap.className = "field";
+  const lab = document.createElement("label"); lab.textContent = label; wrap.appendChild(lab);
+  let el;
+  if (type === "textarea") { el = document.createElement("textarea"); }
+  else { el = document.createElement("input"); el.type = type || "text"; }
+  el.value = value == null ? "" : value;
+  el.oninput = () => oninput(el.value);
+  el.addEventListener("focus", () => { lastField = el; });
+  wrap.appendChild(el);
+  return wrap;
+}
+
+function renderScenes() {
+  const c = document.getElementById("scenes");
+  c.innerHTML = "";
+  scenes.forEach((s, i) => {
+    const card = document.createElement("div"); card.className = "scene"; card.id = "scene-"+i;
+    const head = document.createElement("div"); head.className = "scene-head";
+    const dot = document.createElement("span"); dot.className="type-dot"; dot.style.background = TYPE_COLORS[s.type]||"#444";
+    head.appendChild(dot);
+    const idx = document.createElement("span"); idx.className="idx"; idx.textContent = "#"+(i+1); head.appendChild(idx);
+    const ttl = document.createElement("strong"); ttl.textContent = s.type.toUpperCase(); head.appendChild(ttl);
+    const ctrls = document.createElement("div"); ctrls.className = "ctrls";
+    const up = document.createElement("button"); up.className="sm ghost"; up.textContent="↑"; up.onclick=()=>{ if(i>0){ [scenes[i-1],scenes[i]]=[scenes[i],scenes[i-1]]; renderAll(); } };
+    const down = document.createElement("button"); down.className="sm ghost"; down.textContent="↓"; down.onclick=()=>{ if(i<scenes.length-1){ [scenes[i+1],scenes[i]]=[scenes[i],scenes[i+1]]; renderAll(); } };
+    const del = document.createElement("button"); del.className="sm danger ghost"; del.textContent="✕"; del.onclick=()=>{ scenes.splice(i,1); renderAll(); };
+    ctrls.append(up,down,del); head.appendChild(ctrls);
+    card.appendChild(head);
+
+    const row = document.createElement("div"); row.className = "row";
+    row.appendChild(field("ID", s.id, v=>s.id=v));
+    row.appendChild(field("Dauer (s)", s.duration, v=>{ s.duration=parseFloat(v)||0; renderTimeline(); }, "number"));
+    card.appendChild(row);
+
+    if (s.type==="title") {
+      card.appendChild(field("Titel", s.title, v=>s.title=v));
+      card.appendChild(field("Untertitel", s.subtitle, v=>s.subtitle=v));
+    } else if (s.type==="features") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      const fl = document.createElement("div");
+      const lab = document.createElement("label"); lab.textContent="Features"; fl.appendChild(lab);
+      (s.features||[]).forEach((f,fi)=>{
+        const fr = document.createElement("div"); fr.className="feat-row";
+        const inp = document.createElement("input"); inp.value=f; inp.oninput=()=>s.features[fi]=inp.value;
+        const rm = document.createElement("button"); rm.className="sm danger ghost"; rm.textContent="✕"; rm.onclick=()=>{ s.features.splice(fi,1); renderScenes(); };
+        fr.append(inp,rm); fl.appendChild(fr);
+      });
+      const add = document.createElement("button"); add.className="sm"; add.textContent="+ Feature"; add.onclick=()=>{ s.features=s.features||[]; s.features.push("Neuer Punkt"); renderScenes(); };
+      fl.appendChild(add); card.appendChild(fl);
+    } else if (s.type==="screenshot") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Caption", s.caption, v=>s.caption=v));
+    } else if (s.type==="chapter") {
+      const r2 = document.createElement("div"); r2.className="row";
+      r2.appendChild(field("Nummer", s.number, v=>s.number=parseInt(v)||1, "number"));
+      r2.appendChild(field("Ziel", s.goal, v=>s.goal=v));
+      card.appendChild(r2);
+    } else if (s.type==="clip") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Caption", s.caption, v=>s.caption=v));
+      const r3 = document.createElement("div"); r3.className="row";
+      r3.appendChild(field("Clip-Start (s)", s.clipStart, v=>s.clipStart=parseFloat(v)||0, "number"));
+      r3.appendChild(field("Clip-Dauer (s)", s.clipDuration, v=>{ s.clipDuration=parseFloat(v)||0; s.duration=s.clipDuration; renderTimeline(); }, "number"));
+      card.appendChild(r3);
+      card.insertAdjacentHTML("beforeend", '<div class="hint">Clip nutzt die aufgenommene capture.webm (Ziel-URL erforderlich).</div>');
+    } else if (s.type==="cta") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Button/URL-Text", s.url, v=>s.url=v));
+    } else if (s.type==="image") {
+      card.appendChild(field("Heading", s.heading, v=>s.heading=v));
+      card.appendChild(field("Caption", s.caption, v=>s.caption=v));
+      // Medien-Datei wählen
+      const mw = document.createElement("div"); mw.className="field";
+      const ml = document.createElement("label"); ml.textContent="Bild aus Medienordner"; mw.appendChild(ml);
+      const sel = document.createElement("select");
+      const none = document.createElement("option"); none.value=""; none.textContent="— keine (per Prompt generieren) —"; sel.appendChild(none);
+      mediaFiles.forEach(f=>{ const o=document.createElement("option"); o.value=f; o.textContent=f; if(f===s.mediaFile)o.selected=true; sel.appendChild(o); });
+      sel.onchange=()=>s.mediaFile=sel.value; mw.appendChild(sel); card.appendChild(mw);
+      card.appendChild(field("Prompt (falls kein Bild gewählt, für Auto-Generierung)", s.prompt, v=>s.prompt=v));
+    }
+
+    card.appendChild(field("Voice-over (Narration)", s.narration, v=>s.narration=v, "textarea"));
+    c.appendChild(card);
+  });
+}
+
+function renderCmd() {
+  const url = document.getElementById("m_url").value.trim();
+  const mode = document.getElementById("m_mode").value;
+  let cmd = "cue " + mode + " ";
+  if (url) cmd += url + " ";
+  cmd += "--script my-video.script.json";
+  const aspect = document.getElementById("m_aspect").value;
+  if (aspect !== "16:9") cmd += " --aspect " + aspect;
+  document.getElementById("cmd").textContent = cmd;
+}
+
+function renderAll() { renderTimeline(); renderScenes(); renderCmd(); }
+
+// ---- Modell <-> UI ----
+function buildScript() {
+  return {
+    meta: {
+      title: document.getElementById("m_title").value || "Mein Video",
+      mode: document.getElementById("m_mode").value,
+      lang: document.getElementById("m_lang").value,
+      voice: document.getElementById("m_voice").value,
+      brand: document.getElementById("m_brand").value,
+      aspect: document.getElementById("m_aspect").value,
+      voice: document.getElementById("a_voicepick").value,
+    },
+    scenes: scenes,
+  };
+}
+function buildSettings() {
+  return {
+    lang: document.getElementById("m_lang").value,
+    video: {
+      aspect: document.getElementById("m_aspect").value,
+      brand: document.getElementById("m_brand").value,
+      renderer: "builtin",
+    },
+    audio: {
+      engine: document.getElementById("a_engine").value,
+      voice: document.getElementById("a_voicepick").value,
+    },
+  };
+}
+function loadScript(data) {
+  const m = data.meta || {};
+  if (m.title) document.getElementById("m_title").value = m.title;
+  if (m.mode) document.getElementById("m_mode").value = m.mode;
+  if (m.lang) document.getElementById("m_lang").value = m.lang;
+  if (m.voice) document.getElementById("a_voicepick").value = m.voice;
+  if (m.brand) document.getElementById("m_brand").value = m.brand;
+  if (m.aspect) document.getElementById("m_aspect").value = m.aspect;
+  if (Array.isArray(data.scenes)) scenes = data.scenes;
+  renderAll();
+}
+
+function download(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+}
+function toast(msg) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+// ---- Events ----
+document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { scenes.push(defaultScene(b.dataset.add)); renderAll(); });
+["m_url","m_mode","m_aspect"].forEach(id => document.getElementById(id).addEventListener("input", renderCmd));
+document.getElementById("exportScript").onclick = () => download("my-video.script.json", buildScript());
+document.getElementById("exportSettings").onclick = () => download("cue.config.json", buildSettings());
+document.getElementById("copyCmd").onclick = () => { navigator.clipboard.writeText(document.getElementById("cmd").textContent); toast("Befehl kopiert"); };
+// Player-Transport
+document.getElementById("scrub").addEventListener("input", (e) => {
+  stopPlay();
+  if (!previewDuration) return;
+  seekPreview((e.target.value/1000) * previewDuration);
+});
+document.getElementById("playBtn").addEventListener("click", togglePlay);
+// Aspect-Wechsel → Vorschau neu laden
+document.getElementById("m_aspect").addEventListener("change", () => { if (scenes.length) loadPreview(selectedScene); });
+document.getElementById("importFile").onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { loadScript(JSON.parse(r.result)); toast("Importiert"); } catch(err){ toast("Ungültiges JSON"); } };
+  r.readAsText(f);
+};
+document.getElementById("generate").onclick = async () => {
+  const log = document.getElementById("log"); log.style.display="block"; log.textContent = "Erzeuge Video … (das kann dauern)";
+  const settings = {
+    audio: {
+      engine: document.getElementById("a_engine").value,
+      voice: document.getElementById("a_voicepick").value,
+      voiceover: document.getElementById("a_voice").checked,
+      music: document.getElementById("a_music").checked,
+      sfx: document.getElementById("a_sfx").checked,
+      musicFile: document.getElementById("a_musicfile").value || undefined,
+      sfxFile: document.getElementById("a_sfxfile").value || undefined,
+    },
+    image: {
+      mode: document.getElementById("i_mode").value,
+      theme: document.getElementById("i_theme").value || undefined,
+    },
+  };
+  try {
+    const res = await fetch("/api/generate", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ script: buildScript(), url: document.getElementById("m_url").value.trim(), settings }) });
+    const data = await res.json();
+    log.textContent = (data.log || "") + "\n\n" + (data.ok ? ("✓ Fertig: " + data.mp4) : ("✗ Fehler: " + data.error));
+  } catch (err) { log.textContent = "Server nicht erreichbar (läuft der Configurator über `cue configurator`?).\n" + err.message; }
+};
+
+// ---- Medien: Liste + Upload ----
+function refreshMedia() {
+  fetch("/api/media").then(r=>r.json()).then(d => {
+    mediaFiles = d.files || [];
+    document.getElementById("mediaList").textContent = mediaFiles.length
+      ? ("Im Medienordner: " + mediaFiles.join(", ")) : "Medienordner leer.";
+    // Audio-Dropdowns füllen
+    const mf = document.getElementById("a_musicfile"); const sf = document.getElementById("a_sfxfile");
+    const audioExt = /\.(mp3|wav|ogg|m4a|aac|flac)$/i;
+    mf.innerHTML = '<option value="">— Freesound/Auto —</option>';
+    sf.innerHTML = '<option value="">— generiert —</option>';
+    mediaFiles.filter(f=>audioExt.test(f)).forEach(f=>{
+      [mf, sf].forEach(sel=>{ const o=document.createElement("option"); o.value=f; o.textContent=f; sel.appendChild(o); });
+    });
+    renderScenes();
+  }).catch(()=>{ document.getElementById("mediaList").textContent = "Medien-API nur via `cue configurator` verfügbar."; });
+}
+document.getElementById("mediaUpload").onchange = async (e) => {
+  const files = Array.from(e.target.files || []);
+  let ok = 0;
+  for (const f of files) {
+    try {
+      const dataBase64 = await new Promise((resolve)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.readAsDataURL(f); });
+      const res = await fetch("/api/media", { method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ name: f.name, dataBase64 }) });
+      if (res.ok) ok++;
+    } catch (err) {}
+  }
+  toast(ok > 0 ? (ok + " Datei(en) hochgeladen") : "Upload fehlgeschlagen"); refreshMedia();
+};
+
+// ---- Presets vom Server holen (sonst Fallback) ----
+fetch("/api/presets").then(r=>r.json()).then(p => { if (p && Object.keys(p).length) PRESETS = p; fillBrands(); }).catch(()=>fillBrands());
+refreshMedia();
+refreshKeys();
+
+// ---- API-Keys: Status + Speichern (verschlüsselt) ----
+function setStatusDot(id, on) {
+  const el = document.getElementById(id); if (!el) return;
+  el.textContent = on ? "● gesetzt" : "○ leer";
+  el.style.color = on ? "var(--ok)" : "var(--muted)";
+  el.style.fontSize = "11px";
+}
+function refreshKeys() {
+  fetch("/api/keys").then(r=>r.json()).then(s => {
+    ["anthropic","elevenlabs","freesound","imageApiKey","llmApiKey"].forEach(f => setStatusDot("st_"+f, s[f] && s[f].set));
+    document.getElementById("keyEnc").textContent = s._encrypted ? (s._passphrase ? "verschlüsselt (Passphrase)" : "verschlüsselt") : "";
+    if (s._readable === false) {
+      document.getElementById("keyEnc").textContent = "⚠ vorhanden, NICHT entschlüsselbar — Speichern gesperrt (Passphrase prüfen)";
+      document.getElementById("keyEnc").style.color = "var(--danger)";
+    }
+    // Nicht-geheime Werte vorbefüllen
+    if (s.llmProvider && s.llmProvider.value) document.getElementById("k_llmProvider").value = s.llmProvider.value;
+    if (s.llmBaseUrl && s.llmBaseUrl.value) document.getElementById("k_llmBaseUrl").value = s.llmBaseUrl.value;
+    if (s.llmModel && s.llmModel.value) document.getElementById("k_llmModel").value = s.llmModel.value;
+  }).catch(()=>{ document.getElementById("keyEnc").textContent = "(nur via `cue configurator`)"; });
+}
+const sk = document.getElementById("saveKeys");
+if (sk) sk.onclick = async () => {
+  const payload = {
+    anthropic: document.getElementById("k_anthropic").value,
+    elevenlabs: document.getElementById("k_elevenlabs").value,
+    freesound: document.getElementById("k_freesound").value,
+    imageApiKey: document.getElementById("k_imageApiKey").value,
+    llmApiKey: document.getElementById("k_llmApiKey").value,
+    llmProvider: document.getElementById("k_llmProvider").value,
+    llmBaseUrl: document.getElementById("k_llmBaseUrl").value,
+    llmModel: document.getElementById("k_llmModel").value,
+  };
+  try {
+    const res = await fetch("/api/keys", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!data.ok) { toast("⚠ " + (data.error || "Speichern abgebrochen")); refreshKeys(); return; }
+    // Eingabefelder (Geheimnisse) nur bei Erfolg leeren
+    ["k_anthropic","k_elevenlabs","k_freesound","k_imageApiKey","k_llmApiKey"].forEach(id=>document.getElementById(id).value="");
+    toast("Keys verschlüsselt gespeichert"); refreshKeys();
+  } catch (err) { toast("Speichern fehlgeschlagen (Server nötig)"); }
+};
+
+// ---- Start mit Beispiel-Szenen ----
+fillBrands();
+scenes = [ defaultScene("title"), defaultScene("features"), defaultScene("cta") ];
+renderAll();
+if (scenes.length) selectScene(0);
+</script>
+</body>
+</html>

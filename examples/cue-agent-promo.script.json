@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "title": "CUE-AGENT",
+    "mode": "promo",
+    "lang": "de",
+    "voice": "daniel",
+    "brand": "linear",
+    "aspect": "16:9",
+    "tone": "selbstbewusstes Dev-Tool-Promo mit trockenem Humor"
+  },
+  "scenes": [
+    {
+      "type": "title",
+      "id": "hook",
+      "title": "Dein Code ist fertig.",
+      "subtitle": "Aber ist er wirklich bereit?",
+      "narration": "Dein Code ist fertig. Der Build ist grün. Und trotzdem dieses Gefühl: Ist das wirklich schon bereit für echte Menschen?",
+      "duration": 7
+    },
+    {
+      "type": "features",
+      "id": "qa",
+      "heading": "QA, das hinschaut",
+      "features": [
+        "Echter Browser, echte Screenshots",
+        "Konsolen- und Netzwerk-Fehler",
+        "Vision-Analyse statt Bauchgefühl",
+        "Severity, Score, klarer Report"
+      ],
+      "narration": "CUE-AGENT steuert einen echten Browser, sieht deine App wie ein Nutzer, und analysiert sie mit einem Vision-Modell. Keine Vermutungen — strukturierte Befunde mit Schweregrad und Score.",
+      "duration": 10
+    },
+    {
+      "type": "features",
+      "id": "loop",
+      "heading": "Der autonome QA-Loop",
+      "features": [
+        "Bugs finden und dokumentieren",
+        "Fixes vorschlagen und anwenden",
+        "Neu bauen, erneut testen",
+        "Wiederholen, bis es sitzt"
+      ],
+      "narration": "Und dann wird es spannend. Der autonome Loop findet Bugs, schlägt Fixes vor, wendet sie an, baut neu und testet wieder. So lange, bis die Qualität stimmt.",
+      "duration": 10
+    },
+    {
+      "type": "title",
+      "id": "gate",
+      "title": "Erst QA. Dann Promo.",
+      "subtitle": "Es wird nie eine kaputte App beworben.",
+      "narration": "Das Beste: Es gibt ein Gate. Erst wenn die QA bestanden ist, entsteht ein Video. Du bewirbst also niemals eine kaputte App. Versprochen.",
+      "duration": 9
+    },
+    {
+      "type": "features",
+      "id": "video",
+      "heading": "Vom Bug zum Marketing",
+      "features": [
+        "Promo, Tutorial und Showcase",
+        "Echte Bildschirm-Clips, kein Standbild-Brei",
+        "16:9, 9:16, 1:1, 4:5",
+        "Sechs Brand-Presets"
+      ],
+      "narration": "Aus derselben App macht CUE-AGENT Promo-, Tutorial- und Showcase-Videos. Mit echten Clips, jedem Seitenverhältnis und sechs Marken-Looks.",
+      "duration": 10
+    },
+    {
+      "type": "features",
+      "id": "studio",
+      "heading": "Dein Mini-Studio",
+      "features": [
+        "Stimme — lokal und ganz ohne Key",
+        "Eigene Musik und Soundeffekte",
+        "AI-Bilder oder eigene Medien",
+        "Alles per CLI oder GUI"
+      ],
+      "narration": "Sprache läuft lokal, ganz ohne Schlüssel. Dazu eigene Musik, Soundeffekte, KI-Bilder oder deine eigenen Medien. Per Kommandozeile oder im Configurator.",
+      "duration": 10
+    },
+    {
+      "type": "title",
+      "id": "payoff",
+      "title": "Ein Werkzeug.",
+      "subtitle": "Vom Bug bis zum fertigen Video.",
+      "narration": "Ein Werkzeug für den ganzen Weg. Vom ersten Bug bis zum fertigen Marketing-Video.",
+      "duration": 7
+    },
+    {
+      "type": "cta",
+      "id": "cta",
+      "heading": "CUE-AGENT",
+      "url": "npx github:Lootziffer666/CUE-AGENT",
+      "narration": "CUE-AGENT. Teste härter. Zeig es schöner.",
+      "duration": 5
+    }
+  ]
+}

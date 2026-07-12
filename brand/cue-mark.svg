@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="CUE-AGENT mark — forged cue">
+  <title>CUE-AGENT — Forged Cue</title>
+  <!-- Familien-Sprache: tiefrot, flach, diagonal (links-unten -> rechts-oben).
+       Der Check (Verifikation) laeuft am Aufstrich in Funken aus (Cue/Signal). -->
+  <g fill="none" stroke="#8a1c1c" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Checkmark: kurzer Arm -> Vertex -> langer diagonaler Aufstrich -->
+    <path d="M58 130 L100 174 L184 64" stroke-width="26"/>
+    <!-- Funken am Aufstrich-Ende (das 'go'-Signal) -->
+    <path d="M184 64 L210 40" stroke-width="9"/>
+    <path d="M188 44 L198 28" stroke-width="7"/>
+    <path d="M206 70 L226 60" stroke-width="7"/>
+  </g>
+  <g fill="#8a1c1c">
+    <circle cx="216" cy="34" r="5"/>
+    <circle cx="226" cy="50" r="4"/>
+  </g>
+</svg>

@@ -1,0 +1,24 @@
+{
+  "meta": { "title": "CUE-AGENT", "mode": "promo", "lang": "en", "voice": "daniel", "brand": "linear", "aspect": "16:9" },
+  "scenes": [
+    { "type": "title", "id": "hook", "title": "Your build is green.", "subtitle": "But is it actually ready?",
+      "narration": "Your build is green. The tests pass. And still that feeling: is this really ready for real people?", "duration": 7 },
+    { "type": "image", "id": "bg-qa", "heading": "QA that actually looks", "caption": "Real browser, real eyes",
+      "prompt": "cinematic dark control room, glowing inspection lens, deep focus",
+      "narration": "CUE-AGENT drives a real browser, sees your app the way a user does, and reviews it with a vision model.", "duration": 9 },
+    { "type": "features", "id": "findings", "heading": "Findings, not guesses",
+      "features": ["Console and network errors", "Severity and score", "Pixel-precise design checks", "Release-readiness verdict"],
+      "narration": "No hunches — structured findings with severity and score, pixel-precise design checks against your mockup, and a clear release-readiness verdict.", "duration": 10 },
+    { "type": "image", "id": "bg-iterate", "heading": "It fixes, then re-tests", "caption": "Autonomous loop",
+      "prompt": "abstract flowing data streams converging, magenta and blue energy, dark",
+      "narration": "Point it at a repo and it proposes targeted fixes, applies them, rebuilds, and tests again — until it converges.", "duration": 9 },
+    { "type": "image", "id": "bg-studio", "heading": "Then it shows the work", "caption": "Bug to broadcast",
+      "prompt": "warm cinematic studio glow, abstract stage light, premium",
+      "narration": "Only once quality is proven does it turn the very same proven flows into a polished promo — with a voice, zoom, and slow motion.", "duration": 9 },
+    { "type": "features", "id": "studio", "heading": "Your own little studio",
+      "features": ["Local voice, no key", "AI images and your own media", "Six brand presets", "All from one tool"],
+      "narration": "A local voice with no key required, A I images or your own media, six brand presets — your own little studio, all from one tool.", "duration": 10 },
+    { "type": "cta", "id": "cta", "heading": "CUE-AGENT", "url": "npx github:Lootziffer666/CUE-AGENT",
+      "narration": "CUE-AGENT. Test harder. Show it better.", "duration": 6 }
+  ]
+}

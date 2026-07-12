@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1527" role="img" aria-label="ANVIL-SPARK emblem — hammer-checkmark, crown, pen nib">
+  <title>ANVIL-SPARK — Hammer/Checkmark + Crown + Pen Nib</title>
+  <defs>
+    <linearGradient id="redBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A01835"/>
+      <stop offset="0.55" stop-color="#83102A"/>
+      <stop offset="1" stop-color="#640921"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="18" dy="24" stdDeviation="20" flood-color="#101315" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Canvas -->
+  <rect x="0" y="0" width="1536" height="1527" fill="#1F2326"/>
+
+  <!-- ===== Roter Hammer-Check (eine zusammenhaengende Masse) ===== -->
+  <g filter="url(#soft)" fill="none" stroke="url(#redBody)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Checkmark: kurzer Arm (unten links) -> Vertex -> langer Stiel (oben rechts) -->
+    <path d="M205 985 L470 1300 L905 565" stroke-width="178"/>
+    <!-- Hammerkopf: weiche, keulenartige Lappen quer am Stielende -->
+    <path d="M795 470 L1035 660" stroke-width="208"/>
+  </g>
+
+  <!-- dunkler Trenn-Spalt zwischen Krone und Koerper -->
+  <path d="M820 580 Q 1080 470 1320 520" fill="none" stroke="#101315" stroke-width="30" stroke-linecap="round"/>
+
+  <!-- ===== Krone (rot, Kugelspitzen, diagonal) ===== -->
+  <g>
+    <!-- Kronenband -->
+    <path d="M850 565 Q 1085 475 1315 505 L 1300 560 Q 1085 540 880 600 Z" fill="#A90E2D"/>
+    <!-- innere Schatten-Flaeche (rechts/unten) -->
+    <path d="M1120 520 L1300 560 L1300 505 Z" fill="#6f0a22"/>
+    <!-- Zacken -->
+    <path d="M880 590 L956 235 L1030 510 Z" fill="#A90E2D"/>
+    <path d="M1055 545 L1150 360 L1235 520 Z" fill="#A90E2D"/>
+    <path d="M1235 520 L1320 500 L1300 575 Z" fill="#A90E2D"/>
+    <!-- Kugelspitzen -->
+    <circle cx="956" cy="210" r="50" fill="#A90E2D"/>
+    <circle cx="1150" cy="335" r="44" fill="#A90E2D"/>
+    <circle cx="1320" cy="484" r="48" fill="#A90E2D"/>
+  </g>
+
+  <!-- ===== Fuellerfeder (weiss, royaler Kiel, oben rechts) ===== -->
+  <g stroke="#101315" stroke-width="14" stroke-linejoin="round">
+    <!-- weisser Kragen am Fuss -->
+    <rect x="1052" y="372" width="120" height="62" rx="30" fill="#EDEDED" transform="rotate(-40 1112 403)"/>
+    <!-- Nib-Koerper (Blattform, Spitze nach oben rechts) -->
+    <path d="M1300 135
+             C 1330 215, 1262 330, 1175 405
+             C 1120 360, 1086 300, 1108 244
+             C 1170 178, 1245 145, 1300 135 Z"
+          fill="#EDEDED"/>
+    <!-- graue Schatten-Flaeche (rechte Haelfte) -->
+    <path d="M1300 135 C 1330 215, 1262 330, 1175 405 C 1205 330, 1240 235, 1300 135 Z"
+          fill="#AEAEAD" stroke="none"/>
+    <!-- Mittelschlitz / gespaltene Spitze -->
+    <path d="M1292 150 L1190 318" fill="none" stroke="#151719" stroke-width="16" stroke-linecap="round"/>
+  </g>
+  <!-- sternfoermiges Tintenloch (Herzloch) -->
+  <path d="M1198 248 l16 30 33 6 -24 24 6 33 -31 -16 -31 16 6 -33 -24 -24 33 -6 Z"
+        fill="#151719"/>
+</svg>

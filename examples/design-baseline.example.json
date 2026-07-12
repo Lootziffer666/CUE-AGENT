@@ -1,0 +1,29 @@
+{
+  "screen": "Dashboard",
+  "_doc": "Design-Baseline = Ziel-UI als messbare QA-Messlatte. Optional 'image' (Mockup-PNG fuer Bild-Diff) + 'elements' (pixelgenaue Soll-Werte mit Toleranzen). Der Comparator prueft je Element Position/Groesse/Text/Farbe gegen die tatsaechlich gerenderte UI. Plattform-agnostisch: 'actual'-Elemente liefert der Capture-Adapter (Web-DOM bzw. Android-uiautomator).",
+  "viewport": { "w": 1280, "h": 720 },
+  "image": "mockups/dashboard.png",
+  "tolerance": { "pos": 8, "size": 10, "color": 24 },
+  "elements": [
+    {
+      "id": "primary_cta",
+      "label": "Primary CTA Button",
+      "bbox": [40, 600, 300, 60],
+      "text": "Get Started",
+      "color": "#2563EB",
+      "tolerance": { "pos": 6, "color": 16 }
+    },
+    {
+      "id": "headline",
+      "label": "Headline",
+      "bbox": [40, 80, 700, 48],
+      "text": "Welcome back"
+    },
+    {
+      "id": "avatar",
+      "label": "User Avatar",
+      "bbox": [1200, 24, 48, 48]
+    }
+  ],
+  "ignoreRegions": [[0, 0, 1280, 24]]
+}

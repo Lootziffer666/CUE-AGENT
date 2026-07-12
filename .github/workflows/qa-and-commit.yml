@@ -1,0 +1,119 @@
+# CUE-AGENT — QA-Lauf in der CI, der die Befunde dokumentiert ins Repo committet.
+#
+# "Codespace-Stil": Dieser Job spiegelt das .devcontainer-Setup auf einem
+# frischen Ubuntu-Runner (Node 20 + Playwright Chromium + ffmpeg) und kann
+# 1:1 auch in einem GitHub Codespace ausgefuehrt werden.
+#
+# Was er tut:
+#   1. Umgebung aufsetzen (Node, ffmpeg, Browser)
+#   2. QA gegen eine URL laufen lassen (cue qa)
+#   3. Den frischen Report nach qa-history/<timestamp>/ kopieren
+#   4. qa-history/ zurueck ins Repo committen (dokumentierte Befunde)
+#
+# Secrets (Repo -> Settings -> Secrets and variables -> Actions):
+#   - Variante Anthropic:  ANTHROPIC_API_KEY
+#   - Variante Proxy:      CUE_LLM_PROVIDER=openai, CUE_LLM_BASE_URL,
+#                          CUE_LLM_MODEL, CUE_LLM_API_KEY
+# (Keys sind deine eigenen; CUE-AGENT speichert/verschickt sie nicht.)
+
+name: QA & Commit Findings
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Zu pruefende URL (leer => Configurator-GUI lokal starten und pruefen)"
+        required: false
+        default: ""
+      fail_on:
+        description: "CI-Gate: none|low|medium|high"
+        required: false
+        default: "high"
+  schedule:
+    - cron: "0 6 * * 1" # jeden Montag 06:00 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ffmpeg installieren
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Dependencies + Browser
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Ziel bestimmen (URL oder lokaler Configurator)
+        id: target
+        run: |
+          URL="${{ github.event.inputs.url }}"
+          if [ -z "$URL" ]; then
+            echo "Keine URL angegeben -> starte Configurator-GUI lokal."
+            nohup node bin/cue.js configurator --port 4477 > configurator.log 2>&1 &
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:4477/ >/dev/null; then break; fi
+              sleep 1
+            done
+            URL="http://localhost:4477"
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: QA ausfuehren
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CUE_LLM_PROVIDER: ${{ secrets.CUE_LLM_PROVIDER }}
+          CUE_LLM_BASE_URL: ${{ secrets.CUE_LLM_BASE_URL }}
+          CUE_LLM_MODEL: ${{ secrets.CUE_LLM_MODEL }}
+          CUE_LLM_API_KEY: ${{ secrets.CUE_LLM_API_KEY }}
+        run: |
+          node bin/cue.js doctor || true
+          node bin/cue.js qa "${{ steps.target.outputs.url }}" --fail-on "${{ github.event.inputs.fail_on || 'high' }}" --json > qa-result.json || echo "QA endete mit non-zero Exit (Gate)."
+
+      - name: Befunde nach qa-history/ kopieren
+        if: always()
+        run: |
+          TS=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          DEST="qa-history/$TS"
+          mkdir -p "$DEST"
+          # Neueste Markdown-/JSON-Reports sichern (qa-reports/ ist .gitignored)
+          cp $(ls -t qa-reports/report-*.md 2>/dev/null | head -1) "$DEST/report.md" 2>/dev/null || true
+          cp $(ls -t qa-reports/report-*.json 2>/dev/null | head -1) "$DEST/report.json" 2>/dev/null || true
+          cp qa-result.json "$DEST/cli-result.json" 2>/dev/null || true
+          echo "Gespeichert nach $DEST"
+          ls -la "$DEST" || true
+
+      - name: qa-history committen
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f qa-history/ || true
+          if git diff --cached --quiet; then
+            echo "Keine neuen Befunde zu committen."
+          else
+            git commit -m "chore(qa): dokumentierte QA-Befunde [skip ci]"
+            git push
+          fi
+
+      - name: Report als Artefakt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-history
+          path: qa-history/
