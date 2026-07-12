@@ -21,6 +21,7 @@ const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolve
 const { analyzeSequence } = require("./frame-metrics");
 const { writeVerdict } = require("./report");
 const { detectWebProbe } = require("../probe/client");
+const { getDriver } = require("../drivers");
 
 const SAMPLE_W = 128;
 const SAMPLE_H = 72;
@@ -51,7 +52,10 @@ async function decodeFrames(probePage, buffers) {
   );
 }
 
-async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
+async function runTemporalCheck({ url, cfg, outDir, logger, thresholds, platform = "web", target = null, driver = null }) {
+  if (driver || platform !== "web") {
+    return runTemporalCheckWithDriver({ url, cfg, outDir, logger, thresholds, platform, target, driver });
+  }
   const log = logger || makeLogger("TEMPORAL");
   if (!url) throw new Error("temporal-check braucht eine URL (Argument oder cue.config.json targetUrl)");
 
@@ -195,6 +199,81 @@ async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
     return { json, exitCode };
   } finally {
     await browser.close().catch(() => {});
+  }
+}
+
+
+async function runTemporalCheckWithDriver({ url, cfg, outDir, logger, thresholds, platform, target, driver }) {
+  const log = logger || makeLogger("TEMPORAL");
+  const driverId = platform || (driver && driver.id) || "web";
+  const activeDriver = driver || getDriver(driverId);
+  const targetValue = target || url;
+  if (!targetValue) throw new Error(`temporal-check braucht ein Ziel für Plattform "${driverId}".`);
+
+  const label = typeof targetValue === "string" ? targetValue : (targetValue.pkg || targetValue.apk || JSON.stringify(targetValue));
+  const dir = ensureDir(outDir || path.join(process.cwd(), "temporal-reports", `${slugify(`${driverId}-${label}`)}-${timestamp()}`));
+  const shotsDir = ensureDir(path.join(dir, "frames"));
+  const startedAt = new Date().toISOString();
+  const session = await activeDriver.launch(targetValue, { viewport: cfg && cfg.viewport, logger: log });
+  const captured = [];
+
+  try {
+    for (let i = 0; i < 12; i++) {
+      const data = await session.frame();
+      const saveAs = i === 0 ? "phase1-idle-start.png" : i === 11 ? "phase1-idle-ende.png" : null;
+      if (saveAs) fs.writeFileSync(path.join(shotsDir, saveAs), await session.screenshot());
+      captured.push({ phase: "idle", kind: "idle", data, saveAs });
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    }
+
+    const analysis = analyzeSequence(captured, {
+      thresholds: thresholds || cfg?.qa?.thresholds?.[driverId]?.temporal || cfg?.qa?.thresholds?.web?.temporal,
+      expectAlive: driverId === "gameproc",
+    });
+    const logs = activeDriver.capabilities.logs ? await session.logs().catch(() => []) : [];
+    const errorLogs = logs.filter((entry) => entry.type === "error");
+    if (errorLogs.length) {
+      analysis.findings.push({ severity: "medium", category: "logs", phase: "-", message: `${errorLogs.length} Fehler im Treiber-Log (erster: ${errorLogs[0].text.slice(0, 160)})` });
+      analysis.score = Math.max(0, analysis.score - 15);
+      if (analysis.verdict === "KONSISTENT") analysis.verdict = "AUFFAELLIG";
+    }
+
+    const json = {
+      url: `${driverId}:${label}`,
+      mode: `driver:${driverId}`,
+      sampledAt: new Date().toISOString(),
+      frameCount: captured.length,
+      phases: analysis.phases,
+      findings: analysis.findings,
+      score: analysis.score,
+      verdict: analysis.verdict,
+      consoleErrors: errorLogs.length,
+      reportDir: dir,
+    };
+    writeJson(path.join(dir, "temporal-report.json"), json);
+    writeText(path.join(dir, "TEMPORAL-CONSISTENCY.md"), renderReport(json));
+    const evidence = captured.filter((c) => c.saveAs).map((c) => ({ path: path.join("frames", c.saveAs), kind: "frame", label: c.phase }));
+    const evidencePaths = evidence.map((item) => item.path);
+    const exitCode = json.verdict === "KONSISTENT" ? 0 : 1;
+    writeVerdict(dir, {
+      command: "temporal-check",
+      target: { kind: driverId === "android" ? "apk" : "target", value: label, platform: driverId },
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      verdict: json.verdict,
+      score: json.score,
+      severity: json.verdict === "KONSISTENT" ? "none" : "high",
+      checks: json.phases.map((phase) => ({ id: `phase-${phase.phase}`, label: `Phase ${phase.phase} (${phase.kind})`, ok: !json.findings.some((finding) => finding.phase === phase.phase), signals: phase, evidence: evidencePaths })),
+      findings: json.findings.map((finding) => ({ ...finding, evidence: evidencePaths })),
+      signals: { frameCount: json.frameCount, consoleErrors: json.consoleErrors, mode: json.mode },
+      evidence,
+      environment: { driver: driverId, device: targetValue.serial || null },
+      exitCode,
+    });
+    log[exitCode === 0 ? "ok" : "warn"](`Verdict: ${json.verdict} (Score ${json.score})`);
+    return { json, exitCode };
+  } finally {
+    await session.stop().catch(() => {});
   }
 }
 
