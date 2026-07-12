@@ -23,6 +23,7 @@ const { writeReports } = require("../qa/report");
 const adb = require("./adb");
 const vision = require("./vision");
 const flowmod = require("./flow");
+const perfmod = require("./perf");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const pad = (n) => String(n).padStart(2, "0");
@@ -66,9 +67,30 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
   const useLlm = vision.isConfigured();
   log.info(`Analyse-Modus: ${useLlm ? "multimodal (LLM)" : "Capture-only (heuristisch)"}`);
 
+  const perf = { coldStartMs: null, coldStartSamples: [], jank: null, memory: null, notes: [] };
+  try {
+    const component = adb.resolveLauncherActivity(pkg, serial);
+    if (component) {
+      for (let i = 0; i < 3; i++) {
+        adb.stopPackage(pkg, serial);
+        await sleep(500);
+        const parsed = perfmod.parseAmStartW(adb.amStartW(component, serial));
+        if (parsed && parsed.totalTimeMs != null) perf.coldStartSamples.push(parsed.totalTimeMs);
+        await sleep(800);
+      }
+      perf.coldStartMs = perfmod.median(perf.coldStartSamples);
+    } else {
+      perf.notes.push("Launcher-Activity nicht per cmd package resolve-activity ermittelbar.");
+    }
+  } catch (e) {
+    perf.notes.push(`Kaltstart-Messung nicht verfügbar: ${e.message}`);
+  }
+
   adb.clearLogcat(serial);
   adb.launchPackage(pkg, serial);
   await sleep(2500);
+  try { perf.memory = perfmod.parseMeminfo(adb.meminfo(pkg, serial)); }
+  catch (e) { perf.notes.push(`Meminfo nicht verfügbar: ${e.message}`); }
 
   // Foreground-Check direkt nach Start (False => App startete nicht / Crash beim Start)
   const fgAfterLaunch = adb.currentPackage(serial);
@@ -198,6 +220,13 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
         else { adb.back(serial); action = "back"; }
       }
 
+      if (i % 2 === 0) {
+        try {
+          const mem = perfmod.parseMeminfo(adb.meminfo(pkg, serial));
+          if (mem && (!perf.memory || (mem.totalPssKb || 0) > (perf.memory.totalPssKb || 0))) perf.memory = mem;
+        } catch (e) { perf.notes.push(`Meminfo Schritt ${i} nicht verfügbar: ${e.message}`); }
+      }
+
       steps.push({ n: i, screenshot: shotRel, action, clickables: clickables.length, crash: cr.crashed || cr.anr });
       if (crashed) { log.error(`Crash erkannt in Schritt ${i}.`); break; }
       await sleep(1200);
@@ -211,6 +240,10 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
     }
   }
 
+  try { perf.jank = perfmod.parseFramestats(adb.gfxinfo(pkg, serial)); }
+  catch (e) { perf.notes.push(`Gfxinfo nicht verfügbar: ${e.message}`); }
+  const perfFindings = perfmod.evaluatePerf(perf, cfg?.qa?.thresholds?.android?.perf);
+
   // Abschluss-Logcat + Konsolen-Mapping für severity
   const finalLc = adb.logcatDump(serial);
   const finalCr = adb.detectCrashes(finalLc, pkg);
@@ -219,7 +252,7 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
   const consoleLogs = adb.logcatToConsole(finalLc);
 
   // Severity: Basis aus Logcat-Konsole + Override durch Crash/ANR und LLM-Urteil
-  const assessment = assess({ consoleLogs, navOk });
+  const assessment = assess({ consoleLogs, navOk, findings: perfFindings });
   const order = ["none", "low", "medium", "high"];
   const bump = (lvl) => { if (order.indexOf(lvl) > order.indexOf(assessment.level)) assessment.level = lvl; };
   bump(llmSeverity);
@@ -266,6 +299,8 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
     crashed,
     anr,
     assessment,
+    perf,
+    perfFindings,
     steps,
     screenshotsDir: path.relative(cfg.absPaths.qaReports, shotDir),
   });
