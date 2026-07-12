@@ -1,6 +1,7 @@
 "use strict";
 
 const adb = require("../android/adb");
+const { pngToRgbaFrame } = require("../util/png");
 
 function requireTarget(target) {
   if (!target || typeof target !== "object") throw new Error("Android-Treiber braucht ein Zielobjekt { apk?, pkg, serial? }.");
@@ -34,7 +35,7 @@ async function launch(target) {
       return adb.screencapPng(serial);
     },
     async frame() {
-      throw new Error("Android-frame() braucht den PNG→RGBA-Decoder aus WP-CORE-2. Nutze bis dahin screenshot() als Beweis-Artefakt.");
+      return pngToRgbaFrame(await this.screenshot());
     },
     async uiTree() {
       return toUiTree(adb.uiDumpXml(serial));
