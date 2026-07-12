@@ -57,6 +57,18 @@ function markTried(screen, node) {
   screen.elementsTried = screen.tried.length;
 }
 
+
+function findDialogButton(clickables, dialog) {
+  const haystack = Array.isArray(clickables) ? clickables : [];
+  if (dialog.type === "permission") {
+    return haystack.find((c) => /zulassen|allow|while using|während/i.test(`${c.text} ${c.id}`));
+  }
+  if (dialog.type === "anr") {
+    return haystack.find((c) => /warten|wait/i.test(`${c.text} ${c.id}`));
+  }
+  return null;
+}
+
 function classifySystemDialog(xml, foregroundPackage) {
   const fg = String(foregroundPackage || "");
   const text = String(xml || "");
@@ -71,4 +83,4 @@ function classifySystemDialog(xml, foregroundPackage) {
   return { type: "system", action: "back", reason: "Unbekannter Systemdialog; defensiv zurück." };
 }
 
-module.exports = { normalizeUiStructure, screenSignature, elementKey, updateCoverage, markTried, buildCoverageSnapshot, classifySystemDialog };
+module.exports = { normalizeUiStructure, screenSignature, elementKey, updateCoverage, markTried, buildCoverageSnapshot, classifySystemDialog, findDialogButton };

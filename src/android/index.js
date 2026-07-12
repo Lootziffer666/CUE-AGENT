@@ -193,9 +193,22 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
       fs.writeFileSync(path.join(cfg.absPaths.qaReports, shotRel), png);
 
       const xml = adb.uiDumpXml(serial);
+      const fgBeforeAction = adb.currentPackage(serial);
+      const clickables = adb.parseClickables(xml);
+      const sysDialog = explore.classifySystemDialog(xml, fgBeforeAction);
+      if (sysDialog.type !== "none") {
+        const button = explore.findDialogButton(clickables, sysDialog);
+        if (button) adb.tap(button.cx, button.cy, serial);
+        else if (sysDialog.action === "back") adb.back(serial);
+        if (sysDialog.type === "anr") anr = true;
+        steps.push({ n: i, screenshot: shotRel, action: `system-dialog:${sysDialog.type}:${sysDialog.action}`, systemDialog: sysDialog, clickables: clickables.length });
+        observations.push(`#${i}: Systemdialog ${sysDialog.type} behandelt (${sysDialog.action}) — ${sysDialog.reason}`);
+        await sleep(800);
+        continue;
+      }
+
       const activityBeforeAction = adb.currentActivity(serial);
       const screenId = explore.screenSignature(xml, activityBeforeAction);
-      const clickables = adb.parseClickables(xml);
       const screenCoverage = explore.updateCoverage(coverage, { screenId, activity: activityBeforeAction, clickables, step: i, from: lastScreenId, action: steps[steps.length - 1]?.action || null });
       lastScreenId = screenId;
 
