@@ -73,6 +73,20 @@ const DEFAULTS = {
       maxAgeHours: 24, // QA-Report darf max. so alt sein
       failOnSeverity: "high", // ab dieser Severity wird blockiert
     },
+    thresholds: {
+      web: {
+        temporal: {
+          minMotion: 0.35,
+          maxJump: 40,
+          minResponse: 1.5,
+          maxStaticRatio: 0.5,
+          maxIdleFlicker: 25,
+        },
+      },
+      android: { perf: { maxColdStartMs: 5000 } },
+      windows: {},
+      game: { startTimeoutMs: 15000 },
+    },
   },
 
   // Video / Promo
