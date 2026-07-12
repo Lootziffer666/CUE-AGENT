@@ -13,13 +13,6 @@ qa-reports/release-*/
 qa-reports/proposed-fixes/
 !qa-reports/.gitkeep
 
-# Video-Projektordner (generierte Artefakte)
-video-projects/
-configurator-output/
-captures/
-
-# Eigener Medienordner (User-Assets)
-media/
-
-# Arbeitsordner des Offline-AI-Stubs (scripts/offline-ai-stub.js)
-.cue-ai-stub/
+# Promo video binary output artifacts (audio/video/screenshots)
+promovideo/out/
+promovideo/public/

@@ -1,0 +1,60 @@
+<template id="scene-01-hook-template">
+  <div data-composition-id="scene-01-hook" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div class="vignette"></div>
+    <div class="center">
+      <div class="eyebrow" style="opacity:0">EINE NACHT. 52 CREW. 5 MAZES.</div>
+      <h1 class="headline" style="opacity:0">Bist du bereit?</h1>
+      <div class="sub" style="opacity:0">Are you in control?</div>
+    </div>
+    <style>
+      [data-composition-id="scene-01-hook"] {
+        position: absolute; inset: 0;
+        background: #050505;
+        display: flex; align-items: center; justify-content: center;
+      }
+      [data-composition-id="scene-01-hook"] .bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 80% 60% at 50% 55%, rgba(255,107,44,0.07) 0%, transparent 70%);
+      }
+      [data-composition-id="scene-01-hook"] .vignette {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 120% 100% at 50% 50%, transparent 30%, rgba(0,0,0,0.85) 100%);
+        pointer-events: none;
+      }
+      [data-composition-id="scene-01-hook"] .center {
+        position: relative; z-index: 2;
+        display: flex; flex-direction: column; align-items: center; gap: 24px;
+        text-align: center;
+      }
+      [data-composition-id="scene-01-hook"] .eyebrow {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 18px; font-weight: 700; letter-spacing: 0.12em;
+        color: #FF6B2C; text-transform: uppercase;
+      }
+      [data-composition-id="scene-01-hook"] .headline {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 108px; font-weight: 900; letter-spacing: -0.03em;
+        color: #F8F6F2; margin: 0; line-height: 1;
+      }
+      [data-composition-id="scene-01-hook"] .sub {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 28px; font-weight: 500; letter-spacing: 0.01em;
+        color: rgba(248,246,242,0.45);
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" crossorigin="anonymous"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ns = '[data-composition-id="scene-01-hook"]';
+      tl.fromTo(ns + ' .eyebrow',
+        { autoAlpha: 0, y: -12 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power3.out' }, 0.2);
+      tl.fromTo(ns + ' .headline',
+        { autoAlpha: 0, scale: 0.88 }, { autoAlpha: 1, scale: 1, duration: 0.9, ease: 'expo.out' }, 0.5);
+      tl.fromTo(ns + ' .sub',
+        { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 1.1);
+      window.__timelines['scene-01-hook'] = tl;
+    </script>
+  </div>
+</template>

@@ -1,0 +1,102 @@
+<template id="scene-06-scare-actor-template">
+  <div data-composition-id="scene-06-scare-actor" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div class="layout">
+      <div class="label-block" style="opacity:0">
+        <div class="scene-label">FEATURE 3/4</div>
+        <h2 class="feature-title">Scare Actor · Phone</h2>
+        <p class="feature-desc">Detail-Status · Quick-Actions · DND-Modus · Maze-Karte mit Live-Pins</p>
+        <div class="feature-items">
+          <div class="fi" style="opacity:0"><span class="fi-dot"></span>Bereit / Maske / Backstage / Position</div>
+          <div class="fi" style="opacity:0"><span class="fi-dot"></span>„Ich verspäte mich" + ETA</div>
+          <div class="fi" style="opacity:0"><span class="fi-dot"></span>Pause anfragen · Warnung melden</div>
+          <div class="fi" style="opacity:0"><span class="fi-dot"></span>DND-Modus deaktiviert sich automatisch</div>
+        </div>
+      </div>
+      <div class="phone-wrap" style="opacity:0">
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-content">
+            <img src="../public/screenshots/scene-06-scare-actor.png" alt="Scare Actor Phone" />
+          </div>
+          <div class="phone-home"></div>
+        </div>
+      </div>
+    </div>
+    <style>
+      [data-composition-id="scene-06-scare-actor"] {
+        position: absolute; inset: 0;
+        background: #050505;
+        display: flex; align-items: center; justify-content: center;
+      }
+      [data-composition-id="scene-06-scare-actor"] .bg {
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse 55% 60% at 68% 50%, rgba(255,107,44,0.06) 0%, transparent 65%);
+      }
+      [data-composition-id="scene-06-scare-actor"] .layout {
+        position: relative; z-index: 2;
+        display: flex; flex-direction: row; align-items: center; gap: 80px; width: 1500px;
+      }
+      [data-composition-id="scene-06-scare-actor"] .label-block {
+        flex: 1; display: flex; flex-direction: column; gap: 20px;
+      }
+      [data-composition-id="scene-06-scare-actor"] .scene-label {
+        font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.12em; color: #FF6B2C; text-transform: uppercase;
+      }
+      [data-composition-id="scene-06-scare-actor"] .feature-title {
+        font-family: system-ui, sans-serif; font-size: 42px; font-weight: 800;
+        color: #F8F6F2; margin: 0; letter-spacing: -0.02em; line-height: 1.1;
+      }
+      [data-composition-id="scene-06-scare-actor"] .feature-desc {
+        font-family: system-ui, sans-serif; font-size: 19px; font-weight: 500;
+        color: rgba(248,246,242,0.5); margin: 0; line-height: 1.5;
+      }
+      [data-composition-id="scene-06-scare-actor"] .feature-items {
+        display: flex; flex-direction: column; gap: 10px;
+      }
+      [data-composition-id="scene-06-scare-actor"] .fi {
+        display: flex; align-items: center; gap: 12px;
+        font-family: system-ui, sans-serif; font-size: 18px; font-weight: 500;
+        color: rgba(248,246,242,0.7);
+      }
+      [data-composition-id="scene-06-scare-actor"] .fi-dot {
+        width: 6px; height: 6px; border-radius: 50%; background: #FF6B2C; flex-shrink: 0;
+      }
+      [data-composition-id="scene-06-scare-actor"] .phone-wrap {
+        flex: 0 0 auto;
+      }
+      [data-composition-id="scene-06-scare-actor"] .phone-frame {
+        width: 360px;
+        background: #111; border-radius: 40px;
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 60px 120px rgba(0,0,0,0.8);
+        overflow: hidden; position: relative;
+        display: flex; flex-direction: column;
+      }
+      [data-composition-id="scene-06-scare-actor"] .phone-notch {
+        background: #0a0a0a; height: 28px;
+        border-radius: 0 0 18px 18px; width: 120px;
+        margin: 0 auto;
+      }
+      [data-composition-id="scene-06-scare-actor"] .phone-content img {
+        display: block; width: 100%; height: auto;
+      }
+      [data-composition-id="scene-06-scare-actor"] .phone-home {
+        background: #111; height: 20px;
+        display: flex; align-items: center; justify-content: center;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" crossorigin="anonymous"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const ns = '[data-composition-id="scene-06-scare-actor"]';
+      tl.fromTo(ns + ' .label-block', { autoAlpha: 0, x: -40 }, { autoAlpha: 1, x: 0, duration: 0.6, ease: 'power3.out' }, 0.1);
+      tl.fromTo(ns + ' .phone-wrap', { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.8, ease: 'expo.out' }, 0.2);
+      tl.fromTo(ns + ' .fi',
+        { autoAlpha: 0, x: -20 }, { autoAlpha: 1, x: 0, duration: 0.4, ease: 'power3.out', stagger: 0.15 }, 0.7);
+      window.__timelines['scene-06-scare-actor'] = tl;
+    </script>
+  </div>
+</template>
