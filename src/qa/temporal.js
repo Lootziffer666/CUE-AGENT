@@ -20,6 +20,7 @@ const { chromium } = require("playwright");
 const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolveChromiumExecutable } = require("../util");
 const { analyzeSequence } = require("./frame-metrics");
 const { writeVerdict } = require("./report");
+const { detectWebProbe } = require("../probe/client");
 
 const SAMPLE_W = 128;
 const SAMPLE_H = 72;
@@ -83,26 +84,19 @@ async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
     await page.goto(url, { waitUntil: "load", timeout: 45000 });
     await wait(800);
 
-    const hasShaded = await page.evaluate(
-      () => Boolean(window.SHADED && typeof window.SHADED.isReady === "function" && typeof window.SHADED.setParams === "function")
-    );
-    let shadedReady = false;
-    if (hasShaded) {
-      shadedReady = await page
-        .waitForFunction(() => window.SHADED.isReady(), null, { timeout: 10000 })
-        .then(() => true)
-        .catch(() => false);
-      if (!shadedReady) log.warn("window.SHADED gefunden, aber keine Szene bereit (isReady()=false) — generischer Modus.");
+    const probeClient = await detectWebProbe(page);
+    let probeReady = false;
+    if (probeClient) {
+      probeReady = await Promise.resolve(probeClient.ready()).catch(() => false);
+      if (!probeReady) log.warn(`${probeClient.kind} gefunden, aber nicht bereit — generischer Modus.`);
     }
 
-    if (hasShaded && shadedReady) {
-      mode = "shaded";
-      log.info("SHADED-API erkannt — fahre Weltparameter-Sequenz (Idle → Regen-Rampe → Nacht).");
+    if (probeClient && probeReady && (probeClient.kind === "cue-probe" || probeClient.kind === "shaded-shim")) {
+      mode = probeClient.kind === "cue-probe" ? "cue-probe" : "shaded";
+      log.info(`${probeClient.kind} erkannt — fahre Weltparameter-Sequenz (Idle → Regen-Rampe → Nacht).`);
 
       // Deterministischer Ausgangszustand
-      await page.evaluate(() => {
-        window.SHADED.setParams({ ...window.SHADED.getParams(), dayNight: 0, rain: 0, storm: 0, fog: 0.15, wet: 0, puddle: 0 });
-      });
+      await probeClient.setParams({ dayNight: 0, rain: 0, storm: 0, fog: 0.15, wet: 0, puddle: 0 });
       await wait(900);
 
       // Phase 1: Idle — die Szene muss von sich aus leben
@@ -114,17 +108,13 @@ async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
       // Phase 2: gradueller Wetter-Übergang (Regen-Rampe) — keine Sprünge
       for (let step = 0; step <= 10; step++) {
         const v = step / 10;
-        await page.evaluate((val) => {
-          window.SHADED.setParams({ ...window.SHADED.getParams(), rain: val, wet: val * 0.8, puddle: val * 0.6 });
-        }, v);
+        await probeClient.setParams({ rain: v, wet: v * 0.8, puddle: v * 0.6 });
         await wait(260);
         await grab("ramp_regen", "transition", step === 10 ? "phase2-regen-voll.png" : null);
       }
 
       // Phase 3: Zustandswechsel Tag → Nacht — muss sichtbar wirken
-      await page.evaluate(() => {
-        window.SHADED.setParams({ ...window.SHADED.getParams(), dayNight: 1 });
-      });
+      await probeClient.setParams({ dayNight: 1 });
       await wait(900);
       for (let i = 0; i < 3; i++) {
         await grab("nacht", "state", i === 0 ? "phase3-nacht.png" : null);
@@ -148,8 +138,8 @@ async function runTemporalCheck({ url, cfg, outDir, logger, thresholds }) {
     const frames = captured.map((c, i) => ({ phase: c.phase, kind: c.kind, data: decoded[i] }));
 
     const analysis = analyzeSequence(frames, {
-      thresholds,
-      expectAlive: mode === "shaded", // nur lebendige SHADED-Szenen MÜSSEN sich bewegen
+      thresholds: thresholds || cfg?.qa?.thresholds?.web?.temporal,
+      expectAlive: mode === "shaded" || mode === "cue-probe", // instrumentierte Szenen MÜSSEN sich bewegen
     });
 
     if (consoleErrors.length) {
@@ -213,7 +203,7 @@ function renderReport(json) {
   lines.push("# Zeitliche Konsistenz — Prüfbericht");
   lines.push("");
   lines.push(`- **URL:** ${json.url}`);
-  lines.push(`- **Modus:** ${json.mode === "shaded" ? "SHADED-Weltparameter-Sequenz" : "generisches Idle-Sampling"}`);
+  lines.push(`${json.mode === "cue-probe" ? "- **Modus:** CUE-PROBE-Weltparameter-Sequenz" : `- **Modus:** ${json.mode === "shaded" ? "SHADED-Weltparameter-Sequenz" : "generisches Idle-Sampling"}`}`);
   lines.push(`- **Frames:** ${json.frameCount} · **Zeitpunkt:** ${json.sampledAt}`);
   lines.push(`- **Verdict:** **${json.verdict}** · **Score:** ${json.score}/100`);
   lines.push("");
