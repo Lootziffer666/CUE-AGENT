@@ -73,6 +73,49 @@ const MOCK_PAGE = `<!doctype html>
 </script>
 </body></html>`;
 
+
+const CUE_PROBE_PAGE = `<!doctype html>
+<html><head><meta charset="utf-8"><title>CUE_PROBE-Mock</title></head>
+<body style="margin:0">
+<canvas id="cv" width="1280" height="720"></canvas>
+<script>
+  const PARAMS = { dayNight: 0, rain: 0, wet: 0, puddle: 0, fog: 0, storm: 0 };
+  let frame = 0;
+  window.CUE_PROBE = {
+    isReady: () => true,
+    getState: () => ({ scene: 'probe-scene', fps: 60, frame, custom: { ...PARAMS } }),
+    setParams: (p) => Object.assign(PARAMS, p),
+    drainEvents: () => [],
+  };
+  const cv = document.getElementById('cv');
+  const x = cv.getContext('2d');
+  function draw() {
+    frame++;
+    const base = Math.round(210 - PARAMS.dayNight * 170);
+    x.fillStyle = 'rgb(' + base + ',' + (base - 10) + ',' + (base + 20) + ')';
+    x.fillRect(0, 0, cv.width, cv.height);
+    x.fillStyle = 'rgba(20,50,130,' + (PARAMS.rain * 0.45) + ')';
+    x.fillRect(0, 0, cv.width, cv.height);
+    x.fillStyle = '#53d769';
+    x.fillRect((frame * 3) % cv.width, 300, 120, 120);
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+</body></html>`;
+
+function serveHtml(html) {
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(html);
+  });
+  return new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => {
+      resolve({ server, url: `http://127.0.0.1:${server.address().port}/` });
+    });
+  });
+}
+
 function serveMock() {
   const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "text/html" });
@@ -106,6 +149,26 @@ test(
       // Report + Beweis-Frames geschrieben
       assert.ok(fs.existsSync(path.join(outDir, "TEMPORAL-CONSISTENCY.md")));
       assert.ok(fs.existsSync(path.join(outDir, "frames", "phase3-nacht.png")));
+    } finally {
+      server.close();
+      fs.rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+);
+
+
+test(
+  "temporal-check: window.CUE_PROBE wird als Probe-Vertrag erkannt",
+  { timeout: 180000, skip: !chromiumAvailable() && "Chromium fehlt" },
+  async () => {
+    const { server, url } = await serveHtml(CUE_PROBE_PAGE);
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "cue-probe-temporal-test-"));
+    try {
+      const result = await runTemporalCheck({ url, cfg: {}, outDir, logger: quietLogger });
+      assert.strictEqual(result.json.mode, "cue-probe");
+      assert.strictEqual(result.json.verdict, "KONSISTENT");
+      assert.strictEqual(result.exitCode, 0);
+      assert.ok(fs.existsSync(path.join(outDir, "TEMPORAL-CONSISTENCY.md")));
     } finally {
       server.close();
       fs.rmSync(outDir, { recursive: true, force: true });
