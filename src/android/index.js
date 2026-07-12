@@ -24,6 +24,7 @@ const adb = require("./adb");
 const vision = require("./vision");
 const flowmod = require("./flow");
 const perfmod = require("./perf");
+const explore = require("./explore");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const pad = (n) => String(n).padStart(2, "0");
@@ -99,6 +100,8 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
 
   const steps = [];
   const visited = new Set();
+  const coverage = { screens: new Map(), edges: [] };
+  let lastScreenId = null;
   const observations = [];
   let crashed = false;
   let anr = false;
@@ -190,7 +193,24 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
       fs.writeFileSync(path.join(cfg.absPaths.qaReports, shotRel), png);
 
       const xml = adb.uiDumpXml(serial);
+      const fgBeforeAction = adb.currentPackage(serial);
       const clickables = adb.parseClickables(xml);
+      const sysDialog = explore.classifySystemDialog(xml, fgBeforeAction);
+      if (sysDialog.type !== "none") {
+        const button = explore.findDialogButton(clickables, sysDialog);
+        if (button) adb.tap(button.cx, button.cy, serial);
+        else if (sysDialog.action === "back") adb.back(serial);
+        if (sysDialog.type === "anr") anr = true;
+        steps.push({ n: i, screenshot: shotRel, action: `system-dialog:${sysDialog.type}:${sysDialog.action}`, systemDialog: sysDialog, clickables: clickables.length });
+        observations.push(`#${i}: Systemdialog ${sysDialog.type} behandelt (${sysDialog.action}) — ${sysDialog.reason}`);
+        await sleep(800);
+        continue;
+      }
+
+      const activityBeforeAction = adb.currentActivity(serial);
+      const screenId = explore.screenSignature(xml, activityBeforeAction);
+      const screenCoverage = explore.updateCoverage(coverage, { screenId, activity: activityBeforeAction, clickables, step: i, from: lastScreenId, action: steps[steps.length - 1]?.action || null });
+      lastScreenId = screenId;
 
       // Crash-Check (Logcat seit clear)
       const lc = adb.logcatDump(serial);
@@ -216,7 +236,7 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
       if (!action) {
         // Heuristik: erstes noch nicht besuchtes klickbares Element antippen
         const next = clickables.find((e) => !visited.has(`${e.cx},${e.cy}`));
-        if (next) { visited.add(`${next.cx},${next.cy}`); adb.tap(next.cx, next.cy, serial); action = `tap(${next.cx},${next.cy})"${next.text || next.id}"`; }
+        if (next) { visited.add(`${next.cx},${next.cy}`); explore.markTried(screenCoverage, next); adb.tap(next.cx, next.cy, serial); action = `tap(${next.cx},${next.cy})"${next.text || next.id}"`; }
         else { adb.back(serial); action = "back"; }
       }
 
@@ -301,6 +321,7 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
     assessment,
     perf,
     perfFindings,
+    coverage: explore.buildCoverageSnapshot(coverage),
     steps,
     screenshotsDir: path.relative(cfg.absPaths.qaReports, shotDir),
   });

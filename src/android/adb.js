@@ -151,6 +151,8 @@ function parseAllNodes(xml) {
       text: (tag.match(/text="([^"]*)"/) || [, ""])[1],
       cls: (tag.match(/class="([^"]*)"/) || [, ""])[1],
       bbox: [x1, y1, x2 - x1, y2 - y1],
+      scrollable: /scrollable="true"/.test(tag),
+      clickable: /clickable="true"/.test(tag),
     });
   }
   return nodes;

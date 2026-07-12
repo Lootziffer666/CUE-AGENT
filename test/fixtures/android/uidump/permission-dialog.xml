@@ -1,0 +1,4 @@
+<hierarchy rotation="0">
+  <node text="Allow Camera to take pictures?" resource-id="com.android.permissioncontroller:id/permission_message" class="android.widget.TextView" clickable="false" bounds="[0,0][400,120]" />
+  <node text="While using the app" resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button" class="android.widget.Button" clickable="true" bounds="[20,200][380,260]" />
+</hierarchy>
