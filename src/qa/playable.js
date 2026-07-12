@@ -25,6 +25,7 @@ const { makeLogger, slugify, timestamp, ensureDir, writeJson, writeText, resolve
 const { evaluatePlayability, meanAbsDiff, pixelStdDev } = require("./frame-metrics");
 const { writeVerdict } = require("./report");
 const { loadFlow } = require("../core/flow");
+const { getDriver } = require("../drivers");
 
 const SAMPLE_W = 128;
 const SAMPLE_H = 72;
@@ -69,7 +70,10 @@ async function runFlowSteps(page, steps, log) {
   }
 }
 
-async function runPlayableCheck({ url, cfg, outDir, flowFile, logger }) {
+async function runPlayableCheck({ url, cfg, outDir, flowFile, logger, platform = "web", target = null, driver = null }) {
+  if (driver || platform !== "web") {
+    return runPlayableCheckWithDriver({ url, cfg, outDir, logger, platform, target, driver });
+  }
   const log = logger || makeLogger("PLAYABLE");
   if (!url) throw new Error("playable-check braucht eine URL (Argument oder cue.config.json targetUrl)");
 
@@ -219,6 +223,112 @@ async function runPlayableCheck({ url, cfg, outDir, flowFile, logger }) {
     return { json, exitCode };
   } finally {
     await browser.close().catch(() => {});
+  }
+}
+
+
+async function runPlayableCheckWithDriver({ url, cfg, outDir, logger, platform, target, driver }) {
+  const log = logger || makeLogger("PLAYABLE");
+  const driverId = platform || (driver && driver.id) || "web";
+  const activeDriver = driver || getDriver(driverId);
+  const targetValue = target || url;
+  if (!targetValue) throw new Error(`playable-check braucht ein Ziel für Plattform "${driverId}".`);
+
+  const label = typeof targetValue === "string" ? targetValue : (targetValue.pkg || targetValue.apk || JSON.stringify(targetValue));
+  const dir = ensureDir(outDir || path.join(process.cwd(), "playable-reports", `${slugify(`${driverId}-${label}`)}-${timestamp()}`));
+  const proofDir = ensureDir(path.join(dir, "proof"));
+  const startedAt = new Date().toISOString();
+  const session = await activeDriver.launch(targetValue, { viewport: cfg && cfg.viewport, logger: log });
+  const proofs = [];
+  const saveProof = async (name) => {
+    const rel = path.join("proof", name);
+    fs.writeFileSync(path.join(dir, rel), await session.screenshot());
+    proofs.push(rel);
+  };
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    await saveProof("proof-01-start.png");
+    const startFrame = await session.frame();
+    const blank = pixelStdDev(startFrame) < 2;
+    const tree = activeDriver.capabilities.uiTree ? await session.uiTree().catch(() => null) : null;
+    const interactiveCount = tree && Array.isArray(tree.nodes) ? tree.nodes.filter((n) => n.clickable !== false).length : 0;
+
+    let responded = false;
+    let interactionNote = "";
+    try {
+      const targetNode = tree && tree.nodes && tree.nodes.find((n) => n.bbox && n.bbox[2] > 4 && n.bbox[3] > 4);
+      if (targetNode && activeDriver.capabilities.input) {
+        const [x, y, w, h] = targetNode.bbox;
+        await session.input({ type: driverId === "android" ? "tap" : "click", x: x + w / 2, y: y + h / 2 });
+        interactionNote = `generische Eingabe auf ${targetNode.role || targetNode.id || "UI-Knoten"}`;
+      } else if (activeDriver.capabilities.input) {
+        await session.input({ type: driverId === "android" ? "tap" : "click", x: 100, y: 100 });
+        interactionNote = "generische Eingabe auf Fallback-Koordinate";
+      } else {
+        interactionNote = "Treiber unterstützt keine Eingaben";
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await saveProof("proof-02-nach-interaktion.png");
+      const afterFrame = await session.frame();
+      const diff = meanAbsDiff(startFrame, afterFrame);
+      responded = diff > 0.5;
+      interactionNote += ` → Frame-Differenz ${diff.toFixed(2)}`;
+    } catch (e) {
+      interactionNote = `Interaktion fehlgeschlagen: ${e.message}`;
+    }
+
+    const logs = activeDriver.capabilities.logs ? await session.logs().catch(() => []) : [];
+    const health = activeDriver.capabilities.processHealth ? await session.health().catch(() => ({ running: true, responding: true, crashed: false })) : { running: true, responding: true, crashed: false };
+    const errorLogs = logs.filter((entry) => entry.type === "error");
+    const signals = {
+      navOk: health.running !== false,
+      blank,
+      consoleErrors: errorLogs.length + (health.crashed ? 1 : 0),
+      pageErrors: health.responding === false ? 1 : 0,
+      serverErrors: 0,
+      interactiveCount,
+      responded,
+      proofCount: proofs.length,
+    };
+    const evaluation = evaluatePlayability(signals);
+    const json = {
+      url: `${driverId}:${label}`,
+      checkedAt: new Date().toISOString(),
+      platform: driverId,
+      meta: session.meta(),
+      signals,
+      interaction: interactionNote,
+      checks: evaluation.checks,
+      failed: evaluation.failed,
+      verdict: evaluation.verdict,
+      proofs,
+      consoleErrorSamples: errorLogs.slice(0, 5).map((entry) => entry.text),
+      serverErrorSamples: [],
+      reportDir: dir,
+    };
+    writeJson(path.join(dir, "playable-report.json"), json);
+    writeText(path.join(dir, "PLAYABLE-PROOF.md"), renderReport(json));
+    const exitCode = json.verdict === "BELEGBAR SPIELBAR" ? 0 : 1;
+    writeVerdict(dir, {
+      command: "playable-check",
+      target: { kind: driverId === "android" ? "apk" : "target", value: label, platform: driverId },
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      verdict: json.verdict,
+      score: Math.round((json.checks.filter((c) => c.ok).length / json.checks.length) * 100),
+      severity: json.verdict === "BELEGBAR SPIELBAR" ? "none" : "high",
+      checks: json.checks.map((c) => ({ ...c, evidence: json.proofs, signals })),
+      findings: json.failed.map((id) => ({ severity: "high", category: "playable-check", message: `Check fehlgeschlagen: ${id}`, evidence: json.proofs })),
+      signals,
+      evidence: json.proofs.map((proof) => ({ path: proof, kind: "screenshot", label: proof })),
+      environment: { driver: driverId, device: targetValue.serial || null },
+      exitCode,
+    });
+    log[exitCode === 0 ? "ok" : "warn"](`Verdict: ${json.verdict}`);
+    return { json, exitCode };
+  } finally {
+    await session.stop().catch(() => {});
   }
 }
 
