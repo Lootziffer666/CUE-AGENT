@@ -272,6 +272,13 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
         } catch (e) { perf.notes.push(`Meminfo Schritt ${i} nicht verfügbar: ${e.message}`); }
       }
 
+      if (i % 2 === 0) {
+        try {
+          const mem = perfmod.parseMeminfo(adb.meminfo(pkg, serial));
+          if (mem && (!perf.memory || (mem.totalPssKb || 0) > (perf.memory.totalPssKb || 0))) perf.memory = mem;
+        } catch (e) { perf.notes.push(`Meminfo Schritt ${i} nicht verfügbar: ${e.message}`); }
+      }
+
       steps.push({ n: i, screenshot: shotRel, action, clickables: clickables.length, crash: cr.crashed || cr.anr });
       if (crashed) { log.error(`Crash erkannt in Schritt ${i}.`); break; }
       await sleep(1200);
