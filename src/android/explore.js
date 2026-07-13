@@ -57,6 +57,59 @@ function markTried(screen, node) {
   screen.elementsTried = screen.tried.length;
 }
 
+function parseBounds(tag) {
+  const m = String(tag || "").match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
+  if (!m) return null;
+  const [x1, y1, x2, y2] = m.slice(1).map(Number);
+  return { x1, y1, x2, y2, cx: Math.round((x1 + x2) / 2), cy: Math.round((y1 + y2) / 2) };
+}
+
+function scrollableRegions(xml) {
+  const regions = [];
+  const re = /<node\b[^>]*scrollable="true"[^>]*>/g;
+  let m;
+  while ((m = re.exec(String(xml || ""))) !== null) {
+    const bounds = parseBounds(m[0]);
+    if (bounds) regions.push(bounds);
+  }
+  return regions;
+}
+
+function markScrolled(screen) {
+  screen.scrolled = true;
+}
+
+function chooseNextAction({ screen, clickables = [], xml = "", isRoot = false } = {}) {
+  const tried = new Set((screen && screen.tried) || []);
+  const next = clickables.find((e) => !tried.has(elementKey(e)));
+  if (next) return { type: "tap", target: next, reason: "untried-element" };
+  const scrollable = scrollableRegions(xml)[0];
+  if (scrollable && !screen?.scrolled) {
+    return {
+      type: "scroll",
+      target: {
+        x1: scrollable.cx,
+        y1: Math.max(scrollable.y1 + 20, scrollable.y2 - 80),
+        x2: scrollable.cx,
+        y2: Math.min(scrollable.y2 - 20, scrollable.y1 + 80),
+        ms: 450,
+      },
+      reason: "scrollable-region",
+    };
+  }
+  if (!isRoot) return { type: "back", reason: "screen-exhausted" };
+  return { type: "done", reason: "root-exhausted" };
+}
+
+function coverageToMermaid(snapshot) {
+  const screens = Array.isArray(snapshot?.screens) ? snapshot.screens : [];
+  const edges = Array.isArray(snapshot?.edges) ? snapshot.edges : [];
+  const label = (s) => `${s.id}(${String(s.activity || s.id).replace(/[^a-zA-Z0-9_./:-]/g, "_")}\n${s.elementsTried || 0}/${s.elementsTotal || 0})`;
+  const lines = ["graph TD"];
+  for (const s of screens) lines.push(`  ${label(s)}`);
+  for (const e of edges) lines.push(`  ${e.from} -->|${String(e.action || "action").replace(/[|]/g, "/").slice(0, 40)}| ${e.to}`);
+  return lines.join("\n");
+}
 
 function findDialogButton(clickables, dialog) {
   const haystack = Array.isArray(clickables) ? clickables : [];
@@ -83,4 +136,4 @@ function classifySystemDialog(xml, foregroundPackage) {
   return { type: "system", action: "back", reason: "Unbekannter Systemdialog; defensiv zurück." };
 }
 
-module.exports = { normalizeUiStructure, screenSignature, elementKey, updateCoverage, markTried, buildCoverageSnapshot, classifySystemDialog, findDialogButton };
+module.exports = { normalizeUiStructure, screenSignature, elementKey, updateCoverage, markTried, parseBounds, scrollableRegions, markScrolled, chooseNextAction, coverageToMermaid, buildCoverageSnapshot, classifySystemDialog, findDialogButton };

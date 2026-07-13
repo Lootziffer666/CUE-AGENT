@@ -99,8 +99,8 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
   if (!navOk) log.warn(`App nach Start nicht im Vordergrund (fokussiert: ${fgAfterLaunch || "?"}).`);
 
   const steps = [];
-  const visited = new Set();
   const coverage = { screens: new Map(), edges: [] };
+  const screenStack = [];
   let lastScreenId = null;
   const observations = [];
   let crashed = false;
@@ -209,7 +209,13 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
 
       const activityBeforeAction = adb.currentActivity(serial);
       const screenId = explore.screenSignature(xml, activityBeforeAction);
+      const alreadyKnownScreen = coverage.screens.has(screenId);
       const screenCoverage = explore.updateCoverage(coverage, { screenId, activity: activityBeforeAction, clickables, step: i, from: lastScreenId, action: steps[steps.length - 1]?.action || null });
+      if (!alreadyKnownScreen) screenStack.push(screenId);
+      else {
+        const existing = screenStack.indexOf(screenId);
+        if (existing >= 0) screenStack.splice(existing + 1);
+      }
       lastScreenId = screenId;
 
       // Crash-Check (Logcat seit clear)
@@ -234,10 +240,36 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
         }
       }
       if (!action) {
-        // Heuristik: erstes noch nicht besuchtes klickbares Element antippen
-        const next = clickables.find((e) => !visited.has(`${e.cx},${e.cy}`));
-        if (next) { visited.add(`${next.cx},${next.cy}`); explore.markTried(screenCoverage, next); adb.tap(next.cx, next.cy, serial); action = `tap(${next.cx},${next.cy})"${next.text || next.id}"`; }
-        else { adb.back(serial); action = "back"; }
+        const next = explore.chooseNextAction({
+          screen: screenCoverage,
+          clickables,
+          xml,
+          isRoot: screenStack.length <= 1 && screenStack[0] === screenId,
+        });
+        if (next.type === "tap") {
+          explore.markTried(screenCoverage, next.target);
+          adb.tap(next.target.cx, next.target.cy, serial);
+          action = `tap(${next.target.cx},${next.target.cy})"${next.target.text || next.target.id}"`;
+        } else if (next.type === "scroll") {
+          explore.markScrolled(screenCoverage);
+          adb.swipe(next.target.x1, next.target.y1, next.target.x2, next.target.y2, next.target.ms, serial);
+          action = `scroll(${next.target.x1},${next.target.y1}->${next.target.x2},${next.target.y2})`;
+        } else if (next.type === "back") {
+          if (screenStack.length > 1) screenStack.pop();
+          adb.back(serial);
+          action = "back";
+        } else {
+          steps.push({ n: i, screenshot: shotRel, action: "done", clickables: clickables.length, screenId });
+          observations.push(`#${i}: Exploration beendet — Root-Screen ausgeschöpft.`);
+          break;
+        }
+      }
+
+      if (i % 2 === 0) {
+        try {
+          const mem = perfmod.parseMeminfo(adb.meminfo(pkg, serial));
+          if (mem && (!perf.memory || (mem.totalPssKb || 0) > (perf.memory.totalPssKb || 0))) perf.memory = mem;
+        } catch (e) { perf.notes.push(`Meminfo Schritt ${i} nicht verfügbar: ${e.message}`); }
       }
 
       if (i % 2 === 0) {
@@ -287,9 +319,12 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
     : useLlm
       ? observations.join("\n")
       : "Capture-only-Modus (kein LLM konfiguriert) — heuristische Exploration.";
+  const coverageSnapshot = explore.buildCoverageSnapshot(coverage);
   const analysisText =
     head +
     `\n\nSchritte: ${steps.length} | Crash: ${crashed} | ANR: ${anr}` +
+    `\n\nCoverage: ${coverageSnapshot.screens.length} Screens, ${coverageSnapshot.edges.length} Kanten.` +
+    "\n\n```mermaid\n" + explore.coverageToMermaid(coverageSnapshot) + "\n``` " +
     (finalCr.lines.length ? `\n\nCrash/ANR-Logzeilen:\n${finalCr.lines.join("\n")}` : "");
 
   const lastShot = steps.filter((s) => s.screenshot).map((s) => s.screenshot).pop() || `android-${ts}/01.png`;
@@ -321,7 +356,7 @@ async function runAndroidQa({ apk, pkg, cfg, maxSteps = 8, goal = "", flowFile =
     assessment,
     perf,
     perfFindings,
-    coverage: explore.buildCoverageSnapshot(coverage),
+    coverage: coverageSnapshot,
     steps,
     screenshotsDir: path.relative(cfg.absPaths.qaReports, shotDir),
   });

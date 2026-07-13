@@ -5,7 +5,7 @@ const assert = require("node:assert");
 const fs = require("fs");
 const path = require("path");
 
-const { screenSignature, classifySystemDialog, findDialogButton, updateCoverage, markTried, buildCoverageSnapshot } = require("../src/android/explore");
+const { screenSignature, classifySystemDialog, findDialogButton, updateCoverage, markTried, markScrolled, scrollableRegions, chooseNextAction, coverageToMermaid, buildCoverageSnapshot } = require("../src/android/explore");
 
 function fixture(name) {
   return fs.readFileSync(path.join(__dirname, "fixtures", "android", "uidump", name), "utf8");
@@ -38,4 +38,31 @@ test("android explore: Coverage zählt Screens, Kanten und versuchte Elemente", 
   assert.equal(snap.screens.length, 2);
   assert.equal(snap.screens[0].elementsTried, 1);
   assert.deepEqual(snap.edges, [{ from: "a", to: "b", action: "tap one" }]);
+});
+
+
+test("android explore: Aktionsstrategie tappt, scrollt, geht zurück und stoppt", () => {
+  const coverage = { screens: new Map(), edges: [] };
+  const clickables = [{ text: "Details", id: "com.example:id/details", cls: "android.widget.Button", cx: 540, cy: 330 }];
+  const screen = updateCoverage(coverage, { screenId: "root", activity: "Main", clickables, step: 1 });
+  assert.equal(chooseNextAction({ screen, clickables, xml: fixture("scrollable.xml"), isRoot: true }).type, "tap");
+  markTried(screen, clickables[0]);
+  const scroll = chooseNextAction({ screen, clickables, xml: fixture("scrollable.xml"), isRoot: true });
+  assert.equal(scroll.type, "scroll");
+  assert.ok(scroll.target.y1 > scroll.target.y2);
+  markScrolled(screen);
+  assert.equal(chooseNextAction({ screen, clickables, xml: fixture("scrollable.xml"), isRoot: true }).type, "done");
+  assert.equal(chooseNextAction({ screen, clickables: [], xml: fixture("normal.xml"), isRoot: false }).type, "back");
+});
+
+test("android explore: scrollableRegions und Mermaid-Coverage sind stabil", () => {
+  const regions = scrollableRegions(fixture("scrollable.xml"));
+  assert.equal(regions.length, 1);
+  assert.equal(regions[0].cx, 540);
+  const graph = coverageToMermaid({
+    screens: [{ id: "a", activity: "Main", elementsTried: 1, elementsTotal: 2 }, { id: "b", activity: "Details", elementsTried: 0, elementsTotal: 1 }],
+    edges: [{ from: "a", to: "b", action: "tap details" }],
+  });
+  assert.match(graph, /graph TD/);
+  assert.match(graph, /a -->\|tap details\| b/);
 });
