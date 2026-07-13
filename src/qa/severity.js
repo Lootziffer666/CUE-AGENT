@@ -20,9 +20,10 @@ function rank(level) {
  * @param {Array<{type:string,text:string}>} args.consoleLogs
  * @param {boolean} args.navOk
  * @param {Array<{url:string,status:number}>} [args.network] HTTP-Antworten mit Status >= 400
- * @returns {{level:string, score:number, errors:number, warnings:number, serverErrors:number, clientErrors:number}}
+ * @param {Array<{severity:string}>} [args.findings] bereits severity-getaggte Einzelbefunde
+ * @returns {{level:string, score:number, errors:number, warnings:number, serverErrors:number, clientErrors:number, findings:object}}
  */
-function assess({ consoleLogs = [], navOk = true, network = [] }) {
+function assess({ consoleLogs = [], navOk = true, network = [], findings = [] }) {
   const errors = consoleLogs.filter((l) => l.type === "error").length;
   const warnings = consoleLogs.filter((l) => l.type === "warning").length;
 
@@ -30,20 +31,30 @@ function assess({ consoleLogs = [], navOk = true, network = [] }) {
   const serverErrors = network.filter((n) => n.status >= 500).length;
   const clientErrors = network.filter((n) => n.status >= 400 && n.status < 500).length;
 
+  const findingCounts = { high: 0, medium: 0, low: 0 };
+  for (const finding of findings || []) {
+    if (finding && Object.prototype.hasOwnProperty.call(findingCounts, finding.severity)) {
+      findingCounts[finding.severity] += 1;
+    }
+  }
+
   let score = 100;
   if (!navOk) score -= 25;
   score -= errors * 15;
   score -= warnings * 5;
   score -= serverErrors * 15;
   score -= clientErrors * 8;
+  score -= findingCounts.high * 30;
+  score -= findingCounts.medium * 15;
+  score -= findingCounts.low * 5;
   score = Math.max(0, Math.min(100, score));
 
   let level = "none";
-  if (!navOk || errors > 0 || serverErrors > 0) level = "high";
-  else if (warnings > 2 || clientErrors > 0) level = "medium";
-  else if (warnings > 0) level = "low";
+  if (!navOk || errors > 0 || serverErrors > 0 || findingCounts.high > 0) level = "high";
+  else if (warnings > 2 || clientErrors > 0 || findingCounts.medium > 0) level = "medium";
+  else if (warnings > 0 || findingCounts.low > 0) level = "low";
 
-  return { level, score, errors, warnings, serverErrors, clientErrors };
+  return { level, score, errors, warnings, serverErrors, clientErrors, findings: findingCounts };
 }
 
 /**
