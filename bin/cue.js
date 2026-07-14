@@ -30,6 +30,7 @@ const { runQaLoop } = require("../src/qa/loop");
 const { runPlayableCheck } = require("../src/qa/playable");
 const { runTemporalCheck } = require("../src/qa/temporal");
 const { runAudioCheck } = require("../src/qa/audio-check");
+const { runFidelityCheck } = require("../src/qa/fidelity-check");
 
 function parseArgs(argv) {
   const args = { _: [], flags: {} };
@@ -71,6 +72,7 @@ Commands:
   playable-check <url>  Qualitäts-Türsteher: belegbar spielbar? (deterministisch, key-frei; Screenshot-Beweise + Verdict)
   temporal-check <url>  Zeitliche Konsistenz: Idle/Übergänge/Zustandswechsel (erkennt SHADEDs window.SHADED-Vertrag)
   audio-check <url>     Audio-Vertrags-Beweis: CUE_FIRED/STATE_REACTION/TRANSITION_TIMING/LOOP_CONTINUITY (erkennt ANVILs window.ANVIL_AUDIO-Vertrag; Clipping/Audibility bewusst nicht prüfbar)
+  fidelity-check <urlA> <urlB>  Behavioraler Vergleich zweier CUE-PROBE-Ziele (Trace-Diff über einen gemeinsamen Flow; NICHT VERGLEICHBAR statt stillem Fallback-Erfolg)
   qa-loop <url>     AI-QA-Loop: testen -> fixen -> rebuilden -> erneut testen
   capture <url>     Capture-Engine -> CaptureBundle (Video + Screenshots + Logs)
   promo <url>       Promo-Video (Hook -> Pain -> Solution -> Features -> CTA)
@@ -460,6 +462,22 @@ async function main() {
       const url = args._[1] || cfg.targetUrl;
       const result = await runAudioCheck({
         url, cfg, scenarioFile: args.flags.scenario || null, outDir: args.flags.out || null, logger: log,
+      });
+      if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
+      return result.exitCode;
+    }
+
+    case "fidelity-check": {
+      if (args.flags.help) {
+        console.log("cue fidelity-check <urlA> <urlB> [--flow flow.json] [--fields a,b,custom.x] [--tolerance 0] [--out dir] [--json]");
+        return 0;
+      }
+      const urlA = args._[1];
+      const urlB = args._[2];
+      const fields = args.flags.fields ? String(args.flags.fields).split(",").map((f) => f.trim()).filter(Boolean) : null;
+      const tolerance = args.flags.tolerance != null ? Number(args.flags.tolerance) : 0;
+      const result = await runFidelityCheck({
+        urlA, urlB, cfg, flowFile: args.flags.flow || null, fields, tolerance, outDir: args.flags.out || null, logger: log,
       });
       if (args.flags.json) process.stdout.write(JSON.stringify(result.json, null, 2) + "\n");
       return result.exitCode;
