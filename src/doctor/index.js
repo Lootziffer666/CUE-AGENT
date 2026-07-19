@@ -8,6 +8,7 @@
 
 const { execSync } = require("child_process");
 const { hasValidLlmCredentials } = require("../config");
+const { resolveChromiumExecutable } = require("../util");
 
 function tryCmd(cmd) {
   try {
@@ -21,12 +22,26 @@ function tryCmd(cmd) {
 }
 
 function checkChromium() {
-  // Playwright-Browser-Verfügbarkeit ohne Launch prüfen
+  // Playwright-Browser-Verfügbarkeit ohne Launch prüfen — mit EXAKT derselben
+  // Fallback-Auflösung, die alle echten Checks beim Launch benutzen
+  // (util.resolveChromiumExecutable: CUE_CHROMIUM/CHROMIUM//opt/pw-browsers/chromium).
+  // Vorher prüfte doctor nur chromium.executablePath() und meldete "fehlt",
+  // während playable-/temporal-/audio-check denselben Browser real starteten
+  // (live so passiert: Playwright erwartete chromium-1228, installiert war
+  // chromium-1194 + ein funktionierender /opt/pw-browsers/chromium-Symlink).
   try {
     const { chromium } = require("playwright");
-    const p = chromium.executablePath();
     const fs = require("fs");
-    return { ok: Boolean(p) && fs.existsSync(p), out: p || "" };
+    let def = null;
+    try {
+      def = chromium.executablePath();
+    } catch {
+      /* weiter mit Fallbacks */
+    }
+    if (def && fs.existsSync(def)) return { ok: true, out: def };
+    const fallback = resolveChromiumExecutable(chromium);
+    if (fallback) return { ok: true, out: `${fallback} (Fallback — Playwright-Default fehlt)` };
+    return { ok: false, out: "" };
   } catch (err) {
     return { ok: false, out: err.message };
   }

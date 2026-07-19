@@ -39,14 +39,17 @@ function writeText(file, text) {
   return file;
 }
 
-// einfacher, präfixierter Logger
-function makeLogger(prefix = "CUE") {
+// einfacher, präfixierter Logger. { toStderr: true } schickt auch info/ok auf
+// stderr — nötig für --json-Läufe, deren stdout exklusiv dem Ergebnis-JSON
+// gehört (bin/cue.js).
+function makeLogger(prefix = "CUE", { toStderr = false } = {}) {
   const tag = `[${prefix}]`;
+  const out = toStderr ? console.error : console.log;
   return {
-    info: (...a) => console.log(tag, ...a),
+    info: (...a) => out(tag, ...a),
     warn: (...a) => console.warn(tag, ...a),
     error: (...a) => console.error(tag, ...a),
-    ok: (...a) => console.log(`${tag} \u2713`, ...a),
+    ok: (...a) => out(`${tag} \u2713`, ...a),
   };
 }
 

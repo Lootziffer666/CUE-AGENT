@@ -123,7 +123,13 @@ async function main() {
 
   const overrides = buildOverrides(args.flags);
   const cfg = loadConfig(overrides);
-  const log = makeLogger("CUE");
+  // --json verspricht maschinenlesbares stdout — Log-Zeilen gehen dann auf
+  // stderr, sonst landet "[CUE] Lade …" VOR dem JSON und jeder Konsument des
+  // Outputs (ANVILs CueCliAdapter relayt stdout als Artifact-Payload, Pipes in
+  // Skripten) bekommt kaputtes JSON. Live so gefunden: studio-runs
+  // Verdict-Anzeige und ein JSON-Pipe auf fidelity-check scheiterten beide
+  // exakt daran.
+  const log = args.flags.json ? makeLogger("CUE", { toStderr: true }) : makeLogger("CUE");
 
   switch (command) {
     case "help":

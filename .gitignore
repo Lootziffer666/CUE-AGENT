@@ -16,3 +16,9 @@ qa-reports/proposed-fixes/
 # Promo video binary output artifacts (audio/video/screenshots)
 promovideo/out/
 promovideo/public/
+
+# Laufartefakte der Check-Kommandos (Default-outDir ist cwd)
+playable-reports/
+temporal-reports/
+audio-reports/
+fidelity-reports/
