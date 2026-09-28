@@ -1,0 +1,44 @@
+[CUE] Ziel-URL: http://localhost:4477
+[CUE] Capture-Engine gestartet (intent=qa, 1 Schritte)
+[CUE]   [1/1] goto initial
+[CUE] ✓ Capture abgeschlossen: 1 Schritte, 1 Console-Einträge
+[CUE] ✓ QA-Bundle: /home/runner/work/CUE-AGENT/CUE-AGENT/qa-reports/qa-bundle.json
+[CUE] ✓ Report (Markdown): /home/runner/work/CUE-AGENT/CUE-AGENT/qa-reports/report-2026-09-28T13-22-01-492Z.md
+[CUE] ✓ Report (JSON): /home/runner/work/CUE-AGENT/CUE-AGENT/qa-reports/report-2026-09-28T13-22-01-492Z.json
+{
+  "tool": "cue-agent",
+  "intent": "qa",
+  "timestamp": "2026-09-28T13:22:04.109Z",
+  "url": "http://localhost:4477",
+  "lang": "de",
+  "provider": "anthropic",
+  "model": null,
+  "visionSkipped": true,
+  "screenshot": "screenshot-2026-09-28T13-22-01-492Z.png",
+  "assessment": {
+    "level": "high",
+    "score": 85,
+    "errors": 1,
+    "warnings": 0,
+    "serverErrors": 0,
+    "clientErrors": 0,
+    "findings": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    }
+  },
+  "console": [
+    {
+      "type": "error",
+      "text": "[PageError] Cannot read properties of null (reading 'value')"
+    }
+  ],
+  "network": [],
+  "metrics": {
+    "fcp": 104,
+    "domContentLoaded": 63,
+    "loadComplete": 64
+  },
+  "analysis": "_Vision-Analyse übersprungen — kein LLM-Key konfiguriert. Setze ANTHROPIC_API_KEY (oder einen anderen Provider) für die visuelle Begutachtung. Capture-, Konsolen-, Netzwerk- und Accessibility-Befunde oben sind dennoch vollständig._"
+}
